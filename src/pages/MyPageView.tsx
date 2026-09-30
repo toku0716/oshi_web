@@ -284,8 +284,8 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal, onOpenT
               <RefreshCw className="w-3.5 h-3.5 text-pink-500" />
               <span>端末同士のデータ同期（PC・スマホ）</span>
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              画面に出る6桁の番号を入力するだけで、もう片方の端末とデータを丸ごと同期します。
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+              画面に出る6桁の番号で直接同期。端末間でのみ通信するため、データがサーバーに保存・公開されることは一切ありません。
             </p>
           </div>
 

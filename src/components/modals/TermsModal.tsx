@@ -43,7 +43,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({
                 1. データはあなたの端末だけに保存（安全・非公開）
               </h4>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-[11px]">
-                登録した推し、予定、グッズ、写真などのデータはお使いのスマホやパソコンの中にのみ自動保存されます。外部のサーバーに送信されたり、他人に公開されることは一切ありません。
+                登録した推し、予定、グッズ、写真などのデータはお使いのスマホやパソコンの中にのみ自動保存されます。データがサーバーに保存されたり、第三者に公開・共有されることは一切ありません。
               </p>
             </div>
           </div>
@@ -85,10 +85,13 @@ export const TermsModal: React.FC<TermsModalProps> = ({
             </div>
             <div className="space-y-0.5 text-xs">
               <h4 className="font-bold text-gray-900 dark:text-white text-xs">
-                4. 端末同士のデータ同期機能
+                4. 端末同士のデータ直接同期
               </h4>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-[11px]">
-                パソコンとスマホの間で、画面に出る6桁の番号を入力するだけで直接データを丸ごと引き継ぐことができます。
+                画面に出る6桁の番号を入力するだけで、パソコンとスマホの間でデータを引き継ぐことができます。
+              </p>
+              <p className="text-indigo-600 dark:text-indigo-400 leading-relaxed text-[10.5px] font-medium pt-1">
+                ※ 本アプリは、ユーザー自身の端末間でのみデータを直接同期する仕様です。データがサーバーに保存されたり、第三者に公開・共有されたりすることは一切ありません。
               </p>
             </div>
           </div>

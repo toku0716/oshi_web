@@ -254,6 +254,11 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                 </div>
               </button>
             </div>
+
+            {/* Privacy & Direct Sync Notice */}
+            <div className="p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/30 text-[10.5px] text-indigo-700 dark:text-indigo-300 leading-relaxed text-center">
+              ※ 本アプリは、ユーザー自身の端末間でのみデータを直接同期する仕様です。データがサーバーに保存されたり、第三者に公開・共有されたりすることは一切ありません。
+            </div>
           </div>
         )}
 
