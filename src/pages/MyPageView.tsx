@@ -23,9 +23,10 @@ import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
 
 interface MyPageViewProps {
   onOpenOshiModal: (targetOshi?: Oshi) => void;
+  onOpenTermsModal?: () => void;
 }
 
-export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
+export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal, onOpenTermsModal }) => {
   const {
     oshis,
     events,
@@ -378,11 +379,22 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
       </div>
 
       {/* App Version & Info */}
-      <div className="text-center text-xs text-gray-400 pt-2">
+      <div className="text-center text-xs text-gray-400 pt-2 space-y-1.5">
         <p className="font-semibold text-gray-500 dark:text-gray-400">推しサポ Web版</p>
-        <p className="text-[11px] text-gray-400 mt-0.5">
+        <p className="text-[11px] text-gray-400">
           端末内自動保存 ＆ バックアップファイル対応
         </p>
+        {onOpenTermsModal && (
+          <div>
+            <button
+              type="button"
+              onClick={onOpenTermsModal}
+              className="text-[11px] text-pink-500 hover:text-pink-600 underline font-medium hover:opacity-80 transition inline-block py-1"
+            >
+              利用規約・機能について
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Confirm Modal: Delete Oshi */}

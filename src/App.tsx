@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar, type NavTab } from './components/layout/Navbar';
 import { Header } from './components/layout/Header';
@@ -15,6 +15,7 @@ import { EventDetailModal } from './components/modals/EventDetailModal';
 import { TodoModal } from './components/modals/TodoModal';
 import { GoodsModal } from './components/modals/GoodsModal';
 import { GoodsDetailModal } from './components/modals/GoodsDetailModal';
+import { TermsModal } from './components/modals/TermsModal';
 
 import type { Oshi, OshiEvent, Todo, Goods } from './types';
 
@@ -39,6 +40,32 @@ const MainApp: React.FC = () => {
   const [isGoodsModalOpen, setIsGoodsModalOpen] = useState(false);
   const [editingGoods, setEditingGoods] = useState<Goods | null>(null);
   const [selectedGoodsDetail, setSelectedGoodsDetail] = useState<Goods | null>(null);
+
+  // Terms & Features modal states
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isFirstTermsView, setIsFirstTermsView] = useState(false);
+
+  // Check if first-time visitor on mount
+  useEffect(() => {
+    try {
+      const agreed = localStorage.getItem('oshiss_terms_agreed_v1');
+      if (!agreed) {
+        setIsFirstTermsView(true);
+        setIsTermsModalOpen(true);
+      }
+    } catch {
+      // LocalStorage access fallback (e.g. private browsing restriction)
+    }
+  }, []);
+
+  const handleAgreeTerms = () => {
+    try {
+      localStorage.setItem('oshiss_terms_agreed_v1', 'true');
+    } catch {
+      // Ignore storage error
+    }
+    setIsTermsModalOpen(false);
+  };
 
   // Helper actions
   const handleOpenOshiModal = (targetOshi?: Oshi) => {
@@ -126,6 +153,10 @@ const MainApp: React.FC = () => {
           {currentTab === 'mypage' && (
             <MyPageView
               onOpenOshiModal={(oshi) => handleOpenOshiModal(oshi)}
+              onOpenTermsModal={() => {
+                setIsFirstTermsView(false);
+                setIsTermsModalOpen(true);
+              }}
             />
           )}
         </main>
@@ -171,6 +202,13 @@ const MainApp: React.FC = () => {
         onClose={() => setSelectedGoodsDetail(null)}
         goods={selectedGoodsDetail}
         onEdit={(g) => handleOpenGoodsModal(g)}
+      />
+
+      <TermsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        onAgree={handleAgreeTerms}
+        isFirstTime={isFirstTermsView}
       />
     </div>
   );
