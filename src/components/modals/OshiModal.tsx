@@ -110,21 +110,32 @@ export const OshiModal: React.FC<OshiModalProps> = ({
         <div className="flex flex-col items-center justify-center gap-2">
           <div className="relative group">
             <div
-              className="w-24 h-24 rounded-full border-4 overflow-hidden flex items-center justify-center bg-gray-100 shadow-md relative"
+              className="w-24 h-24 rounded-full border-4 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-[#1a1c28] shadow-md relative"
               style={{ borderColor: color }}
             >
               {image ? (
                 <img src={image} alt="推しプレビュー" className="w-full h-full object-cover" />
               ) : (
-                <Heart className="w-10 h-10 text-gray-300" />
+                <Heart className="w-10 h-10 text-gray-300 dark:text-gray-600" />
               )}
             </div>
+          </div>
 
-            <label
-              className="absolute bottom-0 right-0 p-2 rounded-full bg-gray-900 text-white hover:bg-gray-800 shadow-md cursor-pointer transition transform hover:scale-110"
-              title="写真を登録・変更"
-            >
-              <Camera className="w-4 h-4" />
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold cursor-pointer transition shadow-sm">
+              <Camera className="w-3.5 h-3.5" />
+              <span>カメラで撮影</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </label>
+
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#35384d] hover:bg-gray-50 dark:hover:bg-[#202230] text-gray-700 dark:text-gray-200 text-xs font-semibold cursor-pointer transition">
+              <span>アルバムから選択</span>
               <input
                 type="file"
                 accept="image/*"
@@ -132,17 +143,18 @@ export const OshiModal: React.FC<OshiModalProps> = ({
                 className="hidden"
               />
             </label>
+
+            {image && (
+              <button
+                type="button"
+                onClick={() => setImage(undefined)}
+                className="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-1 font-medium px-2 py-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>写真を削除</span>
+              </button>
+            )}
           </div>
-          {image && (
-            <button
-              type="button"
-              onClick={() => setImage(undefined)}
-              className="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-1 font-medium"
-            >
-              <Trash2 className="w-3 h-3" />
-              <span>写真を削除</span>
-            </button>
-          )}
         </div>
 
         {/* Name & Ruby */}

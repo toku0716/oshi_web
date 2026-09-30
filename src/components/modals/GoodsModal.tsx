@@ -122,11 +122,11 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Image Upload & Preview */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-            グッズ写真（バックアップにも含まれます）
+          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+            グッズ写真
           </label>
-          <div className="flex items-center gap-4">
-            <div className="relative w-28 h-28 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 group">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative w-24 h-24 rounded-xl border border-dashed border-gray-300 dark:border-[#35384d] bg-gray-50 dark:bg-[#1a1c28] flex items-center justify-center overflow-hidden shrink-0 group">
               {image ? (
                 <>
                   <img src={image} alt="グッズプレビュー" className="w-full h-full object-cover" />
@@ -134,32 +134,61 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
                     type="button"
                     onClick={() => setImage(undefined)}
                     className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition text-xs font-semibold"
+                    title="写真を削除"
                   >
-                    <Trash2 className="w-5 h-5 mb-1" />
+                    <Trash2 className="w-4 h-4 mb-0.5" />
                     削除
                   </button>
                 </>
               ) : (
                 <div className="text-center p-2 text-gray-400">
-                  <ImageIcon className="w-7 h-7 mx-auto mb-1 stroke-1" />
+                  <ImageIcon className="w-6 h-6 mx-auto mb-1 stroke-1" />
                   <span className="text-[10px] block leading-tight">写真なし</span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-2">
-              <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 text-xs font-bold cursor-pointer transition">
-                <Camera className="w-4 h-4" />
-                <span>{image ? '写真を変える' : '写真を選択 / 撮影'}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </label>
-              <p className="text-[11px] text-gray-400">
-                スマートフォンならその場で撮影した写真も登録できます。
+            <div className="space-y-1.5 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* カメラで直接撮影 */}
+                <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold cursor-pointer transition shadow-sm">
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>カメラで撮影</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* アルバムから選択 */}
+                <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35384d] hover:bg-gray-50 dark:hover:bg-[#202230] text-gray-700 dark:text-gray-200 text-xs font-semibold cursor-pointer transition">
+                  <ImageIcon className="w-3.5 h-3.5 text-gray-500" />
+                  <span>アルバムから選択</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* 写真削除 */}
+                {image && (
+                  <button
+                    type="button"
+                    onClick={() => setImage(undefined)}
+                    className="inline-flex items-center gap-1 px-2 py-2 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-medium transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>写真を削除</span>
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-tight">
+                「カメラで撮影」を押すと端末のカメラが起動します。
               </p>
             </div>
           </div>
