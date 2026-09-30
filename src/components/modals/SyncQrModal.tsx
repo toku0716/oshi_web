@@ -121,32 +121,37 @@ export const SyncQrModal: React.FC<SyncQrModalProps> = ({ isOpen, onClose }) => 
             )}
 
             {/* URL Copy Option */}
-            <div className="pt-1 flex flex-col sm:flex-row gap-2">
-              <button
-                type="button"
-                onClick={handleCopyUrl}
-                className="flex-1 py-2 px-3 rounded-lg border border-gray-300 dark:border-[#35384d] hover:bg-gray-50 dark:hover:bg-[#202230] text-gray-700 dark:text-gray-200 text-xs font-semibold transition flex items-center justify-center gap-1.5"
-              >
-                {isCopied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>コピー完了！</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5 text-gray-500" />
-                    <span>同期用URLをコピー</span>
-                  </>
-                )}
-              </button>
+            <div className="pt-1 space-y-1.5">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyUrl}
+                  className="flex-1 py-2 px-3 rounded-lg border border-pink-200 dark:border-pink-900/60 bg-pink-50/70 dark:bg-pink-950/20 hover:bg-pink-100/70 text-pink-700 dark:text-pink-300 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                >
+                  {isCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>コピー完了！</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-pink-500" />
+                      <span>同期用URLをコピー</span>
+                    </>
+                  )}
+                </button>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="py-2 px-4 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-xs font-semibold transition"
-              >
-                閉じる
-              </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="py-2 px-4 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-xs font-semibold transition"
+                >
+                  閉じる
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                ※ スマホでURLをコピーして、PCの「コード貼り付け」に入力するだけでも同期可能です。
+              </p>
             </div>
           </>
         )}

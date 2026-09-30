@@ -257,14 +257,14 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
         )}
       </div>
 
-      {/* SECTION 2: 端末間のデータ同期（QRコード） */}
+      {/* SECTION 2: 端末間のデータ同期（QR / コード） */}
       <div className="bg-white dark:bg-[#161822] rounded-xl border border-gray-200 dark:border-[#262838] p-5 space-y-3">
         <div className="flex items-center gap-2">
           <QrCode className="w-4 h-4 text-pink-500" />
-          <h3 className="font-bold text-sm text-gray-900 dark:text-white">端末間のデータ同期（QRコード）</h3>
+          <h3 className="font-bold text-sm text-gray-900 dark:text-white">端末間のデータ同期（QR / コード）</h3>
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          パソコンとスマホの間で、ログイン不要・QRコードだけでデータを直接同期・引き継ぎできます。
+          パソコンとスマホの間で、QRコードまたはコピーしたコードを貼り付けるだけで直接データを同期・引き継ぎできます。
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -273,10 +273,10 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
             <div>
               <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white">
                 <QrCode className="w-3.5 h-3.5 text-pink-500" />
-                <span>QRコードで送る（この端末のデータ）</span>
+                <span>QRコード / URLで送る（この端末）</span>
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                画面に同期用QRコードを表示します。もう片方の端末のカメラで読み取ってください。
+                画面に同期用QRコードとURLを表示します。スマホで読み取るか、URLをコピーして送れます。
               </p>
             </div>
             <button
@@ -285,19 +285,19 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
               className="w-full py-2 px-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
             >
               <QrCode className="w-3.5 h-3.5" />
-              <span>QRコードを表示</span>
+              <span>QRコード / 送信</span>
             </button>
           </div>
 
-          {/* 受信: カメラでスキャン */}
+          {/* 受信: カメラでスキャン または 貼り付け */}
           <div className="p-3.5 rounded-lg border border-gray-200 dark:border-[#262838] bg-gray-50 dark:bg-[#191a26] space-y-2 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white">
                 <Camera className="w-3.5 h-3.5 text-indigo-500" />
-                <span>カメラでQRコードを読み取る</span>
+                <span>スキャン または コード貼り付けで同期</span>
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                もう片方の端末に表示されたQRコードをカメラで読み取って同期します。
+                相手のQRコードをカメラで読み取るか、コピーしたコードを貼り付けて同期します。
               </p>
             </div>
             <button
@@ -306,7 +306,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
               className="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
             >
               <Camera className="w-3.5 h-3.5" />
-              <span>カメラでスキャン</span>
+              <span>読み取り / 貼り付け</span>
             </button>
           </div>
         </div>
