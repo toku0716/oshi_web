@@ -16,8 +16,10 @@ import {
   Package,
   AlertTriangle,
   CheckCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { ConfirmModal } from '../components/common/ConfirmModal';
+import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
 
 interface MyPageViewProps {
   onOpenOshiModal: (targetOshi?: Oshi) => void;
@@ -40,6 +42,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
   const [pendingImportData, setPendingImportData] = useState<any>(null);
   const [isClearAllConfirmOpen, setIsClearAllConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // Handle Delete Oshi
   const handleDeleteOshi = async () => {
@@ -273,6 +276,28 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
           </div>
         </div>
 
+        {/* Device Direct Sync Card */}
+        <div className="p-3.5 rounded-lg border border-gray-200 dark:border-[#262838] bg-white dark:bg-[#191a26] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white">
+              <RefreshCw className="w-3.5 h-3.5 text-pink-500" />
+              <span>端末同士のデータ同期（PC・スマホ）</span>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              画面に出る6桁の番号を入力するだけで、もう片方の端末とデータを丸ごと同期します。
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsSyncModalOpen(true)}
+            className="px-3.5 py-2 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm shrink-0"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>6桁の番号で同期する</span>
+          </button>
+        </div>
+
         {/* Backup Export / Import Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           {/* Backup Export */}
@@ -401,6 +426,12 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
         cancelLabel="キャンセル"
         variant="danger"
         isLoading={isProcessing}
+      />
+
+      {/* Device Sync Modal (6-Digit Code) */}
+      <DeviceSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
       />
     </div>
   );
