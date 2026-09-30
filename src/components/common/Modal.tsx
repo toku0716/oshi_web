@@ -49,14 +49,14 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Card */}
       <div
-        className={`relative w-full ${maxWidthClass} bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-10 flex flex-col max-h-[90vh] transition-all transform scale-100`}
+        className={`relative w-full ${maxWidthClass} bg-white dark:bg-[#161824] rounded-2xl shadow-2xl dark:shadow-2xl dark:shadow-black/80 border border-gray-200/90 dark:border-[#383d56] overflow-hidden z-10 flex flex-col max-h-[90vh] transition-all transform scale-100 text-gray-800 dark:text-gray-100`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200/80 dark:border-[#2b2f45] bg-gray-50/90 dark:bg-[#1c1f30]">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#2b2f46] transition"
             aria-label="閉じる"
           >
             <X className="w-5 h-5" />

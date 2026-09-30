@@ -53,13 +53,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="sm">
       <div className="text-center py-2">
         <div className="mb-4">{getIcon()}</div>
-        <p className="text-gray-700 whitespace-pre-line text-sm leading-relaxed mb-4">
+        <p className="text-gray-700 dark:text-gray-200 whitespace-pre-line text-sm leading-relaxed mb-4">
           {message}
         </p>
 
         {warningNote && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 text-xs leading-relaxed text-left mb-6 flex gap-2">
-            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="bg-amber-50 dark:bg-[#2c2618] border border-amber-300/80 dark:border-amber-600/60 text-amber-950 dark:text-amber-100 rounded-xl p-3 text-xs leading-relaxed text-left mb-6 flex gap-2">
+            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <span>{warningNote}</span>
           </div>
         )}
@@ -69,7 +69,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium text-sm transition focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#383e5e] bg-white dark:bg-[#202438] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#282d46] font-medium text-sm transition focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-50"
           >
             {cancelLabel}
           </button>

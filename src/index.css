@@ -30,20 +30,20 @@ html.dark aside,
 html.dark header,
 html.dark nav,
 html.dark .bg-white {
-  background-color: #161720 !important;
+  background-color: #161824 !important;
 }
 
 html.dark [class*="bg-slate-50"],
 html.dark [class*="bg-gray-50"],
 html.dark .bg-slate-50,
 html.dark .bg-gray-50 {
-  background-color: #0d0e12 !important;
+  background-color: #1f2232 !important;
 }
 
 html.dark [class*="bg-gray-100"],
 html.dark [class*="bg-slate-100"],
 html.dark .bg-gray-100 {
-  background-color: #1e202c !important;
+  background-color: #272a3e !important;
 }
 
 html.dark [class*="border-gray-100"],
@@ -52,7 +52,7 @@ html.dark [class*="border-slate-100"],
 html.dark [class*="border-slate-200"],
 html.dark .border-gray-100,
 html.dark .border-gray-200 {
-  border-color: #262838 !important;
+  border-color: #353950 !important;
 }
 
 html.dark [class*="bg-pink-50"],
@@ -100,15 +100,31 @@ html.dark [class*="text-gray-600"] {
 
 html.dark [class*="text-gray-500"],
 html.dark [class*="text-gray-400"] {
-  color: #94a3b8 !important;
+  color: #a0aec0 !important;
+}
+
+html.dark [class*="text-indigo-600"],
+html.dark [class*="text-indigo-700"],
+html.dark [class*="text-indigo-800"] {
+  color: #c7d2fe !important;
+}
+
+html.dark [class*="text-amber-900"],
+html.dark [class*="text-amber-800"] {
+  color: #fef08a !important;
+}
+
+html.dark [class*="text-pink-600"],
+html.dark [class*="text-rose-600"] {
+  color: #f472b6 !important;
 }
 
 html.dark input,
 html.dark textarea,
 html.dark select {
-  background-color: #1a1b26 !important;
+  background-color: #1f2234 !important;
   color: #ffffff !important;
-  border-color: #2d3042 !important;
+  border-color: #383d56 !important;
 }
 
 html.dark input::placeholder,

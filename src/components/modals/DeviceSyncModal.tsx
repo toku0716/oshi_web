@@ -221,16 +221,16 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
               <button
                 type="button"
                 onClick={startSend}
-                className="p-4 rounded-xl border border-gray-200 dark:border-[#2e3146] hover:border-pink-500 hover:bg-pink-50/50 dark:hover:bg-pink-950/20 text-left transition group space-y-2 flex flex-col justify-between"
+                className="p-4 rounded-xl border border-gray-200 dark:border-[#383e5e] bg-gray-50/70 dark:bg-[#202438] hover:border-pink-500 hover:bg-pink-50/60 dark:hover:border-pink-500 dark:hover:bg-[#282d46] text-left transition group space-y-2 flex flex-col justify-between shadow-2xs"
               >
-                <div className="w-9 h-9 rounded-lg bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-300 flex items-center justify-center">
                   <Send className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-pink-600 transition">
+                  <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 transition">
                     この端末から送る
                   </h4>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-300 mt-0.5">
                     画面に6桁の番号を表示します
                   </p>
                 </div>
@@ -239,16 +239,16 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
               <button
                 type="button"
                 onClick={startReceive}
-                className="p-4 rounded-xl border border-gray-200 dark:border-[#2e3146] hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 text-left transition group space-y-2 flex flex-col justify-between"
+                className="p-4 rounded-xl border border-gray-200 dark:border-[#383e5e] bg-gray-50/70 dark:bg-[#202438] hover:border-indigo-500 hover:bg-indigo-50/60 dark:hover:border-indigo-500 dark:hover:bg-[#282d46] text-left transition group space-y-2 flex flex-col justify-between shadow-2xs"
               >
-                <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
                   <Download className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 transition">
+                  <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
                     別の端末から受け取る
                   </h4>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-300 mt-0.5">
                     相手の6桁の番号を入力します
                   </p>
                 </div>
@@ -256,7 +256,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
             </div>
 
             {/* Privacy & Direct Sync Notice */}
-            <div className="p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/30 text-[10.5px] text-indigo-700 dark:text-indigo-300 leading-relaxed text-center">
+            <div className="p-2.5 rounded-lg bg-indigo-50/90 dark:bg-[#181d33] border border-indigo-200/90 dark:border-indigo-500/40 text-[10.5px] text-indigo-950 dark:text-indigo-200 font-medium leading-relaxed text-center">
               ※ 本アプリは、ユーザー自身の端末間でのみデータを直接同期する仕様です。データがサーバーに保存されたり、第三者に公開・共有されたりすることは一切ありません。
             </div>
           </div>
