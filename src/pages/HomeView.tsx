@@ -1,8 +1,8 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import type { OshiEvent, Goods } from '../types';
-import { getDaysSince, formatJapaneseDate, formatCurrency } from '../utils/helpers';
-import { EventCategoryBadge } from '../components/common/Badge';
+import { getDaysSince, formatJapaneseDate, formatCurrency, getDaysDiff } from '../utils/helpers';
+import { EventCategoryBadge, CountdownBadge } from '../components/common/Badge';
 import {
   Calendar,
   Package,
@@ -209,30 +209,36 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* Today's Events (If any) */}
       {todayEvents.length > 0 && (
         <div className="bg-white dark:bg-[#161822] border-l-4 border-pink-500 rounded-xl p-4 border border-gray-200 dark:border-[#262838]">
-          <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-3">
-            本日の予定（{todayEvents.length}件）
+          <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-3 flex items-center justify-between">
+            <span>本日の予定（{todayEvents.length}件）</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 font-bold animate-pulse">
+              TODAY
+            </span>
           </h3>
           <div className="space-y-2">
             {todayEvents.map((ev) => (
               <div
                 key={ev.id}
                 onClick={() => onSelectEvent(ev)}
-                className="p-3 rounded-lg border border-gray-200 dark:border-[#262838] hover:bg-gray-50 dark:hover:bg-[#1d202d] cursor-pointer transition flex items-center justify-between"
+                className="p-3 rounded-lg border border-gray-200 dark:border-[#262838] hover:bg-gray-50 dark:hover:bg-[#1d202d] cursor-pointer transition flex items-center justify-between gap-3"
               >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <EventCategoryBadge category={ev.category} />
-                    {ev.time && <span className="text-xs text-gray-500">{ev.time}</span>}
+                    {ev.time && <span className="text-xs text-gray-500 dark:text-gray-400">{ev.time}</span>}
                   </div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{ev.title}</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{ev.title}</h4>
                   {ev.location && (
-                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3" />
-                      {ev.location}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+                      <MapPin className="w-3 h-3 text-pink-500 shrink-0" />
+                      <span>{ev.location}</span>
                     </p>
                   )}
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <div className="flex items-center gap-2 shrink-0">
+                  <CountdownBadge date={ev.date} size="sm" />
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </div>
               </div>
             ))}
           </div>
@@ -270,31 +276,61 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </div>
             ) : (
               <div className="space-y-2.5">
+                {/* Highlight Next Event Countdown Banner */}
+                {upcomingEvents[0] && (
+                  <div
+                    onClick={() => onSelectEvent(upcomingEvents[0])}
+                    className="p-3.5 rounded-xl bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-purple-500/10 dark:from-pink-950/40 dark:via-rose-950/30 dark:to-purple-950/40 border border-pink-200/90 dark:border-pink-900/60 flex items-center justify-between gap-3 cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 transition group shadow-2xs mb-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-black text-pink-600 dark:text-pink-400 tracking-wider uppercase block mb-0.5">
+                        NEXT EVENT（次のイベント）
+                      </span>
+                      <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate group-hover:text-pink-600 dark:group-hover:text-pink-400 transition">
+                        {upcomingEvents[0].title}
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                          {formatJapaneseDate(upcomingEvents[0].date)}
+                        </span>
+                        {upcomingEvents[0].time && <span>{upcomingEvents[0].time}</span>}
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      <CountdownBadge date={upcomingEvents[0].date} size="lg" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Event list */}
                 {upcomingEvents.map((ev) => (
                   <div
                     key={ev.id}
                     onClick={() => onSelectEvent(ev)}
-                    className="p-3 rounded-lg border border-gray-100 dark:border-[#222434] hover:border-gray-200 dark:hover:border-[#35384d] hover:bg-gray-50 dark:hover:bg-[#1a1c28] cursor-pointer transition flex items-center justify-between"
+                    className="p-3 rounded-lg border border-gray-100 dark:border-[#222434] hover:border-gray-200 dark:hover:border-[#35384d] hover:bg-gray-50 dark:hover:bg-[#1a1c28] cursor-pointer transition flex items-center justify-between gap-3"
                   >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                           {formatJapaneseDate(ev.date)}
                         </span>
                         {ev.time && <span className="text-xs text-gray-400">{ev.time}</span>}
                         <EventCategoryBadge category={ev.category} />
                       </div>
-                      <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate">
                         {ev.title}
                       </h4>
                       {ev.location && (
-                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3" />
-                          {ev.location}
+                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+                          <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                          <span>{ev.location}</span>
                         </p>
                       )}
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <CountdownBadge date={ev.date} size="md" />
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </div>
                   </div>
                 ))}
               </div>

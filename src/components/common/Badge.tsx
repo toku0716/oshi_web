@@ -1,5 +1,6 @@
 import React from 'react';
 import type { EventCategory, GoodsCategory, GoodsOpenStatus, TicketStatus } from '../../types';
+import { getDaysDiff } from '../../utils/helpers';
 
 export const EVENT_CATEGORY_CONFIG: Record<EventCategory, { label: string; bg: string; text: string }> = {
   live: { label: 'ライブ', bg: 'bg-rose-100', text: 'text-rose-700' },
@@ -71,6 +72,73 @@ export const TicketStatusBadge: React.FC<{ status?: TicketStatus }> = ({ status 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${conf.bg} ${conf.text}`}>
       {conf.label}
+    </span>
+  );
+};
+
+export const CountdownBadge: React.FC<{ date: string; size?: 'sm' | 'md' | 'lg' }> = ({
+  date,
+  size = 'md',
+}) => {
+  const daysDiff = getDaysDiff(date);
+
+  if (daysDiff === 0) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center font-black rounded-lg bg-rose-500 text-white shadow-xs animate-pulse shrink-0 ${
+          size === 'sm' ? 'px-2 py-0.5 text-[10px]' : size === 'lg' ? 'px-3.5 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'
+        }`}
+      >
+        本日開催！
+      </span>
+    );
+  }
+
+  if (daysDiff === 1) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center font-black rounded-lg bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xs shrink-0 ${
+          size === 'sm' ? 'px-2 py-0.5 text-[10px]' : size === 'lg' ? 'px-3.5 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'
+        }`}
+      >
+        明日！
+      </span>
+    );
+  }
+
+  if (daysDiff > 1 && daysDiff <= 7) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center font-bold rounded-lg bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-900/60 shadow-2xs shrink-0 ${
+          size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : size === 'lg' ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs'
+        }`}
+      >
+        <span>あと</span>
+        <span className="text-sm font-black mx-0.5 text-pink-600 dark:text-pink-300">{daysDiff}</span>
+        <span>日</span>
+      </span>
+    );
+  }
+
+  if (daysDiff > 7) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center font-bold rounded-lg bg-gray-100 dark:bg-[#202438] text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-[#383e5e] shrink-0 ${
+          size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : size === 'lg' ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs'
+        }`}
+      >
+        あと{daysDiff}日
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center font-medium rounded-lg bg-gray-100 dark:bg-[#1a1c28] text-gray-400 dark:text-gray-400 shrink-0 ${
+        size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : size === 'lg' ? 'px-2.5 py-1 text-xs' : 'px-2 py-0.5 text-[11px]'
+      }`}
+    >
+      終了
     </span>
   );
 };

@@ -9,7 +9,9 @@ export function getDaysDiff(targetDateStr: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const target = new Date(targetDateStr);
+  const parts = targetDateStr.split('-').map(Number);
+  if (parts.length < 3 || isNaN(parts[0])) return 0;
+  const target = new Date(parts[0], parts[1] - 1, parts[2]);
   target.setHours(0, 0, 0, 0);
 
   const diffTime = target.getTime() - today.getTime();
