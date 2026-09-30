@@ -201,7 +201,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="bg-white dark:bg-[#161822] rounded-xl p-4 border border-gray-200 dark:border-[#262838]">
           <p className="text-xs text-gray-500 dark:text-gray-400">グッズ総額</p>
           <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
-            ¥{formatCurrency(totalGoodsSpent)}
+            {formatCurrency(totalGoodsSpent)}
           </p>
         </div>
       </div>
@@ -280,20 +280,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 {upcomingEvents[0] && (
                   <div
                     onClick={() => onSelectEvent(upcomingEvents[0])}
-                    className="p-3.5 rounded-xl bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-purple-500/10 dark:from-pink-950/40 dark:via-rose-950/30 dark:to-purple-950/40 border border-pink-200/90 dark:border-pink-900/60 flex items-center justify-between gap-3 cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 transition group shadow-2xs mb-3"
+                    className="p-3.5 rounded-xl bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-purple-500/10 dark:from-pink-950/40 dark:via-rose-950/30 dark:to-purple-950/40 border border-pink-200/90 dark:border-pink-900/60 flex items-center justify-between gap-3 cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 transition group shadow-2xs mb-2"
                   >
                     <div className="min-w-0 flex-1">
-                      <span className="text-[10px] font-black text-pink-600 dark:text-pink-400 tracking-wider uppercase block mb-0.5">
-                        NEXT EVENT（次のイベント）
-                      </span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-black text-pink-600 dark:text-pink-400 tracking-wider uppercase">
+                          NEXT EVENT（次のイベント）
+                        </span>
+                        <EventCategoryBadge category={upcomingEvents[0].category} />
+                      </div>
                       <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate group-hover:text-pink-600 dark:group-hover:text-pink-400 transition">
                         {upcomingEvents[0].title}
                       </h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-gray-700 dark:text-gray-300">
                           {formatJapaneseDate(upcomingEvents[0].date)}
                         </span>
                         {upcomingEvents[0].time && <span>{upcomingEvents[0].time}</span>}
+                        {upcomingEvents[0].location && (
+                          <span className="flex items-center gap-1 text-gray-400 truncate">
+                            <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                            {upcomingEvents[0].location}
+                          </span>
+                        )}
                       </p>
                     </div>
                     <div className="shrink-0">
@@ -302,8 +311,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   </div>
                 )}
 
-                {/* Event list */}
-                {upcomingEvents.map((ev) => (
+                {/* Event list (2件目以降の予定) */}
+                {upcomingEvents.slice(1).map((ev) => (
                   <div
                     key={ev.id}
                     onClick={() => onSelectEvent(ev)}
@@ -389,11 +398,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
                         {item.name}
                       </h4>
                       <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mt-0.5">
-                        ¥{formatCurrency(item.price)}
+                        {formatCurrency(item.price)}
                       </p>
                       {item.storageLocation && (
-                        <p className="text-[10px] text-gray-400 truncate">
-                          {item.storageLocation}
+                        <p className="text-[10px] text-gray-400 truncate mt-0.5">
+                          保管場所: {item.storageLocation}
                         </p>
                       )}
                     </div>
