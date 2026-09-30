@@ -13,9 +13,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'favicon.svg'],
       manifest: {
-        name: '推しサポ — 推し活総合サポート',
+        name: '推しサポ',
         short_name: '推しサポ',
-        description: '予定・TODO・グッズをまとめて管理できる推し活Webアプリ',
         theme_color: '#111216',
         background_color: '#111216',
         display: 'standalone',
