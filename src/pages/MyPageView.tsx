@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { oshiRepository, backupRepository } from '../repository';
-import type { Oshi } from '../types';
+import type { Oshi, BackupData } from '../types';
 import { getDaysSince } from '../utils/helpers';
 import {
   User,
@@ -16,14 +16,22 @@ import {
   Package,
   AlertTriangle,
   CheckCircle,
+  QrCode,
+  Camera,
 } from 'lucide-react';
 import { ConfirmModal } from '../components/common/ConfirmModal';
+import { SyncQrModal } from '../components/modals/SyncQrModal';
+import { ScanQrModal } from '../components/modals/ScanQrModal';
 
 interface MyPageViewProps {
   onOpenOshiModal: (targetOshi?: Oshi) => void;
+  onSyncDataReceived?: (data: BackupData) => void;
 }
 
-export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
+export const MyPageView: React.FC<MyPageViewProps> = ({
+  onOpenOshiModal,
+  onSyncDataReceived,
+}) => {
   const {
     oshis,
     events,
@@ -40,6 +48,8 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
   const [pendingImportData, setPendingImportData] = useState<any>(null);
   const [isClearAllConfirmOpen, setIsClearAllConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSyncQrOpen, setIsSyncQrOpen] = useState(false);
+  const [isScanQrOpen, setIsScanQrOpen] = useState(false);
 
   // Handle Delete Oshi
   const handleDeleteOshi = async () => {
@@ -247,7 +257,62 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
         )}
       </div>
 
-      {/* SECTION 2: データの保存とバックアップ */}
+      {/* SECTION 2: 端末間のデータ同期（QRコード） */}
+      <div className="bg-white dark:bg-[#161822] rounded-xl border border-gray-200 dark:border-[#262838] p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <QrCode className="w-4 h-4 text-pink-500" />
+          <h3 className="font-bold text-sm text-gray-900 dark:text-white">端末間のデータ同期（QRコード）</h3>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          パソコンとスマホの間で、ログイン不要・QRコードだけでデータを直接同期・引き継ぎできます。
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {/* 送信: QRコード表示 */}
+          <div className="p-3.5 rounded-lg border border-gray-200 dark:border-[#262838] bg-gray-50 dark:bg-[#191a26] space-y-2 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white">
+                <QrCode className="w-3.5 h-3.5 text-pink-500" />
+                <span>QRコードで送る（この端末のデータ）</span>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                画面に同期用QRコードを表示します。もう片方の端末のカメラで読み取ってください。
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsSyncQrOpen(true)}
+              className="w-full py-2 px-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>QRコードを表示</span>
+            </button>
+          </div>
+
+          {/* 受信: カメラでスキャン */}
+          <div className="p-3.5 rounded-lg border border-gray-200 dark:border-[#262838] bg-gray-50 dark:bg-[#191a26] space-y-2 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white">
+                <Camera className="w-3.5 h-3.5 text-indigo-500" />
+                <span>カメラでQRコードを読み取る</span>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                もう片方の端末に表示されたQRコードをカメラで読み取って同期します。
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsScanQrOpen(true)}
+              className="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>カメラでスキャン</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3: データの保存とバックアップ */}
       <div className="bg-white dark:bg-[#161822] rounded-xl border border-gray-200 dark:border-[#262838] p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Database className="w-4 h-4 text-indigo-500" />
@@ -401,6 +466,25 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal }) => {
         cancelLabel="キャンセル"
         variant="danger"
         isLoading={isProcessing}
+      />
+
+      {/* Sync QR Modals */}
+      <SyncQrModal
+        isOpen={isSyncQrOpen}
+        onClose={() => setIsSyncQrOpen(false)}
+      />
+
+      <ScanQrModal
+        isOpen={isScanQrOpen}
+        onClose={() => setIsScanQrOpen(false)}
+        onSuccess={(data) => {
+          if (onSyncDataReceived) {
+            onSyncDataReceived(data);
+          } else {
+            setPendingImportData(data);
+            setIsImportConfirmOpen(true);
+          }
+        }}
       />
     </div>
   );

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar, type NavTab } from './components/layout/Navbar';
 import { Header } from './components/layout/Header';
 import { ToastContainer } from './components/common/ToastContainer';
+import { ConfirmModal } from './components/common/ConfirmModal';
 import { HomeView } from './pages/HomeView';
 import { CalendarView } from './pages/CalendarView';
 import { GoodsView } from './pages/GoodsView';
@@ -16,12 +17,16 @@ import { TodoModal } from './components/modals/TodoModal';
 import { GoodsModal } from './components/modals/GoodsModal';
 import { GoodsDetailModal } from './components/modals/GoodsDetailModal';
 
-import type { Oshi, OshiEvent, Todo, Goods } from './types';
+import { parseSyncData } from './utils/syncUtils';
+import { backupRepository } from './repository';
+import type { Oshi, OshiEvent, Todo, Goods, BackupData } from './types';
 
 const MainApp: React.FC = () => {
-  const { todos, isLoading } = useApp();
+  const { todos, isLoading, refreshAllData, showToast } = useApp();
 
   const [currentTab, setCurrentTab] = useState<NavTab>('home');
+  const [incomingSyncData, setIncomingSyncData] = useState<BackupData | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Modal states
   const [isOshiModalOpen, setIsOshiModalOpen] = useState(false);
@@ -65,6 +70,57 @@ const MainApp: React.FC = () => {
 
   const handleAddTodoForEvent = (event: OshiEvent) => {
     handleOpenTodoModal(undefined, event.id);
+  };
+
+  // URLハッシュからの同期データ検知（スマホの通常カメラ等でQRを開いた時）
+  useEffect(() => {
+    const checkHashSync = () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('#sync=')) {
+        const parsed = parseSyncData(hash);
+        if (parsed) {
+          setIncomingSyncData(parsed);
+        }
+      }
+    };
+
+    checkHashSync();
+    window.addEventListener('hashchange', checkHashSync);
+    return () => window.removeEventListener('hashchange', checkHashSync);
+  }, []);
+
+  const handleConfirmSync = async () => {
+    if (!incomingSyncData) return;
+    setIsSyncing(true);
+    try {
+      const stats = await backupRepository.importBackup(incomingSyncData);
+      await refreshAllData();
+      showToast(
+        `同期が完了しました！(推し:${stats.oshisCount}人, 予定:${stats.eventsCount}件, グッズ:${stats.goodsCount}点)`,
+        'success'
+      );
+      // URLのハッシュを消去
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+      setIncomingSyncData(null);
+    } catch (err) {
+      console.error(err);
+      showToast('同期に失敗しました', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCancelSync = () => {
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    setIncomingSyncData(null);
+  };
+
+  const handleSyncDataReceived = (data: BackupData) => {
+    setIncomingSyncData(data);
   };
 
   const uncompletedTodoCount = todos.filter((t) => !t.completed).length;
@@ -126,6 +182,7 @@ const MainApp: React.FC = () => {
           {currentTab === 'mypage' && (
             <MyPageView
               onOpenOshiModal={(oshi) => handleOpenOshiModal(oshi)}
+              onSyncDataReceived={handleSyncDataReceived}
             />
           )}
         </main>
@@ -171,6 +228,20 @@ const MainApp: React.FC = () => {
         onClose={() => setSelectedGoodsDetail(null)}
         goods={selectedGoodsDetail}
         onEdit={(g) => handleOpenGoodsModal(g)}
+      />
+
+      {/* Confirm Modal: Incoming QR Sync */}
+      <ConfirmModal
+        isOpen={!!incomingSyncData}
+        onClose={handleCancelSync}
+        onConfirm={handleConfirmSync}
+        title="QR同期データを受信しました"
+        message="別の端末から推し活データを受信しました。この端末のデータに上書きして同期しますか？"
+        warningNote={`受信内容: 推し ${incomingSyncData?.data.oshis.length || 0}人 / 予定 ${incomingSyncData?.data.events.length || 0}件 / グッズ ${incomingSyncData?.data.goods.length || 0}点\n※ 現在この端末に入っているデータは受信内容に置き換わります。`}
+        confirmLabel="上書きして同期する"
+        cancelLabel="キャンセル"
+        variant="warning"
+        isLoading={isSyncing}
       />
     </div>
   );

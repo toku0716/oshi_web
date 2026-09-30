@@ -38,16 +38,20 @@ export function generateSyncUrl(backupData: BackupData): { url: string; size: nu
 }
 
 /**
- * URLハッシュから同期データを解凍・パースします。
+ * URLハッシュまたはQR読み取りテキストから同期データを解凍・パースします。
  */
-export function parseSyncDataFromHash(hash: string): BackupData | null {
-  if (!hash || !hash.includes('#sync=')) return null;
+export function parseSyncData(input: string): BackupData | null {
+  if (!input) return null;
 
   try {
-    const rawCompressed = hash.split('#sync=')[1];
-    if (!rawCompressed) return null;
+    let target = input.trim();
+    if (target.includes('#sync=')) {
+      target = target.split('#sync=')[1];
+    } else if (target.includes('sync=')) {
+      target = target.split('sync=')[1];
+    }
 
-    const decompressed = LZString.decompressFromEncodedURIComponent(rawCompressed);
+    const decompressed = LZString.decompressFromEncodedURIComponent(target);
     if (!decompressed) return null;
 
     const parsed = JSON.parse(decompressed);
@@ -56,7 +60,12 @@ export function parseSyncDataFromHash(hash: string): BackupData | null {
     }
     return null;
   } catch (err) {
-    console.error('Failed to parse sync data from hash:', err);
+    console.error('Failed to parse sync data:', err);
     return null;
   }
 }
+
+/**
+ * 互換性のためのエイリアス
+ */
+export const parseSyncDataFromHash = parseSyncData;
