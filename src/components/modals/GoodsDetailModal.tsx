@@ -104,21 +104,21 @@ export const GoodsDetailModal: React.FC<GoodsDetailModalProps> = ({
               )}
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900 leading-snug">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-snug">
               {goods.name}
             </h2>
           </div>
 
           {/* Pricing & Quantity Card */}
-          <div className="bg-gradient-to-r from-pink-50/70 to-rose-50/40 rounded-2xl p-4 border border-pink-100/80 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-pink-50/80 to-rose-50/50 dark:from-[#2a1c28] dark:to-[#221824] rounded-2xl p-4 border border-pink-200/80 dark:border-pink-900/50 flex items-center justify-between shadow-2xs">
             <div>
-              <p className="text-xs text-gray-500 font-medium">価格 × 数量</p>
-              <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-xl font-black text-pink-600">
+              <p className="text-xs text-gray-500 dark:text-gray-300 font-medium">価格 × 数量</p>
+              <div className="flex items-baseline flex-wrap gap-2 mt-0.5">
+                <span className="text-xl font-black text-pink-600 dark:text-pink-400">
                   {formatCurrency(goods.price)}
                 </span>
                 {goods.quantity > 1 && (
-                  <span className="text-xs text-gray-500 font-semibold">
+                  <span className="text-xs text-gray-700 dark:text-gray-200 font-bold bg-white/80 dark:bg-[#181a28] px-2 py-0.5 rounded-md border border-pink-200/80 dark:border-pink-900/50">
                     (× {goods.quantity}個 = {formatCurrency(goods.price * goods.quantity)})
                   </span>
                 )}
@@ -126,9 +126,9 @@ export const GoodsDetailModal: React.FC<GoodsDetailModalProps> = ({
             </div>
             {goods.storageLocation && (
               <div className="text-right">
-                <span className="text-[11px] text-gray-400 block font-medium">保管場所</span>
-                <span className="text-xs font-bold text-gray-700 flex items-center justify-end gap-1">
-                  <MapPin className="w-3 h-3 text-pink-500" />
+                <span className="text-[11px] text-gray-400 dark:text-gray-400 block font-medium">保管場所</span>
+                <span className="text-xs font-bold text-gray-800 dark:text-gray-100 flex items-center justify-end gap-1 mt-0.5">
+                  <MapPin className="w-3.5 h-3.5 text-pink-500" />
                   {goods.storageLocation}
                 </span>
               </div>
@@ -136,17 +136,17 @@ export const GoodsDetailModal: React.FC<GoodsDetailModalProps> = ({
           </div>
 
           {/* Purchase Date & Memo */}
-          <div className="space-y-2 text-sm bg-gray-50/60 rounded-xl p-3.5 border border-gray-100">
+          <div className="space-y-2 text-sm bg-gray-50/80 dark:bg-[#1f2234] rounded-xl p-3.5 border border-gray-200/80 dark:border-[#353950]">
             {goods.purchaseDate && (
-              <div className="flex items-center gap-2 text-gray-600 text-xs">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 text-xs">
                 <Calendar className="w-3.5 h-3.5 text-gray-400" />
                 <span>購入日: {formatJapaneseDate(goods.purchaseDate)}</span>
               </div>
             )}
             {goods.memo && (
-              <div className="pt-2 border-t border-gray-200/60">
-                <p className="text-xs font-semibold text-gray-500 mb-1">メモ</p>
-                <p className="text-gray-800 text-xs whitespace-pre-wrap leading-relaxed">
+              <div className="pt-2 border-t border-gray-200/60 dark:border-[#353950]">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">メモ</p>
+                <p className="text-gray-800 dark:text-gray-200 text-xs whitespace-pre-wrap leading-relaxed">
                   {goods.memo}
                 </p>
               </div>
@@ -154,7 +154,7 @@ export const GoodsDetailModal: React.FC<GoodsDetailModalProps> = ({
           </div>
 
           {/* Footer Action buttons */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-[#2b2f45]">
             <button
               onClick={() => setIsDeleteConfirmOpen(true)}
               className="text-xs text-rose-600 hover:text-rose-700 p-2 rounded-lg hover:bg-rose-50 flex items-center gap-1.5 font-medium transition"
