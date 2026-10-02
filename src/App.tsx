@@ -19,6 +19,7 @@ import { TermsModal } from './components/modals/TermsModal';
 import { GoogleLinkModal } from './components/modals/GoogleLinkModal';
 import { GoogleAccountModal } from './components/modals/GoogleAccountModal';
 import { MaintenanceView } from './components/maintenance/MaintenanceView';
+import { ExternalLink, Wrench } from 'lucide-react';
 
 import type { Oshi, OshiEvent, Todo, Goods, MaintenanceInfo } from './types';
 
@@ -201,20 +202,32 @@ const MainApp: React.FC = () => {
       {/* Admin Bypass Sticky Notice */}
       {maintenance?.enabled && isAdminBypass && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2 text-xs font-bold shadow-md">
-          <div className="flex items-center justify-between max-w-6xl mx-auto">
-            <span>🔧 メンテナンス中モードが有効です（現在、管理者プレビューとして閲覧中）</span>
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  sessionStorage.removeItem('oshiss_admin_bypass');
-                } catch {}
-                setIsAdminBypass(false);
-              }}
-              className="px-2.5 py-1 rounded bg-black/20 hover:bg-black/30 transition text-xs font-semibold"
-            >
-              一般公開（メンテナンス画面）に戻す
-            </button>
+          <div className="flex items-center justify-between max-w-6xl mx-auto gap-2">
+            <span className="truncate">🔧 メンテナンス中モードが有効です（現在、管理者プレビュー中）</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href="https://github.com/toku0716/oshi_web/actions/workflows/maintenance.yml"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded bg-black/30 hover:bg-black/40 transition text-xs font-semibold flex items-center gap-1 text-white shadow-2xs"
+              >
+                <Wrench className="w-3 h-3 text-amber-300" />
+                <span>メンテナンス終了（GitHub）</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    sessionStorage.removeItem('oshiss_admin_bypass');
+                  } catch {}
+                  setIsAdminBypass(false);
+                }}
+                className="px-2.5 py-1 rounded bg-black/20 hover:bg-black/30 transition text-xs font-semibold"
+              >
+                プレビュー終了
+              </button>
+            </div>
           </div>
         </div>
       )}

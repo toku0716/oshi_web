@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { MaintenanceInfo } from '../../types';
 import {
   Wrench,
@@ -33,13 +33,30 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   const [passwordError, setPasswordError] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
 
+  // Periodic background check so visitor or admin doesn't have to keep reloading manually
+  useEffect(() => {
+    if (isPreview) return;
+    const interval = setInterval(async () => {
+      try {
+        const updated = await onRecheck();
+        if (updated && !updated.enabled) {
+          window.location.reload();
+        }
+      } catch {}
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [isPreview, onRecheck]);
+
   const handleCheck = async () => {
     setIsChecking(true);
     setCheckResult(null);
     try {
       const updated = await onRecheck();
       if (updated && !updated.enabled) {
-        setCheckResult('メンテナンスが終了しました！画面を更新します...');
+        setCheckResult('メンテナンスが終了しました！通常画面に切り替えます...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 600);
       } else {
         setCheckResult('現在もメンテナンス作業中です。完了までもう少々お待ちください。');
       }
@@ -173,12 +190,14 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
             </button>
             <span>•</span>
             <a
-              href="https://github.com/toku0716/oshi_web/actions"
+              href="https://github.com/toku0716/oshi_web/actions/workflows/maintenance.yml"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline transition flex items-center gap-1"
+              title="メンテナンスモード切替・終了（GitHub Actions）"
             >
-              <span>GitHub Actions</span>
+              <Wrench className="w-3 h-3 text-amber-500" />
+              <span>切替・終了（GitHub）</span>
               <ExternalLink className="w-3 h-3" />
             </a>
           </div>
@@ -193,11 +212,11 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
               <div className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-950/60 text-pink-600 flex items-center justify-center">
                 <Lock className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-sm text-gray-900 dark:text-white">管理者プレビュー閲覧</h3>
+              <h3 className="font-bold text-sm text-gray-900 dark:text-white">管理者メニュー</h3>
             </div>
 
             <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-              メンテナンス中画面を一時的にスキップして、管理画面や動作確認を行います。
+              メンテナンス中画面をスキップしてアプリの動作確認を行うか、GitHubでメンテナンスモードを終了（通常復帰）します。
             </p>
 
             <form onSubmit={handlePasswordSubmit} className="space-y-3">
@@ -219,20 +238,33 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 </p>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#252838]"
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-[#262838]">
+                <a
+                  href="https://github.com/toku0716/oshi_web/actions/workflows/maintenance.yml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-700/60 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-[11px] font-bold transition flex items-center gap-1"
                 >
-                  キャンセル
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold transition shadow-xs"
-                >
-                  プレビューに入る
-                </button>
+                  <Wrench className="w-3 h-3 text-amber-500" />
+                  <span>終了する (GitHub)</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordModalOpen(false)}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#252838]"
+                  >
+                    閉じる
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-3.5 py-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold transition shadow-xs"
+                  >
+                    プレビューに入る
+                  </button>
+                </div>
               </div>
             </form>
           </div>
