@@ -1,7 +1,7 @@
 {
-  "enabled": true,
-  "title": "大規模改善",
-  "message": "より快適にご利用いただけるよう、システムの改善および更新作業を行っております。\nご不便をおかけいたしますが、完了まで今しばらくお待ちください。",
-  "estimatedEnd": "18:30~19:00",
-  "updatedAt": "2026-10-02T07:30:51.042Z"
+  "enabled": false,
+  "title": "通常運用中",
+  "message": "",
+  "estimatedEnd": "",
+  "updatedAt": "2026-10-02T07:42:06.529Z"
 }
