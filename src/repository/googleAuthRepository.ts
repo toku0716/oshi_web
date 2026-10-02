@@ -45,7 +45,10 @@ export const googleAuthRepository = {
    */
   getClientId(): string {
     const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
-    return (envClientId && typeof envClientId === 'string') ? envClientId.trim() : '';
+    if (envClientId && typeof envClientId === 'string' && envClientId.trim()) {
+      return envClientId.trim();
+    }
+    return '112431414494-8vj2boelps95u2lu0fo6h39i0gqob2t4.apps.googleusercontent.com';
   },
 
   /**
@@ -56,7 +59,10 @@ export const googleAuthRepository = {
     if (!clientId) {
       throw new Error('Google OAuth クライアントIDが設定されていません');
     }
-    const redirectUri = window.location.origin + window.location.pathname;
+    let redirectUri = window.location.origin + window.location.pathname;
+    if (!redirectUri.endsWith('/')) {
+      redirectUri += '/';
+    }
     const scope = encodeURIComponent('openid profile email');
     const state = Math.random().toString(36).substring(2);
     sessionStorage.setItem('oshiss_oauth_state', state);
