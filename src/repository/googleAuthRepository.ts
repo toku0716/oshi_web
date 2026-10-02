@@ -52,6 +52,145 @@ export const googleAuthRepository = {
   },
 
   /**
+   * Render official Google Identity Services (GIS) button in a container element.
+   * This is Google's official, verified sign-in button that avoids "unverified app / dangerous site" warnings.
+   */
+  initAndRenderButton(
+    container: HTMLElement,
+    onSuccess: (user: GoogleUser) => void,
+    onError?: (err: any) => void
+  ): () => void {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      if (onError) onError(new Error('Google OAuth クライアントIDが設定されていません'));
+      return () => {};
+    }
+
+    const tryRender = () => {
+      if (typeof window === 'undefined' || !window.google?.accounts?.id) {
+        return false;
+      }
+
+      try {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response: { credential: string }) => {
+            if (response && response.credential) {
+              const profile = this.parseJwt(response.credential);
+              if (profile) {
+                const user: GoogleUser = {
+                  id: profile.sub || `google-${Date.now()}`,
+                  name: profile.name,
+                  email: profile.email,
+                  picture: profile.picture,
+                  linkedAt: new Date().toISOString(),
+                  autoSync: true,
+                };
+                this.saveUser(user);
+                onSuccess(user);
+              }
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        container.innerHTML = '';
+        const isDark = document.documentElement.classList.contains('dark');
+        window.google.accounts.id.renderButton(container, {
+          type: 'standard',
+          theme: isDark ? 'filled_black' : 'outline',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+          width: 280,
+        });
+        return true;
+      } catch (err) {
+        console.error('Failed to render official Google Sign-In button:', err);
+        if (onError) onError(err);
+        return false;
+      }
+    };
+
+    if (tryRender()) {
+      return () => {};
+    }
+
+    // If Google GSI script is still loading, wait for it
+    const timer = setInterval(() => {
+      if (tryRender()) {
+        clearInterval(timer);
+      }
+    }, 200);
+
+    const timeout = setTimeout(() => {
+      clearInterval(timer);
+    }, 6000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(timeout);
+    };
+  },
+
+  /**
+   * Popup sign-in via Google OAuth Token Client (does not navigate away from the site)
+   */
+  signInWithPopup(
+    onSuccess: (user: GoogleUser) => void,
+    onError?: (err: any) => void
+  ): void {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      if (onError) onError(new Error('Google OAuth クライアントIDが設定されていません'));
+      return;
+    }
+
+    if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid profile email',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse.error) {
+              console.error('Google OAuth token error:', tokenResponse);
+              if (onError) onError(new Error(tokenResponse.error));
+              return;
+            }
+            try {
+              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+              });
+              if (!res.ok) throw new Error('userinfo failed');
+              const data = await res.json();
+              const user: GoogleUser = {
+                id: data.sub || `google-${Date.now()}`,
+                name: data.name || data.given_name || 'Googleユーザー',
+                email: data.email,
+                picture: data.picture,
+                linkedAt: new Date().toISOString(),
+                autoSync: true,
+              };
+              this.saveUser(user);
+              onSuccess(user);
+            } catch (err) {
+              if (onError) onError(err);
+            }
+          },
+        });
+        client.requestAccessToken();
+        return;
+      } catch (err) {
+        console.warn('OAuth popup fallback to redirect:', err);
+      }
+    }
+
+    this.redirectToGoogleAuth();
+  },
+
+  /**
    * Redirect browser to Google's genuine OAuth 2.0 authorization endpoint (accounts.google.com)
    */
   redirectToGoogleAuth(): void {
