@@ -226,13 +226,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setGoogleUserState(user);
     showToast(`Googleアカウント「${user.name}」と連携しました`, 'success');
 
-    // 初回連携時に現在のデータをクラウドに保存
+    // 既存バックアップの確認（旧IDや自動控えスナップショットからの自動引き継ぎ）
     try {
-      const backup = await backupRepository.exportBackup();
-      const meta = googleAuthRepository.saveCloudBackup(user.id, backup);
-      const updated = { ...user, lastSyncedAt: meta.updatedAt };
-      googleAuthRepository.saveUser(updated);
-      setGoogleUserState(updated);
+      const existing = googleAuthRepository.getCloudBackup(user.id);
+      if (existing && existing.data && ((existing.data.oshis?.length || 0) > 0 || (existing.data.events?.length || 0) > 0 || (existing.data.goods?.length || 0) > 0)) {
+        const meta = googleAuthRepository.getCloudBackupMetadata(user.id);
+        const updated = { ...user, lastSyncedAt: meta?.updatedAt || new Date().toISOString() };
+        googleAuthRepository.saveUser(updated);
+        setGoogleUserState(updated);
+      } else {
+        const backup = await backupRepository.exportBackup();
+        const meta = googleAuthRepository.saveCloudBackup(user.id, backup);
+        const updated = { ...user, lastSyncedAt: meta.updatedAt };
+        googleAuthRepository.saveUser(updated);
+        setGoogleUserState(updated);
+      }
     } catch (e) {
       console.error('Initial cloud backup error:', e);
     }
@@ -253,22 +261,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = { ...googleUser, lastSyncedAt: meta.updatedAt };
     googleAuthRepository.saveUser(updated);
     setGoogleUserState(updated);
-    showToast('Googleクラウドに最新バックアップを保存しました', 'success');
+    showToast(`Googleバックアップを保存しました (推し:${meta.oshisCount}人, 予定:${meta.eventsCount}件, グッズ:${meta.goodsCount}点)`, 'success');
     return meta;
   }, [googleUser, showToast]);
 
   const restoreFromGoogleCloud = useCallback(async () => {
-    if (!googleUser) {
-      throw new Error('Googleアカウントが連携されていません');
-    }
-    const backup = googleAuthRepository.getCloudBackup(googleUser.id);
-    if (!backup) {
-      throw new Error('Googleクラウド上にバックアップデータが見つかりません');
+    const backup = googleAuthRepository.getCloudBackup(googleUser?.id);
+    if (!backup || !backup.data) {
+      throw new Error('復元可能なバックアップデータが見つかりません');
     }
     const stats = await backupRepository.importBackup(backup);
     await refreshAllData();
     showToast(
-      `Googleクラウドから復元しました (推し:${stats.oshisCount}人, 予定:${stats.eventsCount}件, グッズ:${stats.goodsCount}点)`,
+      `バックアップから復元しました (推し:${stats.oshisCount}人, 予定:${stats.eventsCount}件, グッズ:${stats.goodsCount}点)`,
       'success'
     );
     return stats;

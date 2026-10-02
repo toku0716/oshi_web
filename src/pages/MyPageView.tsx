@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { oshiRepository, backupRepository } from '../repository';
+import { oshiRepository, backupRepository, googleAuthRepository } from '../repository';
 import type { Oshi } from '../types';
 import { getDaysSince } from '../utils/helpers';
 import {
@@ -494,19 +494,30 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-2 border-t border-gray-100 dark:border-[#262838] flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1.5">
-                <Cloud className="w-3.5 h-3.5 text-blue-500" />
-                <span>前回同期: {formatDateTime(googleUser.lastSyncedAt)}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsGoogleRestoreConfirmOpen(true)}
-                className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
-              >
-                クラウドから復元
-              </button>
-            </div>
+            {(() => {
+              const cloudMeta = googleAuthRepository.getCloudBackupMetadata(googleUser.id);
+              return (
+                <div className="pt-2 border-t border-gray-100 dark:border-[#262838] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    <Cloud className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <span>最新控え: <strong className="text-gray-800 dark:text-gray-200">{formatDateTime(cloudMeta?.updatedAt || googleUser.lastSyncedAt)}</strong></span>
+                    {cloudMeta && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-medium">
+                        推し:{cloudMeta.oshisCount}人・予定:{cloudMeta.eventsCount}件・グッズ:{cloudMeta.goodsCount}点
+                      </span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsGoogleRestoreConfirmOpen(true)}
+                    className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-600 dark:text-blue-300 font-bold transition flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>控えから復元する</span>
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         )}
 

@@ -359,16 +359,43 @@ export const googleAuthRepository = {
   },
 
   /**
-   * Retrieve cloud backup data for the user
+   * Retrieve cloud backup data for the user (with automatic safety recovery fallback)
    */
-  getCloudBackup(userId: string): BackupData | null {
+  getCloudBackup(userId?: string): BackupData | null {
     try {
-      const key = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`;
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
-      return JSON.parse(raw) as BackupData;
+      if (userId) {
+        const key = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`;
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw) as BackupData;
+            if (
+              parsed &&
+              parsed.data &&
+              ((parsed.data.oshis?.length || 0) > 0 ||
+                (parsed.data.events?.length || 0) > 0 ||
+                (parsed.data.goods?.length || 0) > 0)
+            ) {
+              return parsed;
+            }
+          } catch {}
+        }
+      }
+
+      // Fallback: 全ての保存控え・履歴・自動スナップショットから最新の有効バックアップを救出
+      const fallback = this.findRecoverableBackup(userId);
+      if (fallback) {
+        if (userId) {
+          // 現在のGoogleユーザーIDに紐付けて自動保存
+          const key = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`;
+          localStorage.setItem(key, JSON.stringify(fallback));
+        }
+        return fallback;
+      }
+
+      return null;
     } catch (err) {
-      console.error('Failed to parse cloud backup data:', err);
+      console.error('Failed to retrieve cloud backup data:', err);
       return null;
     }
   },
@@ -420,7 +447,7 @@ export const googleAuthRepository = {
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && (k.startsWith('oshiss_') || k.includes('backup'))) {
+        if (k && (k.startsWith('oshiss_') || k.includes('backup') || k.includes('google'))) {
           checkAndAdd(localStorage.getItem(k));
         }
       }
@@ -447,14 +474,13 @@ export const googleAuthRepository = {
   /**
    * Get metadata for existing cloud backup
    */
-  getCloudBackupMetadata(userId: string): GoogleCloudBackupMetadata | null {
+  getCloudBackupMetadata(userId?: string): GoogleCloudBackupMetadata | null {
     try {
       const backup = this.getCloudBackup(userId);
       if (!backup || !backup.data) return null;
-      const key = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`;
-      const raw = localStorage.getItem(key) || '';
+      const raw = JSON.stringify(backup);
       return {
-        updatedAt: backup.createdAt,
+        updatedAt: backup.createdAt || new Date().toISOString(),
         oshisCount: backup.data.oshis?.length || 0,
         eventsCount: backup.data.events?.length || 0,
         todosCount: backup.data.todos?.length || 0,
