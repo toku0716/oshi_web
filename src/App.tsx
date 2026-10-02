@@ -16,13 +16,19 @@ import { TodoModal } from './components/modals/TodoModal';
 import { GoodsModal } from './components/modals/GoodsModal';
 import { GoodsDetailModal } from './components/modals/GoodsDetailModal';
 import { TermsModal } from './components/modals/TermsModal';
+import { GoogleLinkModal } from './components/modals/GoogleLinkModal';
+import { GoogleAccountModal } from './components/modals/GoogleAccountModal';
 
 import type { Oshi, OshiEvent, Todo, Goods } from './types';
 
 const MainApp: React.FC = () => {
-  const { todos, isLoading } = useApp();
+  const { todos, isLoading, googleUser } = useApp();
 
   const [currentTab, setCurrentTab] = useState<NavTab>('home');
+
+  // Google account modal states
+  const [isGoogleLinkModalOpen, setIsGoogleLinkModalOpen] = useState(false);
+  const [isGoogleAccountModalOpen, setIsGoogleAccountModalOpen] = useState(false);
 
   // Modal states
   const [isOshiModalOpen, setIsOshiModalOpen] = useState(false);
@@ -94,6 +100,14 @@ const MainApp: React.FC = () => {
     handleOpenTodoModal(undefined, event.id);
   };
 
+  const handleOpenGoogleModal = () => {
+    if (googleUser) {
+      setIsGoogleAccountModalOpen(true);
+    } else {
+      setIsGoogleLinkModalOpen(true);
+    }
+  };
+
   const uncompletedTodoCount = todos.filter((t) => !t.completed).length;
 
   if (isLoading) {
@@ -121,7 +135,10 @@ const MainApp: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
         {/* Top Header */}
-        <Header onAddOshiClick={() => handleOpenOshiModal()} />
+        <Header
+          onAddOshiClick={() => handleOpenOshiModal()}
+          onOpenGoogleModal={handleOpenGoogleModal}
+        />
 
         {/* View Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto">
@@ -133,6 +150,7 @@ const MainApp: React.FC = () => {
               onOpenOshiModal={() => handleOpenOshiModal()}
               onSelectEvent={(ev) => setSelectedEventDetail(ev)}
               onSelectGoods={(g) => setSelectedGoodsDetail(g)}
+              onOpenGoogleModal={handleOpenGoogleModal}
             />
           )}
 
@@ -157,6 +175,7 @@ const MainApp: React.FC = () => {
                 setIsFirstTermsView(false);
                 setIsTermsModalOpen(true);
               }}
+              onOpenGoogleModal={handleOpenGoogleModal}
             />
           )}
         </main>
@@ -209,6 +228,21 @@ const MainApp: React.FC = () => {
         onClose={() => setIsTermsModalOpen(false)}
         onAgree={handleAgreeTerms}
         isFirstTime={isFirstTermsView}
+      />
+
+      {/* Google Account Modals */}
+      <GoogleLinkModal
+        isOpen={isGoogleLinkModalOpen}
+        onClose={() => setIsGoogleLinkModalOpen(false)}
+      />
+
+      <GoogleAccountModal
+        isOpen={isGoogleAccountModalOpen}
+        onClose={() => setIsGoogleAccountModalOpen(false)}
+        onSwitchAccount={() => {
+          setIsGoogleAccountModalOpen(false);
+          setIsGoogleLinkModalOpen(true);
+        }}
       />
     </div>
   );

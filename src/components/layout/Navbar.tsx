@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, Calendar, Package, User } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
 
 export type NavTab = 'home' | 'calendar' | 'goods' | 'mypage';
 
@@ -19,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   onTabChange,
 }) => {
+  const { googleUser } = useApp();
   return (
     <>
       {/* Mobile Bottom Navigation (Fixed at bottom) */}
@@ -84,6 +86,32 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Sidebar Footer info */}
         <div className="p-4 border-t border-gray-200 dark:border-[#262838] text-xs text-gray-500 dark:text-gray-400">
+          {googleUser && (
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40 mb-3">
+              <div className="relative shrink-0">
+                {googleUser.picture ? (
+                  <img
+                    src={googleUser.picture}
+                    alt={googleUser.name}
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center">
+                    {googleUser.name.slice(0, 1)}
+                  </div>
+                )}
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-[#161822]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
+                  {googleUser.name}
+                </p>
+                <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold leading-tight">
+                  Google連携中
+                </p>
+              </div>
+            </div>
+          )}
           <p className="font-semibold text-gray-700 dark:text-gray-300">IndexedDB & JSON保存</p>
           <p className="text-[11px] text-gray-400 mt-0.5">完全ローカル動作</p>
         </div>

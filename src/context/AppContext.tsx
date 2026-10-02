@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { Oshi, OshiEvent, Todo, Goods, AppSettings } from '../types';
+import type { Oshi, OshiEvent, Todo, Goods, AppSettings, GoogleUser, GoogleCloudBackupMetadata } from '../types';
 import {
   oshiRepository,
   eventRepository,
@@ -7,6 +7,7 @@ import {
   goodsRepository,
   settingsRepository,
   backupRepository,
+  googleAuthRepository,
 } from '../repository';
 
 interface ToastMessage {
@@ -31,6 +32,13 @@ interface AppContextType {
   removeToast: (id: string) => void;
   setActiveOshiId: (id: string) => Promise<void>;
   refreshAllData: () => Promise<void>;
+  // Google Account Linking & Cloud Sync
+  googleUser: GoogleUser | null;
+  linkGoogleAccount: (user: GoogleUser) => Promise<void>;
+  unlinkGoogleAccount: () => Promise<void>;
+  saveToGoogleCloud: () => Promise<GoogleCloudBackupMetadata>;
+  restoreFromGoogleCloud: () => Promise<{ oshisCount: number; eventsCount: number; todosCount: number; goodsCount: number }>;
+  toggleGoogleAutoSync: (enabled: boolean) => Promise<void>;
   // Action triggers
   fireConfetti: () => void;
 }
@@ -144,6 +152,82 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     []
   );
 
+  const [googleUser, setGoogleUserState] = useState<GoogleUser | null>(() => {
+    return googleAuthRepository.getStoredUser();
+  });
+
+  const linkGoogleAccount = useCallback(async (user: GoogleUser) => {
+    googleAuthRepository.saveUser(user);
+    setGoogleUserState(user);
+    showToast(`Googleアカウント「${user.name}」と連携しました`, 'success');
+
+    // 初回連携時に現在のデータをクラウドに保存
+    try {
+      const backup = await backupRepository.exportBackup();
+      const meta = googleAuthRepository.saveCloudBackup(user.id, backup);
+      const updated = { ...user, lastSyncedAt: meta.updatedAt };
+      googleAuthRepository.saveUser(updated);
+      setGoogleUserState(updated);
+    } catch (e) {
+      console.error('Initial cloud backup error:', e);
+    }
+  }, [showToast]);
+
+  const unlinkGoogleAccount = useCallback(async () => {
+    googleAuthRepository.removeUser();
+    setGoogleUserState(null);
+    showToast('Googleアカウントの連携を解除しました', 'info');
+  }, [showToast]);
+
+  const saveToGoogleCloud = useCallback(async (): Promise<GoogleCloudBackupMetadata> => {
+    if (!googleUser) {
+      throw new Error('Googleアカウントが連携されていません');
+    }
+    const backup = await backupRepository.exportBackup();
+    const meta = googleAuthRepository.saveCloudBackup(googleUser.id, backup);
+    const updated = { ...googleUser, lastSyncedAt: meta.updatedAt };
+    googleAuthRepository.saveUser(updated);
+    setGoogleUserState(updated);
+    showToast('Googleクラウドに最新バックアップを保存しました', 'success');
+    return meta;
+  }, [googleUser, showToast]);
+
+  const restoreFromGoogleCloud = useCallback(async () => {
+    if (!googleUser) {
+      throw new Error('Googleアカウントが連携されていません');
+    }
+    const backup = googleAuthRepository.getCloudBackup(googleUser.id);
+    if (!backup) {
+      throw new Error('Googleクラウド上にバックアップデータが見つかりません');
+    }
+    const stats = await backupRepository.importBackup(backup);
+    await refreshAllData();
+    showToast(
+      `Googleクラウドから復元しました (推し:${stats.oshisCount}人, 予定:${stats.eventsCount}件, グッズ:${stats.goodsCount}点)`,
+      'success'
+    );
+    return stats;
+  }, [googleUser, refreshAllData, showToast]);
+
+  const toggleGoogleAutoSync = useCallback(async (enabled: boolean) => {
+    if (!googleUser) return;
+    const updated = { ...googleUser, autoSync: enabled };
+    googleAuthRepository.saveUser(updated);
+    setGoogleUserState(updated);
+    showToast(enabled ? 'クラウド自動同期を有効にしました' : '自動同期を停止しました', 'info');
+    if (enabled) {
+      try {
+        const backup = await backupRepository.exportBackup();
+        const meta = googleAuthRepository.saveCloudBackup(googleUser.id, backup);
+        const withSync = { ...updated, lastSyncedAt: meta.updatedAt };
+        googleAuthRepository.saveUser(withSync);
+        setGoogleUserState(withSync);
+      } catch (err) {
+        console.error('Auto-sync initial save error:', err);
+      }
+    }
+  }, [googleUser, showToast]);
+
   const activeOshi = oshis.find((o) => o.id === activeOshiId);
 
   return (
@@ -164,6 +248,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         removeToast,
         setActiveOshiId,
         refreshAllData,
+        googleUser,
+        linkGoogleAccount,
+        unlinkGoogleAccount,
+        saveToGoogleCloud,
+        restoreFromGoogleCloud,
+        toggleGoogleAutoSync,
         fireConfetti,
       }}
     >

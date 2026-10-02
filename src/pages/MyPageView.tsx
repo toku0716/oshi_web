@@ -17,6 +17,9 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCw,
+  Cloud,
+  CloudUpload,
+  Settings,
 } from 'lucide-react';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
@@ -24,15 +27,23 @@ import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
 interface MyPageViewProps {
   onOpenOshiModal: (targetOshi?: Oshi) => void;
   onOpenTermsModal?: () => void;
+  onOpenGoogleModal?: () => void;
 }
 
-export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal, onOpenTermsModal }) => {
+export const MyPageView: React.FC<MyPageViewProps> = ({
+  onOpenOshiModal,
+  onOpenTermsModal,
+  onOpenGoogleModal,
+}) => {
   const {
     oshis,
     events,
     goods,
     refreshAllData,
     showToast,
+    googleUser,
+    saveToGoogleCloud,
+    restoreFromGoogleCloud,
   } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +55,38 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal, onOpenT
   const [isClearAllConfirmOpen, setIsClearAllConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isGoogleRestoreConfirmOpen, setIsGoogleRestoreConfirmOpen] = useState(false);
+  const [isGoogleSyncing, setIsGoogleSyncing] = useState(false);
+
+  const formatDateTime = (isoString?: string) => {
+    if (!isoString) return '未同期';
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '未同期';
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
+  const handleGoogleBackupClick = async () => {
+    setIsGoogleSyncing(true);
+    try {
+      await saveToGoogleCloud();
+    } catch {
+      showToast('クラウドバックアップの保存に失敗しました', 'error');
+    } finally {
+      setIsGoogleSyncing(false);
+    }
+  };
+
+  const handleGoogleRestoreConfirm = async () => {
+    setIsGoogleSyncing(true);
+    try {
+      await restoreFromGoogleCloud();
+      setIsGoogleRestoreConfirmOpen(false);
+    } catch {
+      showToast('クラウドからの復元に失敗しました', 'error');
+    } finally {
+      setIsGoogleSyncing(false);
+    }
+  };
 
   // Handle Delete Oshi
   const handleDeleteOshi = async () => {
@@ -258,6 +301,122 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal, onOpenT
           <h3 className="font-bold text-sm text-gray-900 dark:text-white">データの保存とバックアップ</h3>
         </div>
 
+        {/* Google Account Linking Card */}
+        {!googleUser ? (
+          <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-gradient-to-r from-blue-50/80 via-white to-indigo-50/70 dark:from-blue-950/20 dark:via-[#191b28] dark:to-indigo-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f2234] shadow-sm border border-gray-200 dark:border-[#383d56] flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.41 7.33 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.27 2.59 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h4 className="font-bold text-xs text-gray-900 dark:text-white">Googleアカウントと紐付け</h4>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                    おすすめ
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                  Googleアカウントと紐付けて推し活データをクラウド保管。別端末への引き継ぎや自動バックアップが利用できます。
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onOpenGoogleModal}
+              className="px-4 py-2 rounded-xl bg-white dark:bg-[#202334] hover:bg-gray-50 dark:hover:bg-[#272b3f] text-gray-800 dark:text-gray-100 border border-gray-300 dark:border-[#383d56] font-bold text-xs transition flex items-center justify-center gap-2 shadow-xs shrink-0"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.41 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.27 2.59 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              <span>Googleアカウントと連携する</span>
+            </button>
+          </div>
+        ) : (
+          <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-white dark:bg-[#191b28] space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  {googleUser.picture ? (
+                    <img
+                      src={googleUser.picture}
+                      alt={googleUser.name}
+                      className="w-10 h-10 rounded-full object-cover border border-blue-400/40"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center">
+                      {googleUser.name.slice(0, 1)}
+                    </div>
+                  )}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-[#191b28]" />
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-xs text-gray-900 dark:text-white">
+                      {googleUser.name}
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50">
+                      Google連携中
+                    </span>
+                    {googleUser.autoSync && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
+                        自動同期ON
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {googleUser.email}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleGoogleBackupClick}
+                  disabled={isGoogleSyncing}
+                  className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
+                >
+                  <CloudUpload className="w-3.5 h-3.5" />
+                  <span>{isGoogleSyncing ? '保存中...' : 'クラウド保存'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onOpenGoogleModal}
+                  className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#383d56] hover:bg-gray-50 dark:hover:bg-[#202334] text-gray-700 dark:text-gray-200 font-semibold text-xs transition flex items-center gap-1.5"
+                >
+                  <Settings className="w-3.5 h-3.5 text-gray-400" />
+                  <span>管理</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 dark:border-[#262838] flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1.5">
+                <Cloud className="w-3.5 h-3.5 text-blue-500" />
+                <span>前回同期: {formatDateTime(googleUser.lastSyncedAt)}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsGoogleRestoreConfirmOpen(true)}
+                className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+              >
+                クラウドから復元
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Local Storage Status Box */}
         <div className="p-3.5 rounded-lg border border-gray-200 dark:border-[#262838] bg-gray-50 dark:bg-[#1a1c28] text-xs space-y-2">
           <div className="flex items-center justify-between">
@@ -438,6 +597,19 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onOpenOshiModal, onOpenT
         cancelLabel="キャンセル"
         variant="danger"
         isLoading={isProcessing}
+      />
+
+      {/* Confirm Modal: Google Cloud Restore */}
+      <ConfirmModal
+        isOpen={isGoogleRestoreConfirmOpen}
+        onClose={() => setIsGoogleRestoreConfirmOpen(false)}
+        onConfirm={handleGoogleRestoreConfirm}
+        title="Googleクラウドから復元"
+        message="Googleクラウドに保存されているバックアップデータを端末に復元します。"
+        warningNote="※ 現在端末に入っているデータは、クラウドのデータで上書きされます。よろしいですか？"
+        confirmLabel="上書きして復元する"
+        variant="warning"
+        isLoading={isGoogleSyncing}
       />
 
       {/* Device Sync Modal (6-Digit Code) */}
