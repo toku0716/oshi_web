@@ -130,6 +130,14 @@ export interface GoogleCloudBackupMetadata {
   sizeBytes: number;
 }
 
+export interface MaintenanceInfo {
+  enabled: boolean;
+  title?: string;
+  message?: string;
+  estimatedEnd?: string;
+  updatedAt?: string;
+}
+
 declare global {
   interface Window {
     google?: {

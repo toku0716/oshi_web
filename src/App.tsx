@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar, type NavTab } from './components/layout/Navbar';
 import { Header } from './components/layout/Header';
@@ -18,8 +18,9 @@ import { GoodsDetailModal } from './components/modals/GoodsDetailModal';
 import { TermsModal } from './components/modals/TermsModal';
 import { GoogleLinkModal } from './components/modals/GoogleLinkModal';
 import { GoogleAccountModal } from './components/modals/GoogleAccountModal';
+import { MaintenanceView } from './components/maintenance/MaintenanceView';
 
-import type { Oshi, OshiEvent, Todo, Goods } from './types';
+import type { Oshi, OshiEvent, Todo, Goods, MaintenanceInfo } from './types';
 
 const MainApp: React.FC = () => {
   const { todos, isLoading, googleUser } = useApp();
@@ -50,6 +51,43 @@ const MainApp: React.FC = () => {
   // Terms & Features modal states
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isFirstTermsView, setIsFirstTermsView] = useState(false);
+
+  // Maintenance mode states
+  const [maintenance, setMaintenance] = useState<MaintenanceInfo | null>(null);
+  const [isPreviewingMaintenance, setIsPreviewingMaintenance] = useState(false);
+  const [isAdminBypass, setIsAdminBypass] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('preview') === 'admin' || urlParams.get('bypass') === 'true') {
+        sessionStorage.setItem('oshiss_admin_bypass', 'true');
+        return true;
+      }
+      return sessionStorage.getItem('oshiss_admin_bypass') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const checkMaintenance = useCallback(async (): Promise<MaintenanceInfo | null> => {
+    try {
+      const basePath = window.location.pathname.replace(/\/[^/]*$/, '/');
+      const url = `${window.location.origin}${basePath}maintenance.json?_t=${Date.now()}`;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (res.ok) {
+        const data: MaintenanceInfo = await res.json();
+        setMaintenance(data);
+        return data;
+      }
+    } catch {
+      // Offline fallback
+    }
+    return null;
+  }, []);
+
+  useEffect(() => {
+    checkMaintenance();
+  }, [checkMaintenance]);
 
   // Check if first-time visitor on mount
   useEffect(() => {
@@ -110,6 +148,43 @@ const MainApp: React.FC = () => {
 
   const uncompletedTodoCount = todos.filter((t) => !t.completed).length;
 
+  // Maintenance Preview Mode (triggered from admin menu)
+  if (isPreviewingMaintenance) {
+    return (
+      <MaintenanceView
+        maintenance={
+          maintenance || {
+            enabled: true,
+            title: 'ただいまメンテナンス中です',
+            message:
+              'より快適にご利用いただけるよう、システムの改善および更新作業を行っております。\nご不便をおかけいたしますが、完了まで今しばらくお待ちください。',
+            estimatedEnd: '本日 18:00頃',
+          }
+        }
+        onRecheck={checkMaintenance}
+        onBypass={() => setIsPreviewingMaintenance(false)}
+        isPreview={true}
+        onClosePreview={() => setIsPreviewingMaintenance(false)}
+      />
+    );
+  }
+
+  // Active Maintenance Mode for general visitors
+  if (maintenance?.enabled && !isAdminBypass) {
+    return (
+      <MaintenanceView
+        maintenance={maintenance}
+        onRecheck={checkMaintenance}
+        onBypass={() => {
+          try {
+            sessionStorage.setItem('oshiss_admin_bypass', 'true');
+          } catch {}
+          setIsAdminBypass(true);
+        }}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#121318] text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center p-4 transition-colors">
@@ -122,7 +197,28 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-[#121318] text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-[#121318] text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200 relative">
+      {/* Admin Bypass Sticky Notice */}
+      {maintenance?.enabled && isAdminBypass && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2 text-xs font-bold shadow-md">
+          <div className="flex items-center justify-between max-w-6xl mx-auto">
+            <span>🔧 メンテナンス中モードが有効です（現在、管理者プレビューとして閲覧中）</span>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem('oshiss_admin_bypass');
+                } catch {}
+                setIsAdminBypass(false);
+              }}
+              className="px-2.5 py-1 rounded bg-black/20 hover:bg-black/30 transition text-xs font-semibold"
+            >
+              一般公開（メンテナンス画面）に戻す
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notifications */}
       <ToastContainer />
 
@@ -133,7 +229,7 @@ const MainApp: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
+      <div className={`flex-1 flex flex-col min-w-0 pb-20 md:pb-8 ${maintenance?.enabled && isAdminBypass ? 'pt-8' : ''}`}>
         {/* Top Header */}
         <Header
           onAddOshiClick={() => handleOpenOshiModal()}
@@ -176,6 +272,7 @@ const MainApp: React.FC = () => {
                 setIsTermsModalOpen(true);
               }}
               onOpenGoogleModal={handleOpenGoogleModal}
+              onPreviewMaintenance={() => setIsPreviewingMaintenance(true)}
             />
           )}
         </main>

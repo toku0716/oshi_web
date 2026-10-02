@@ -21,6 +21,9 @@ import {
   CloudUpload,
   Settings,
   RotateCcw,
+  Wrench,
+  Eye,
+  ExternalLink,
 } from 'lucide-react';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
@@ -29,12 +32,14 @@ interface MyPageViewProps {
   onOpenOshiModal: (targetOshi?: Oshi) => void;
   onOpenTermsModal?: () => void;
   onOpenGoogleModal?: () => void;
+  onPreviewMaintenance?: () => void;
 }
 
 export const MyPageView: React.FC<MyPageViewProps> = ({
   onOpenOshiModal,
   onOpenTermsModal,
   onOpenGoogleModal,
+  onPreviewMaintenance,
 }) => {
   const {
     oshis,
@@ -625,6 +630,47 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
             <Trash2 className="w-3.5 h-3.5" />
             <span>すべてのデータを消去</span>
           </button>
+        </div>
+      </div>
+
+      {/* Admin Maintenance Card */}
+      <div className="bg-white dark:bg-[#161822] rounded-xl border border-gray-200 dark:border-[#262838] p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-xs text-gray-900 dark:text-white">
+            <Wrench className="w-4 h-4 text-amber-500" />
+            <span>運営・管理者用（メンテナンス切替）</span>
+          </div>
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50">
+            管理者機能
+          </span>
+        </div>
+
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+          GitHub Actionsから<strong>「Run workflow」ボタンを1回押すだけ</strong>で、本番サイトをメンテナンス中モードに即座に切り替えられます。
+        </p>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <a
+            href="https://github.com/toku0716/oshi_web/actions/workflows/maintenance.yml"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2 rounded-xl bg-gray-900 hover:bg-black dark:bg-[#202334] dark:hover:bg-[#282c42] text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
+          >
+            <Wrench className="w-3.5 h-3.5 text-amber-400" />
+            <span>GitHubでメンテナンス切替（1クリック実行）</span>
+            <ExternalLink className="w-3 h-3 text-gray-400" />
+          </a>
+
+          {onPreviewMaintenance && (
+            <button
+              type="button"
+              onClick={onPreviewMaintenance}
+              className="px-3.5 py-2 rounded-xl border border-gray-300 dark:border-[#383d56] hover:bg-gray-50 dark:hover:bg-[#202334] text-gray-700 dark:text-gray-200 font-bold text-xs transition flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5 text-pink-500" />
+              <span>メンテナンス画面をプレビュー</span>
+            </button>
+          )}
         </div>
       </div>
 

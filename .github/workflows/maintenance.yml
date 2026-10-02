@@ -1,0 +1,119 @@
+name: 🔧 メンテナンスモード切替 (Maintenance Mode)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: '切替モード (Mode)'
+        required: true
+        type: choice
+        options:
+          - 'toggle (自動切替: 現在の状態を反転)'
+          - 'on (メンテナンス開始)'
+          - 'off (通常運用・メンテナンス終了)'
+        default: 'toggle (自動切替: 現在の状態を反転)'
+      title:
+        description: 'タイトル (任意・空欄時は自動設定)'
+        required: false
+        type: string
+        default: ''
+      message:
+        description: '告知メッセージ (任意・空欄時は自動設定)'
+        required: false
+        type: string
+        default: ''
+      estimated_end:
+        description: '終了予定時刻 (任意・例: 18:00頃 / 本日20:00 まで)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  maintenance-toggle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Update maintenance.json
+        env:
+          ACTION: ${{ inputs.action }}
+          INPUT_TITLE: ${{ inputs.title }}
+          INPUT_MESSAGE: ${{ inputs.message }}
+          INPUT_END: ${{ inputs.estimated_end }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "./public/maintenance.json";
+            let current = { enabled: false };
+            if (fs.existsSync(path)) {
+              try { current = JSON.parse(fs.readFileSync(path, "utf8")); } catch(e){}
+            }
+
+            const action = (process.env.ACTION || "").trim();
+            let targetEnabled = !current.enabled;
+            if (action.startsWith("on")) targetEnabled = true;
+            if (action.startsWith("off")) targetEnabled = false;
+
+            const inputTitle = (process.env.INPUT_TITLE || "").trim();
+            const inputMessage = (process.env.INPUT_MESSAGE || "").trim();
+            const inputEnd = (process.env.INPUT_END || "").trim();
+
+            const updated = {
+              enabled: targetEnabled,
+              title: inputTitle || (targetEnabled ? "ただいまメンテナンス中です" : "通常運用中"),
+              message: inputMessage || (targetEnabled ? "より快適にご利用いただけるよう、システムの改善および更新作業を行っております。\nご不便をおかけいたしますが、完了まで今しばらくお待ちください。" : ""),
+              estimatedEnd: inputEnd || "",
+              updatedAt: new Date().toISOString()
+            };
+
+            fs.writeFileSync(path, JSON.stringify(updated, null, 2) + "\n");
+            console.log("Updated maintenance.json to:", updated);
+          '
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/maintenance.json
+          git commit -m "chore(maintenance): switch mode via 1-click action [skip ci]" || echo "No changes to commit"
+          git push origin main || echo "Git push skipped or permission denied, proceeding with direct page deployment."
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_GOOGLE_CLIENT_ID: 112431414494-8vj2boelps95u2lu0fo6h39i0gqob2t4.apps.googleusercontent.com
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
