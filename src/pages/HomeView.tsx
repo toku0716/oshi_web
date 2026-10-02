@@ -23,7 +23,6 @@ interface HomeViewProps {
   onOpenOshiModal: () => void;
   onSelectEvent: (event: OshiEvent) => void;
   onSelectGoods: (goods: Goods) => void;
-  onOpenGoogleModal?: () => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -33,7 +32,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenOshiModal,
   onSelectEvent,
   onSelectGoods,
-  onOpenGoogleModal,
 }) => {
   const {
     oshis,
@@ -41,7 +39,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
     goods,
     activeOshiId,
     activeOshi,
-    googleUser,
     recoverableBackup,
     restoreRecoverableBackup,
   } = useApp();
@@ -107,37 +104,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>直近データを復元する</span>
-          </button>
-        </div>
-      )}
-
-      {/* Google Account Link Banner (Unlinked) */}
-      {!googleUser && onOpenGoogleModal && (
-        <div className="bg-gradient-to-r from-blue-50/80 via-white to-pink-50/80 dark:from-blue-950/20 dark:via-[#191b28] dark:to-pink-950/20 rounded-xl p-3.5 border border-blue-200/80 dark:border-blue-900/40 flex items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#202334] border border-gray-200 dark:border-[#383d56] flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.41 7.33 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.27 2.59 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                Googleアカウントと紐付けてデータを安全にバックアップ
-              </p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                スマホの機種変更や別端末との同期がスムーズに行えます
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenGoogleModal}
-            className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shrink-0 shadow-2xs"
-          >
-            連携する
           </button>
         </div>
       )}

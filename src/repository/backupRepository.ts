@@ -410,4 +410,64 @@ export const backupRepository = {
 
     await this.importBackup(sampleBackup);
   },
+
+  /**
+   * Scan localStorage for any previous non-empty backup data to allow user recovery
+   */
+  findRecoverableBackup(): BackupData | null {
+    const candidates: BackupData[] = [];
+
+    const checkAndAdd = (rawStr: string | null) => {
+      if (!rawStr) return;
+      try {
+        const parsed = JSON.parse(rawStr);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.data && Array.isArray(parsed.data.oshis) && parsed.data.oshis.length > 0) {
+            candidates.push(parsed);
+          } else if (Array.isArray(parsed.oshis) && parsed.oshis.length > 0) {
+            candidates.push({
+              app: 'oshiss',
+              backupVersion: 1,
+              createdAt: parsed.createdAt || new Date().toISOString(),
+              data: {
+                oshis: parsed.oshis || [],
+                events: parsed.events || [],
+                todos: parsed.todos || [],
+                goods: parsed.goods || [],
+              },
+            });
+          }
+        }
+      } catch {}
+    };
+
+    checkAndAdd(localStorage.getItem('oshiss_auto_safety_snapshot'));
+
+    // 全てのlocalStorageキーを探索して過去のデータを救出
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('oshiss_') || k.includes('backup') || k.includes('google'))) {
+          checkAndAdd(localStorage.getItem(k));
+        }
+      }
+    } catch {}
+
+    if (candidates.length === 0) return null;
+
+    // 最もデータ数が多い（推し、予定、グッズの合計が多い）バックアップを優先
+    candidates.sort((a, b) => {
+      const aCount =
+        (a.data.oshis?.length || 0) * 10 +
+        (a.data.events?.length || 0) +
+        (a.data.goods?.length || 0);
+      const bCount =
+        (b.data.oshis?.length || 0) * 10 +
+        (b.data.events?.length || 0) +
+        (b.data.goods?.length || 0);
+      return bCount - aCount;
+    });
+
+    return candidates[0] || null;
+  },
 };
