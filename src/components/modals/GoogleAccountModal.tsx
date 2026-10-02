@@ -15,6 +15,9 @@ import {
   Package,
   CheckSquare,
   Sparkles,
+  ExternalLink,
+  CheckCircle2,
+  HardDrive,
 } from 'lucide-react';
 
 interface GoogleAccountModalProps {
@@ -137,11 +140,38 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
             <div className="flex items-center justify-between">
               <span className="font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5">
                 <Cloud className="w-4 h-4 text-blue-500" />
-                <span>Googleクラウド保管状況</span>
+                <span>Googleドライブ保管状況</span>
               </span>
               <span className="text-[11px] text-gray-500 dark:text-gray-400">
                 前回保存: {formatDateTime(googleUser.lastSyncedAt || metadata?.updatedAt)}
               </span>
+            </div>
+
+            {/* Google Drive Status Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-900/40 text-xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <div>
+                  <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5 flex-wrap">
+                    <span>Googleドライブ実ファイル同期</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                      oshisapo_backup.json
+                    </span>
+                  </span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">
+                    あなた個人のGoogleドライブに直接保存・同期されます
+                  </span>
+                </div>
+              </div>
+              <a
+                href={googleUser.driveFileLink || "https://drive.google.com/drive/my-drive"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 underline shrink-0"
+              >
+                <span>Googleドライブで確認</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
 
             {metadata ? (
@@ -181,7 +211,7 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
               </div>
             ) : (
               <p className="text-xs text-gray-500 dark:text-gray-400 py-1">
-                クラウド上にまだバックアップがありません。「クラウドに最新バックアップを保存」を押して保存してください。
+                Googleドライブ上にまだバックアップがありません。「Googleドライブに最新保存」を押して保存してください。
               </p>
             )}
 
@@ -193,7 +223,7 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
                   <span>自動同期（推奨）</span>
                 </p>
                 <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                  推しや予定を編集した際に自動でクラウドへ反映
+                  推しや予定を編集した際に自動でGoogleドライブへ反映
                 </p>
               </div>
 
@@ -224,12 +254,12 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
               {isSaving ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>クラウドに保存中...</span>
+                  <span>Googleドライブに保存中...</span>
                 </>
               ) : (
                 <>
                   <CloudUpload className="w-4 h-4" />
-                  <span>クラウドに最新バックアップ</span>
+                  <span>Googleドライブに最新保存</span>
                 </>
               )}
             </button>
@@ -248,7 +278,7 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
               ) : (
                 <>
                   <CloudDownload className="w-4 h-4 text-blue-500" />
-                  <span>クラウドからデータを復元</span>
+                  <span>Googleドライブから復元</span>
                 </>
               )}
             </button>
@@ -289,9 +319,9 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
         isOpen={isRestoreConfirmOpen}
         onClose={() => setIsRestoreConfirmOpen(false)}
         onConfirm={handleExecuteRestore}
-        title="Googleクラウドから復元"
-        message="Googleクラウドに保存されているバックアップデータを端末に復元します。"
-        warningNote="※ 現在端末に入っているデータは、クラウドのデータで上書きされます。よろしいですか？"
+        title="Googleドライブから復元"
+        message="Googleドライブに保存されているバックアップ（oshisapo_backup.json）を端末に読み込みます。"
+        warningNote="※ 現在端末に入っているデータは、Googleドライブのデータで上書きされます。よろしいですか？"
         confirmLabel="上書きして復元する"
         variant="warning"
         isLoading={isRestoring}

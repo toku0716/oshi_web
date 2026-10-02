@@ -2,6 +2,9 @@ import type { GoogleUser, BackupData, GoogleCloudBackupMetadata } from '../types
 
 const STORAGE_KEY_USER = 'oshiss_google_user';
 const STORAGE_KEY_CLOUD_BACKUP_PREFIX = 'oshiss_google_cloud_backup_';
+const STORAGE_KEY_DRIVE_INFO_PREFIX = 'oshiss_google_drive_file_info_';
+const STORAGE_KEY_ACCESS_TOKEN = 'oshiss_google_drive_token';
+const STORAGE_KEY_TOKEN_EXPIRY = 'oshiss_google_drive_token_expiry';
 
 export const googleAuthRepository = {
   /**
@@ -35,6 +38,8 @@ export const googleAuthRepository = {
   removeUser(): void {
     try {
       localStorage.removeItem(STORAGE_KEY_USER);
+      sessionStorage.removeItem(STORAGE_KEY_ACCESS_TOKEN);
+      sessionStorage.removeItem(STORAGE_KEY_TOKEN_EXPIRY);
     } catch (err) {
       console.error('Failed to remove Google user:', err);
     }
@@ -160,6 +165,16 @@ export const googleAuthRepository = {
               return;
             }
             try {
+              if (tokenResponse.access_token) {
+                try {
+                  sessionStorage.setItem(STORAGE_KEY_ACCESS_TOKEN, tokenResponse.access_token);
+                  sessionStorage.setItem(
+                    STORAGE_KEY_TOKEN_EXPIRY,
+                    (Date.now() + (Number(tokenResponse.expires_in) || 3600) * 1000).toString()
+                  );
+                } catch {}
+              }
+
               const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                 headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
               });
@@ -228,6 +243,11 @@ export const googleAuthRepository = {
       const accessToken = params.get('access_token');
       if (!accessToken) return null;
 
+      try {
+        sessionStorage.setItem(STORAGE_KEY_ACCESS_TOKEN, accessToken);
+        sessionStorage.setItem(STORAGE_KEY_TOKEN_EXPIRY, (Date.now() + 3600000).toString());
+      } catch {}
+
       // Clean the URL hash so tokens aren't left visible in the address bar
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
 
@@ -289,9 +309,318 @@ export const googleAuthRepository = {
   },
 
   /**
-   * Save backup snapshot to Google Cloud storage cache
+   * Request Google OAuth 2.0 access token with Google Drive scope using Google Identity Services Token Client
    */
-  saveCloudBackup(userId: string, backup: BackupData): GoogleCloudBackupMetadata {
+  async requestDriveAccessToken(forcePrompt: boolean = false): Promise<string> {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      throw new Error('Google OAuth クライアントIDが設定されていません');
+    }
+
+    // Check cached token in sessionStorage
+    try {
+      const cachedToken = sessionStorage.getItem(STORAGE_KEY_ACCESS_TOKEN);
+      const cachedExpiry = sessionStorage.getItem(STORAGE_KEY_TOKEN_EXPIRY);
+      if (cachedToken && cachedExpiry && !forcePrompt) {
+        const expiryTime = Number(cachedExpiry);
+        if (Date.now() < expiryTime - 60000) {
+          return cachedToken;
+        }
+      }
+    } catch {}
+
+    const oauth2 = typeof window !== 'undefined' ? window.google?.accounts?.oauth2 : undefined;
+    if (!oauth2) {
+      throw new Error('Google Identity Services SDKが読み込まれていません。ページを再読み込みしてください。');
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const client = oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid profile email https://www.googleapis.com/auth/drive.file',
+          callback: (tokenResponse: any) => {
+            if (tokenResponse.error) {
+              console.error('Google OAuth token error:', tokenResponse);
+              reject(new Error(tokenResponse.error_description || tokenResponse.error));
+              return;
+            }
+            if (tokenResponse.access_token) {
+              const token = tokenResponse.access_token;
+              const expiresIn = Number(tokenResponse.expires_in) || 3600;
+              const expiry = Date.now() + expiresIn * 1000;
+              try {
+                sessionStorage.setItem(STORAGE_KEY_ACCESS_TOKEN, token);
+                sessionStorage.setItem(STORAGE_KEY_TOKEN_EXPIRY, expiry.toString());
+              } catch {}
+              resolve(token);
+            } else {
+              reject(new Error('アクセストークンを取得できませんでした'));
+            }
+          },
+        });
+
+        client.requestAccessToken({ prompt: forcePrompt ? 'consent' : '' });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  },
+
+  /**
+   * Get cached Google Drive file information from localStorage
+   */
+  getStoredDriveInfo(
+    userId?: string
+  ): { fileId: string; name?: string; modifiedTime?: string; size?: number; webViewLink?: string } | null {
+    if (!userId) return null;
+    try {
+      const raw = localStorage.getItem(`${STORAGE_KEY_DRIVE_INFO_PREFIX}${userId}`);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Upload backup data directly to user's Google Drive as 'oshisapo_backup.json'
+   */
+  async uploadToGoogleDrive(
+    userId: string,
+    backup: BackupData
+  ): Promise<{ fileId: string; modifiedTime: string; size: number; webViewLink?: string }> {
+    let token = await this.requestDriveAccessToken(false);
+
+    const executeFetch = async (url: string, init: RequestInit) => {
+      let res = await fetch(url, {
+        ...init,
+        headers: {
+          ...(init.headers || {}),
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401) {
+        // Token expired, re-prompt
+        token = await this.requestDriveAccessToken(true);
+        res = await fetch(url, {
+          ...init,
+          headers: {
+            ...(init.headers || {}),
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+      return res;
+    };
+
+    // 1. Search for existing oshisapo_backup.json
+    const query = encodeURIComponent("name = 'oshisapo_backup.json' and trashed = false");
+    const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime,size,webViewLink)&spaces=drive`;
+    const searchRes = await executeFetch(searchUrl, { method: 'GET' });
+
+    if (!searchRes.ok) {
+      const errBody = await searchRes.json().catch(() => null);
+      const errMsg = errBody?.error?.message || searchRes.statusText;
+      if (
+        searchRes.status === 403 &&
+        (errMsg.includes('has not been used in project') ||
+          errMsg.includes('disabled') ||
+          errMsg.includes('Access Not Configured'))
+      ) {
+        const err = new Error('GOOGLE_DRIVE_API_NOT_ENABLED');
+        (err as any).details = errMsg;
+        throw err;
+      }
+      throw new Error(`Google Driveの接続に失敗しました (${searchRes.status}): ${errMsg}`);
+    }
+
+    const searchData = await searchRes.json();
+    const existingFile =
+      searchData.files && searchData.files.length > 0 ? searchData.files[0] : null;
+
+    const jsonString = JSON.stringify(backup, null, 2);
+    let fileId: string;
+    let modifiedTime: string;
+    let size: number;
+    let webViewLink: string | undefined;
+
+    if (existingFile && existingFile.id) {
+      // Update existing file via PATCH media
+      const patchUrl = `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`;
+      const updateRes = await executeFetch(patchUrl, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonString,
+      });
+
+      if (!updateRes.ok) {
+        const errBody = await updateRes.json().catch(() => null);
+        throw new Error(`Google Driveの更新に失敗しました: ${errBody?.error?.message || updateRes.statusText}`);
+      }
+
+      const updatedData = await updateRes.json();
+      fileId = updatedData.id || existingFile.id;
+      modifiedTime = updatedData.modifiedTime || new Date().toISOString();
+      size = updatedData.size ? Number(updatedData.size) : new Blob([jsonString]).size;
+      webViewLink = updatedData.webViewLink || existingFile.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
+    } else {
+      // Create new file via multipart upload
+      const boundary = '-------oshisapo' + Math.random().toString(36).substring(2);
+      const delimiter = `\r\n--${boundary}\r\n`;
+      const closeDelimiter = `\r\n--${boundary}--`;
+
+      const metadata = {
+        name: 'oshisapo_backup.json',
+        mimeType: 'application/json',
+        description: '推しサポ (Oshisapo) クラウド自動バックアップデータ',
+      };
+
+      const multipartBody =
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        jsonString +
+        closeDelimiter;
+
+      const uploadUrl =
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime,size,webViewLink';
+      const createRes = await executeFetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': `multipart/related; boundary=${boundary}`,
+        },
+        body: multipartBody,
+      });
+
+      if (!createRes.ok) {
+        const errBody = await createRes.json().catch(() => null);
+        throw new Error(`Google Driveへの新規保存に失敗しました: ${errBody?.error?.message || createRes.statusText}`);
+      }
+
+      const createdData = await createRes.json();
+      fileId = createdData.id;
+      modifiedTime = createdData.modifiedTime || new Date().toISOString();
+      size = createdData.size ? Number(createdData.size) : new Blob([jsonString]).size;
+      webViewLink = createdData.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
+    }
+
+    const driveInfo = {
+      fileId,
+      name: 'oshisapo_backup.json',
+      modifiedTime,
+      size,
+      webViewLink,
+    };
+
+    try {
+      localStorage.setItem(`${STORAGE_KEY_DRIVE_INFO_PREFIX}${userId}`, JSON.stringify(driveInfo));
+    } catch {}
+
+    // Update local snapshot cache
+    this.saveCloudBackup(userId, backup, driveInfo);
+
+    return driveInfo;
+  },
+
+  /**
+   * Download and parse backup data directly from Google Drive
+   */
+  async downloadFromGoogleDrive(userId?: string): Promise<BackupData> {
+    let token = await this.requestDriveAccessToken(false);
+
+    const executeFetch = async (url: string, init: RequestInit = {}) => {
+      let res = await fetch(url, {
+        ...init,
+        headers: {
+          ...(init.headers || {}),
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401) {
+        token = await this.requestDriveAccessToken(true);
+        res = await fetch(url, {
+          ...init,
+          headers: {
+            ...(init.headers || {}),
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+      return res;
+    };
+
+    // 1. Search for oshisapo_backup.json
+    const query = encodeURIComponent("name = 'oshisapo_backup.json' and trashed = false");
+    const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime,size,webViewLink)&spaces=drive`;
+    const searchRes = await executeFetch(searchUrl);
+
+    if (!searchRes.ok) {
+      const errBody = await searchRes.json().catch(() => null);
+      const errMsg = errBody?.error?.message || searchRes.statusText;
+      if (
+        searchRes.status === 403 &&
+        (errMsg.includes('has not been used in project') ||
+          errMsg.includes('disabled') ||
+          errMsg.includes('Access Not Configured'))
+      ) {
+        const err = new Error('GOOGLE_DRIVE_API_NOT_ENABLED');
+        (err as any).details = errMsg;
+        throw err;
+      }
+      throw new Error(`Google Driveの接続に失敗しました: ${errMsg}`);
+    }
+
+    const searchData = await searchRes.json();
+    if (!searchData.files || searchData.files.length === 0) {
+      throw new Error('Googleドライブ内にバックアップファイル「oshisapo_backup.json」が見つかりませんでした。先にバックアップを保存してください。');
+    }
+
+    const file = searchData.files[0];
+    const downloadUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+    const downloadRes = await executeFetch(downloadUrl);
+
+    if (!downloadRes.ok) {
+      throw new Error(`Google Driveからのダウンロードに失敗しました (${downloadRes.status})`);
+    }
+
+    const backupData = (await downloadRes.json()) as BackupData;
+    if (!backupData || !backupData.data) {
+      throw new Error('ダウンロードしたバックアップファイルの形式が正しくありません');
+    }
+
+    // Cache locally
+    if (userId) {
+      const driveInfo = {
+        fileId: file.id,
+        name: file.name,
+        modifiedTime: file.modifiedTime || new Date().toISOString(),
+        size: file.size ? Number(file.size) : 0,
+        webViewLink: file.webViewLink,
+      };
+      try {
+        localStorage.setItem(`${STORAGE_KEY_DRIVE_INFO_PREFIX}${userId}`, JSON.stringify(driveInfo));
+      } catch {}
+      this.saveCloudBackup(userId, backupData, driveInfo);
+    }
+
+    return backupData;
+  },
+
+  /**
+   * Save backup snapshot to storage cache
+   */
+  saveCloudBackup(
+    userId: string,
+    backup: BackupData,
+    driveInfo?: { fileId: string; name?: string; modifiedTime?: string; size?: number; webViewLink?: string }
+  ): GoogleCloudBackupMetadata {
     const key = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`;
     const historyKey = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}history_${userId}`;
 
@@ -348,13 +677,21 @@ export const googleAuthRepository = {
     const goodsCount = backup.data.goods.length;
     const sizeBytes = new Blob([raw]).size;
 
+    const effectiveDrive = driveInfo || this.getStoredDriveInfo(userId);
+
     return {
-      updatedAt: backup.createdAt,
+      updatedAt: effectiveDrive?.modifiedTime || backup.createdAt,
       oshisCount,
       eventsCount,
       todosCount,
       goodsCount,
       sizeBytes,
+      driveFileId: effectiveDrive?.fileId,
+      driveFileName: effectiveDrive?.name || (effectiveDrive?.fileId ? 'oshisapo_backup.json' : undefined),
+      driveFileLink:
+        effectiveDrive?.webViewLink ||
+        (effectiveDrive?.fileId ? `https://drive.google.com/file/d/${effectiveDrive.fileId}/view` : undefined),
+      isDriveSynced: !!effectiveDrive?.fileId,
     };
   },
 
@@ -479,13 +816,21 @@ export const googleAuthRepository = {
       const backup = this.getCloudBackup(userId);
       if (!backup || !backup.data) return null;
       const raw = JSON.stringify(backup);
+      const driveInfo = this.getStoredDriveInfo(userId);
+
       return {
-        updatedAt: backup.createdAt || new Date().toISOString(),
+        updatedAt: driveInfo?.modifiedTime || backup.createdAt || new Date().toISOString(),
         oshisCount: backup.data.oshis?.length || 0,
         eventsCount: backup.data.events?.length || 0,
         todosCount: backup.data.todos?.length || 0,
         goodsCount: backup.data.goods?.length || 0,
         sizeBytes: new Blob([raw]).size,
+        driveFileId: driveInfo?.fileId,
+        driveFileName: driveInfo?.name || (driveInfo?.fileId ? 'oshisapo_backup.json' : undefined),
+        driveFileLink:
+          driveInfo?.webViewLink ||
+          (driveInfo?.fileId ? `https://drive.google.com/file/d/${driveInfo.fileId}/view` : undefined),
+        isDriveSynced: !!driveInfo?.fileId,
       };
     } catch (err) {
       console.error('Failed to get cloud backup metadata:', err);
@@ -498,8 +843,8 @@ export const googleAuthRepository = {
    */
   clearCloudBackup(userId: string): void {
     try {
-      const key = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`;
-      localStorage.removeItem(key);
+      localStorage.removeItem(`${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`);
+      localStorage.removeItem(`${STORAGE_KEY_DRIVE_INFO_PREFIX}${userId}`);
     } catch (err) {
       console.error('Failed to remove cloud backup:', err);
     }

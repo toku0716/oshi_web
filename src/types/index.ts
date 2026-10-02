@@ -119,6 +119,10 @@ export interface GoogleUser {
   linkedAt: string; // ISO date string
   lastSyncedAt?: string; // ISO date string
   autoSync?: boolean;
+  driveFileId?: string;
+  driveFileName?: string;
+  driveFileLink?: string;
+  driveSyncedAt?: string;
 }
 
 export interface GoogleCloudBackupMetadata {
@@ -128,6 +132,10 @@ export interface GoogleCloudBackupMetadata {
   todosCount: number;
   goodsCount: number;
   sizeBytes: number;
+  driveFileId?: string;
+  driveFileName?: string;
+  driveFileLink?: string;
+  isDriveSynced?: boolean;
 }
 
 export interface MaintenanceInfo {

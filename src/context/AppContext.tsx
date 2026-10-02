@@ -257,23 +257,76 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       throw new Error('Googleアカウントが連携されていません');
     }
     const backup = await backupRepository.exportBackup();
-    const meta = googleAuthRepository.saveCloudBackup(googleUser.id, backup);
-    const updated = { ...googleUser, lastSyncedAt: meta.updatedAt };
-    googleAuthRepository.saveUser(updated);
-    setGoogleUserState(updated);
-    showToast(`Googleバックアップを保存しました (推し:${meta.oshisCount}人, 予定:${meta.eventsCount}件, グッズ:${meta.goodsCount}点)`, 'success');
-    return meta;
+
+    try {
+      // 1. Genuine Google Drive Upload
+      const driveInfo = await googleAuthRepository.uploadToGoogleDrive(googleUser.id, backup);
+      const meta = googleAuthRepository.getCloudBackupMetadata(googleUser.id)!;
+      const updated: GoogleUser = {
+        ...googleUser,
+        lastSyncedAt: driveInfo.modifiedTime,
+        driveFileId: driveInfo.fileId,
+        driveFileName: 'oshisapo_backup.json',
+        driveFileLink: driveInfo.webViewLink,
+        driveSyncedAt: driveInfo.modifiedTime,
+      };
+      googleAuthRepository.saveUser(updated);
+      setGoogleUserState(updated);
+      showToast(
+        `Googleドライブに保存しました (推し:${meta.oshisCount}人, 予定:${meta.eventsCount}件, グッズ:${meta.goodsCount}点)`,
+        'success'
+      );
+      return meta;
+    } catch (driveErr: any) {
+      console.warn('Google Drive sync failed, falling back to local snapshot:', driveErr);
+      const meta = googleAuthRepository.saveCloudBackup(googleUser.id, backup);
+      const updated = { ...googleUser, lastSyncedAt: meta.updatedAt };
+      googleAuthRepository.saveUser(updated);
+      setGoogleUserState(updated);
+
+      if (driveErr?.message === 'GOOGLE_DRIVE_API_NOT_ENABLED') {
+        showToast(
+          'Google CloudでDrive APIの有効化が必要です（端末内に控えを安全に保存しました）',
+          'info'
+        );
+      } else {
+        showToast(
+          `端末内に控えを保存しました（Googleドライブ通信: ${driveErr?.message || '未完了'}）`,
+          'info'
+        );
+      }
+      return meta;
+    }
   }, [googleUser, showToast]);
 
   const restoreFromGoogleCloud = useCallback(async () => {
-    const backup = googleAuthRepository.getCloudBackup(googleUser?.id);
-    if (!backup || !backup.data) {
-      throw new Error('復元可能なバックアップデータが見つかりません');
+    if (!googleUser) {
+      throw new Error('Googleアカウントが連携されていません');
     }
+
+    let backup: BackupData | null = null;
+    let sourceLabel = 'Googleドライブ';
+
+    // 1. Try real Google Drive download
+    try {
+      backup = await googleAuthRepository.downloadFromGoogleDrive(googleUser.id);
+    } catch (driveErr: any) {
+      console.warn('Google Drive download error, falling back to local snapshot:', driveErr);
+      backup = googleAuthRepository.getCloudBackup(googleUser.id);
+      sourceLabel = '保存控え';
+
+      if (!backup || !backup.data) {
+        if (driveErr?.message === 'GOOGLE_DRIVE_API_NOT_ENABLED') {
+          throw new Error('Google CloudでDrive APIが有効になっていません。Google Cloud Consoleで有効化してください。');
+        }
+        throw new Error(driveErr?.message || '復元可能なバックアップデータが見つかりません');
+      }
+    }
+
     const stats = await backupRepository.importBackup(backup);
     await refreshAllData();
     showToast(
-      `バックアップから復元しました (推し:${stats.oshisCount}人, 予定:${stats.eventsCount}件, グッズ:${stats.goodsCount}点)`,
+      `${sourceLabel}から復元しました (推し:${stats.oshisCount}人, 予定:${stats.eventsCount}件, グッズ:${stats.goodsCount}点)`,
       'success'
     );
     return stats;

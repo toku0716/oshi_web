@@ -480,7 +480,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
                   className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
                 >
                   <CloudUpload className="w-3.5 h-3.5" />
-                  <span>{isGoogleSyncing ? '保存中...' : 'クラウド保存'}</span>
+                  <span>{isGoogleSyncing ? '保存中...' : 'Googleドライブ保存'}</span>
                 </button>
 
                 <button
@@ -506,6 +506,17 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
                         推し:{cloudMeta.oshisCount}人・予定:{cloudMeta.eventsCount}件・グッズ:{cloudMeta.goodsCount}点
                       </span>
                     )}
+                    {cloudMeta?.isDriveSynced && (
+                      <a
+                        href={cloudMeta.driveFileLink || googleUser.driveFileLink || "https://drive.google.com/drive/my-drive"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 underline"
+                      >
+                        <span>Googleドライブで確認</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </span>
                   <button
                     type="button"
@@ -513,7 +524,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
                     className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-600 dark:text-blue-300 font-bold transition flex items-center gap-1 self-start sm:self-auto cursor-pointer"
                   >
                     <RotateCcw className="w-3 h-3" />
-                    <span>控えから復元する</span>
+                    <span>Googleドライブから復元</span>
                   </button>
                 </div>
               );
@@ -747,14 +758,14 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
         isLoading={isProcessing}
       />
 
-      {/* Confirm Modal: Google Cloud Restore */}
+      {/* Confirm Modal: Google Drive Restore */}
       <ConfirmModal
         isOpen={isGoogleRestoreConfirmOpen}
         onClose={() => setIsGoogleRestoreConfirmOpen(false)}
         onConfirm={handleGoogleRestoreConfirm}
-        title="Googleクラウドから復元"
-        message="Googleクラウドに保存されているバックアップデータを端末に復元します。"
-        warningNote="※ 現在端末に入っているデータは、クラウドのデータで上書きされます。よろしいですか？"
+        title="Googleドライブから復元"
+        message="Googleドライブに保存されているバックアップデータ（oshisapo_backup.json）を端末に読み込みます。"
+        warningNote="※ 現在端末に入っているデータは、Googleドライブのデータで上書きされます。よろしいですか？"
         confirmLabel="上書きして復元する"
         variant="warning"
         isLoading={isGoogleSyncing}
