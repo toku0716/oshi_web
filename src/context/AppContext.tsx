@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { Oshi, OshiEvent, Todo, Goods, AppSettings, GoogleUser, GoogleCloudBackupMetadata } from '../types';
+import type { Oshi, OshiEvent, Todo, Goods, AppSettings, GoogleUser, GoogleCloudBackupMetadata, BackupData } from '../types';
 import {
   oshiRepository,
   eventRepository,
@@ -39,6 +39,10 @@ interface AppContextType {
   saveToGoogleCloud: () => Promise<GoogleCloudBackupMetadata>;
   restoreFromGoogleCloud: () => Promise<{ oshisCount: number; eventsCount: number; todosCount: number; goodsCount: number }>;
   toggleGoogleAutoSync: (enabled: boolean) => Promise<void>;
+  // Data Recovery
+  recoverableBackup: BackupData | null;
+  restoreRecoverableBackup: () => Promise<void>;
+  restoreSampleData: () => Promise<void>;
   // Action triggers
   fireConfetti: () => void;
 }
@@ -58,6 +62,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [recoverableBackup, setRecoverableBackup] = useState<BackupData | null>(null);
 
   useEffect(() => {
     const isDark = themeMode === 'dark';
@@ -95,31 +100,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         settingsRepository.getSettings(),
       ]);
 
-      // サンプルデータ、または推し0人の孤立した初期サンプルを完全に一括削除
+      // 初期サンプルデータのみをピンポイントで安全に消去（ユーザーのデータを全消去しない）
       const sampleOshiIds = new Set(['oshi-1', 'oshi-2']);
       const sampleEventIds = new Set(['event-1', 'event-2', 'event-3', 'event-4']);
       const sampleTodoIds = new Set(['todo-1', 'todo-2', 'todo-3', 'todo-4']);
       const sampleGoodsIds = new Set(['goods-1', 'goods-2', 'goods-3', 'goods-4']);
 
-      const hasSampleData =
-        fetchedOshis.some((o) => sampleOshiIds.has(o.id)) ||
-        fetchedEvents.some((e) => sampleEventIds.has(e.id)) ||
-        fetchedTodos.some((t) => sampleTodoIds.has(t.id)) ||
-        fetchedGoods.some((g) => sampleGoodsIds.has(g.id)) ||
-        // 推しが0人なのに孤立した予定やグッズが残っている場合
-        (fetchedOshis.length === 0 && (fetchedEvents.length > 0 || fetchedGoods.length > 0 || fetchedTodos.length > 0));
-
-      const alreadyCleaned = localStorage.getItem('oshiss_sample_cleared_v5');
-
-      if (hasSampleData || !alreadyCleaned) {
-        if (hasSampleData || fetchedOshis.length === 0) {
-          await backupRepository.clearAllData();
-          fetchedOshis = [];
-          fetchedEvents = [];
-          fetchedTodos = [];
-          fetchedGoods = [];
+      let dataChanged = false;
+      for (const o of fetchedOshis) {
+        if (sampleOshiIds.has(o.id)) {
+          await oshiRepository.delete(o.id);
+          dataChanged = true;
         }
-        localStorage.setItem('oshiss_sample_cleared_v5', 'true');
+      }
+      for (const e of fetchedEvents) {
+        if (sampleEventIds.has(e.id)) {
+          await eventRepository.delete(e.id);
+          dataChanged = true;
+        }
+      }
+      for (const t of fetchedTodos) {
+        if (sampleTodoIds.has(t.id)) {
+          await todoRepository.delete(t.id);
+          dataChanged = true;
+        }
+      }
+      for (const g of fetchedGoods) {
+        if (sampleGoodsIds.has(g.id)) {
+          await goodsRepository.delete(g.id);
+          dataChanged = true;
+        }
+      }
+
+      if (dataChanged) {
+        [fetchedOshis, fetchedEvents, fetchedTodos, fetchedGoods] = await Promise.all([
+          oshiRepository.getAll(),
+          eventRepository.getAll(),
+          todoRepository.getAll(),
+          goodsRepository.getAll(),
+        ]);
       }
 
       setOshis(fetchedOshis);
@@ -128,6 +147,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setGoods(fetchedGoods);
       setSettings(fetchedSettings);
       setActiveOshiIdState(fetchedSettings.activeOshiId || 'all');
+
+      // 非空データを検知したら緊急スナップショットとしてlocalStorageに自動保護
+      if (fetchedOshis.length > 0 || fetchedEvents.length > 0 || fetchedGoods.length > 0) {
+        backupRepository.exportBackup().then((backup) => {
+          localStorage.setItem('oshiss_auto_safety_snapshot', JSON.stringify(backup));
+        }).catch(() => {});
+        setRecoverableBackup(null);
+      } else {
+        // 現在データが0件の場合は救出可能な過去バックアップを自動探索
+        const candidate = googleAuthRepository.findRecoverableBackup(googleAuthRepository.getStoredUser()?.id);
+        setRecoverableBackup(candidate);
+      }
     } catch (err) {
       console.error('Failed to load data from IndexedDB:', err);
       showToast('データの読み込みに失敗しました', 'error');
@@ -148,12 +179,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (user) {
         setGoogleUserState(user);
         showToast(`Googleアカウント「${user.name}」でログインしました`, 'success');
-        backupRepository.exportBackup().then((backup) => {
-          const meta = googleAuthRepository.saveCloudBackup(user.id, backup);
-          const updated = { ...user, lastSyncedAt: meta.updatedAt };
+
+        // 既存のクラウドバックアップが存在するか確認
+        const existingCloudBackup = googleAuthRepository.getCloudBackup(user.id);
+        if (existingCloudBackup && existingCloudBackup.data) {
+          // すでにクラウドにバックアップが存在する場合は空データで上書きせず、既存データを保持
+          const meta = googleAuthRepository.getCloudBackupMetadata(user.id);
+          const updated = { ...user, lastSyncedAt: meta?.updatedAt || new Date().toISOString() };
           googleAuthRepository.saveUser(updated);
           setGoogleUserState(updated);
-        }).catch(() => {});
+        } else {
+          // クラウドにバックアップがまだなく、端末にデータがある場合のみ初期バックアップ
+          backupRepository.exportBackup().then((backup) => {
+            const hasData =
+              (backup.data.oshis?.length || 0) > 0 ||
+              (backup.data.events?.length || 0) > 0 ||
+              (backup.data.goods?.length || 0) > 0;
+            if (hasData) {
+              const meta = googleAuthRepository.saveCloudBackup(user.id, backup);
+              const updated = { ...user, lastSyncedAt: meta.updatedAt };
+              googleAuthRepository.saveUser(updated);
+              setGoogleUserState(updated);
+            }
+          }).catch(() => {});
+        }
       }
     }).catch((err) => {
       console.error('Google OAuth callback error:', err);
@@ -244,6 +293,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [googleUser, showToast]);
 
+  const restoreRecoverableBackup = useCallback(async () => {
+    if (!recoverableBackup) return;
+    try {
+      setIsLoading(true);
+      const stats = await backupRepository.importBackup(recoverableBackup);
+      await refreshAllData();
+      showToast(
+        `データを復元しました (推し:${stats.oshisCount}人, 予定:${stats.eventsCount}件, グッズ:${stats.goodsCount}点)`,
+        'success'
+      );
+      setRecoverableBackup(null);
+    } catch (err) {
+      console.error(err);
+      showToast('データの復元に失敗しました', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [recoverableBackup, refreshAllData, showToast]);
+
+  const restoreSampleData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      await backupRepository.seedSampleData();
+      await refreshAllData();
+      showToast('サンプルデータを読み込みました', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('サンプルデータの読み込みに失敗しました', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [refreshAllData, showToast]);
+
   const activeOshi = oshis.find((o) => o.id === activeOshiId);
 
   return (
@@ -270,6 +352,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         saveToGoogleCloud,
         restoreFromGoogleCloud,
         toggleGoogleAutoSync,
+        recoverableBackup,
+        restoreRecoverableBackup,
+        restoreSampleData,
         fireConfetti,
       }}
     >

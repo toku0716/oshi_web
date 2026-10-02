@@ -12,6 +12,7 @@ import {
   MapPin,
   ChevronRight,
   TrendingUp,
+  RotateCcw,
 } from 'lucide-react';
 import type { NavTab } from '../components/layout/Navbar';
 
@@ -41,6 +42,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
     activeOshiId,
     activeOshi,
     googleUser,
+    recoverableBackup,
+    restoreRecoverableBackup,
   } = useApp();
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -76,6 +79,38 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Recoverable Backup Recovery Banner */}
+      {recoverableBackup && oshis.length === 0 && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-600/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-xs text-amber-950 dark:text-amber-100">
+                  直前の保存控えが見つかりました！
+                </h4>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
+                  復元可能
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 mt-0.5">
+                推し <strong>{recoverableBackup.data.oshis?.length || 0}人</strong>、予定 <strong>{recoverableBackup.data.events?.length || 0}件</strong>、グッズ <strong>{recoverableBackup.data.goods?.length || 0}点</strong> のデータをワンクリックで元通りに復元できます。
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={restoreRecoverableBackup}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>直近データを復元する</span>
+          </button>
+        </div>
+      )}
+
       {/* Google Account Link Banner (Unlinked) */}
       {!googleUser && onOpenGoogleModal && (
         <div className="bg-gradient-to-r from-blue-50/80 via-white to-pink-50/80 dark:from-blue-950/20 dark:via-[#191b28] dark:to-pink-950/20 rounded-xl p-3.5 border border-blue-200/80 dark:border-blue-900/40 flex items-center justify-between gap-3 shadow-2xs">

@@ -20,6 +20,7 @@ import {
   Cloud,
   CloudUpload,
   Settings,
+  RotateCcw,
 } from 'lucide-react';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
@@ -44,6 +45,9 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
     googleUser,
     saveToGoogleCloud,
     restoreFromGoogleCloud,
+    recoverableBackup,
+    restoreRecoverableBackup,
+    restoreSampleData,
   } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -190,6 +194,38 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
         </p>
       </div>
 
+      {/* Recoverable Backup Recovery Banner */}
+      {recoverableBackup && oshis.length === 0 && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-600/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-xs text-amber-950 dark:text-amber-100">
+                  直前の保存控えが見つかりました！
+                </h4>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
+                  復元可能
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 mt-0.5">
+                推し <strong>{recoverableBackup.data.oshis?.length || 0}人</strong>、予定 <strong>{recoverableBackup.data.events?.length || 0}件</strong>、グッズ <strong>{recoverableBackup.data.goods?.length || 0}点</strong> のデータをワンクリックで元通りに復元できます。
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={restoreRecoverableBackup}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>直近データを復元する</span>
+          </button>
+        </div>
+      )}
+
       {/* SECTION 1: 推し管理 */}
       <div className="bg-white dark:bg-[#161822] rounded-xl border border-gray-200 dark:border-[#262838] p-5 space-y-4">
         <div className="flex items-center justify-between">
@@ -209,14 +245,34 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
         </div>
 
         {oshis.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 dark:bg-[#1c1d29] rounded-lg border border-dashed border-gray-200 dark:border-[#35384d]">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">推しがまだ登録されていません</p>
-            <button
-              onClick={() => onOpenOshiModal()}
-              className="text-xs text-pink-600 dark:text-pink-400 font-semibold hover:underline"
-            >
-              推しを登録する
-            </button>
+          <div className="text-center py-8 bg-gray-50 dark:bg-[#1c1d29] rounded-lg border border-dashed border-gray-200 dark:border-[#35384d] space-y-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">推しがまだ登録されていません</p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={() => onOpenOshiModal()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-semibold text-xs transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>推しを追加する</span>
+              </button>
+              {recoverableBackup && (
+                <button
+                  onClick={restoreRecoverableBackup}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs transition"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>前回のデータを復元</span>
+                </button>
+              )}
+            </div>
+            <div className="pt-1">
+              <button
+                onClick={restoreSampleData}
+                className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 underline"
+              >
+                初期サンプルデータを読み込む
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -300,6 +356,38 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
           <Database className="w-4 h-4 text-indigo-500" />
           <h3 className="font-bold text-sm text-gray-900 dark:text-white">データの保存とバックアップ</h3>
         </div>
+
+        {/* Recoverable Backup Recovery Card in Section 2 */}
+        {recoverableBackup && (
+          <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-gradient-to-r from-amber-50 to-orange-50/50 dark:from-amber-950/30 dark:to-[#191b28] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                <RotateCcw className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-bold text-xs text-amber-950 dark:text-amber-100">
+                    直前の保存控えが見つかりました
+                  </h4>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
+                    ワンクリック復元
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 mt-0.5">
+                  消えてしまった推し <strong>{recoverableBackup.data.oshis?.length || 0}人</strong>、予定 <strong>{recoverableBackup.data.events?.length || 0}件</strong>、グッズ <strong>{recoverableBackup.data.goods?.length || 0}点</strong> のデータを元通りに復元できます。
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={restoreRecoverableBackup}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>データを復元する</span>
+            </button>
+          </div>
+        )}
 
         {/* Google Account Linking Card */}
         {!googleUser ? (
@@ -510,6 +598,9 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
                 <Upload className="w-3.5 h-3.5" />
                 <span>ファイルを選んで復元</span>
               </button>
+              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-1.5 font-medium leading-relaxed">
+                ※ 端末のダウンロードフォルダ等に保存したバックアップファイル（.json）があれば、ここから選ぶだけでいつでも元通りに復元できます。
+              </p>
             </div>
           </div>
         </div>

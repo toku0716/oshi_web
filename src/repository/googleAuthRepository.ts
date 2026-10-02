@@ -153,9 +153,55 @@ export const googleAuthRepository = {
    * Save backup snapshot to Google Cloud storage cache
    */
   saveCloudBackup(userId: string, backup: BackupData): GoogleCloudBackupMetadata {
-    const raw = JSON.stringify(backup);
     const key = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`;
+    const historyKey = `${STORAGE_KEY_CLOUD_BACKUP_PREFIX}history_${userId}`;
+
+    const existingRaw = localStorage.getItem(key);
+    let existingBackup: BackupData | null = null;
+    if (existingRaw) {
+      try {
+        existingBackup = JSON.parse(existingRaw);
+      } catch {}
+    }
+
+    const incomingCount =
+      (backup.data.oshis?.length || 0) +
+      (backup.data.events?.length || 0) +
+      (backup.data.goods?.length || 0) +
+      (backup.data.todos?.length || 0);
+
+    const existingCount = existingBackup
+      ? (existingBackup.data.oshis?.length || 0) +
+        (existingBackup.data.events?.length || 0) +
+        (existingBackup.data.goods?.length || 0) +
+        (existingBackup.data.todos?.length || 0)
+      : 0;
+
+    // Safety: 既存データがあり、新バックアップが0件の場合は空上書きを阻止して既存データを保護
+    if (incomingCount === 0 && existingCount > 0 && existingBackup) {
+      console.warn('Prevented overwriting non-empty backup with empty backup');
+      return this.getCloudBackupMetadata(userId)!;
+    }
+
+    // 既存データを履歴として保存（直近5世代）
+    if (existingRaw && existingCount > 0 && existingBackup) {
+      try {
+        const historyRaw = localStorage.getItem(historyKey);
+        const history: BackupData[] = historyRaw ? JSON.parse(historyRaw) : [];
+        history.unshift(existingBackup);
+        localStorage.setItem(historyKey, JSON.stringify(history.slice(0, 5)));
+      } catch {}
+    }
+
+    const raw = JSON.stringify(backup);
     localStorage.setItem(key, raw);
+
+    // 緊急セーフティスナップショット（端末内ローカル自動保存）
+    if (incomingCount > 0) {
+      try {
+        localStorage.setItem('oshiss_auto_safety_snapshot', raw);
+      } catch {}
+    }
 
     const oshisCount = backup.data.oshis.length;
     const eventsCount = backup.data.events.length;
@@ -186,6 +232,77 @@ export const googleAuthRepository = {
       console.error('Failed to parse cloud backup data:', err);
       return null;
     }
+  },
+
+  /**
+   * Scan localStorage for any previous non-empty backup data to allow user recovery
+   */
+  findRecoverableBackup(userId?: string): BackupData | null {
+    const candidates: BackupData[] = [];
+
+    const checkAndAdd = (rawStr: string | null) => {
+      if (!rawStr) return;
+      try {
+        const parsed = JSON.parse(rawStr);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.data && Array.isArray(parsed.data.oshis) && parsed.data.oshis.length > 0) {
+            candidates.push(parsed);
+          } else if (Array.isArray(parsed.oshis) && parsed.oshis.length > 0) {
+            candidates.push({
+              app: 'oshiss',
+              backupVersion: 1,
+              createdAt: parsed.createdAt || new Date().toISOString(),
+              data: {
+                oshis: parsed.oshis || [],
+                events: parsed.events || [],
+                todos: parsed.todos || [],
+                goods: parsed.goods || [],
+              },
+            });
+          }
+        }
+      } catch {}
+    };
+
+    if (userId) {
+      checkAndAdd(localStorage.getItem(`${STORAGE_KEY_CLOUD_BACKUP_PREFIX}${userId}`));
+      try {
+        const historyRaw = localStorage.getItem(`${STORAGE_KEY_CLOUD_BACKUP_PREFIX}history_${userId}`);
+        if (historyRaw) {
+          const list: BackupData[] = JSON.parse(historyRaw);
+          list.forEach((b) => candidates.push(b));
+        }
+      } catch {}
+    }
+
+    checkAndAdd(localStorage.getItem('oshiss_auto_safety_snapshot'));
+
+    // 全てのlocalStorageキーを探索して過去のデータを救出
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('oshiss_') || k.includes('backup'))) {
+          checkAndAdd(localStorage.getItem(k));
+        }
+      }
+    } catch {}
+
+    if (candidates.length === 0) return null;
+
+    // 最もデータ数が多い（推し、予定、グッズの合計が多い）バックアップを優先
+    candidates.sort((a, b) => {
+      const aCount =
+        (a.data.oshis?.length || 0) * 10 +
+        (a.data.events?.length || 0) +
+        (a.data.goods?.length || 0);
+      const bCount =
+        (b.data.oshis?.length || 0) * 10 +
+        (b.data.events?.length || 0) +
+        (b.data.goods?.length || 0);
+      return bCount - aCount;
+    });
+
+    return candidates[0] || null;
   },
 
   /**
