@@ -239,10 +239,6 @@ const MainApp: React.FC = () => {
       <GoogleAccountModal
         isOpen={isGoogleAccountModalOpen}
         onClose={() => setIsGoogleAccountModalOpen(false)}
-        onSwitchAccount={() => {
-          setIsGoogleAccountModalOpen(false);
-          setIsGoogleLinkModalOpen(true);
-        }}
       />
     </div>
   );

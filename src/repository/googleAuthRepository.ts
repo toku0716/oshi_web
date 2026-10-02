@@ -1,7 +1,6 @@
 import type { GoogleUser, BackupData, GoogleCloudBackupMetadata } from '../types';
 
 const STORAGE_KEY_USER = 'oshiss_google_user';
-const STORAGE_KEY_CLIENT_ID = 'oshiss_google_client_id';
 const STORAGE_KEY_CLOUD_BACKUP_PREFIX = 'oshiss_google_cloud_backup_';
 
 export const googleAuthRepository = {
@@ -42,32 +41,11 @@ export const googleAuthRepository = {
   },
 
   /**
-   * Get Google OAuth Client ID (from localStorage or Vite env)
+   * Get Google OAuth Client ID (managed by app via VITE_GOOGLE_CLIENT_ID)
    */
   getClientId(): string {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
-      if (stored && stored.trim()) return stored.trim();
-    } catch {
-      // Ignore storage error
-    }
     const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
     return (envClientId && typeof envClientId === 'string') ? envClientId.trim() : '';
-  },
-
-  /**
-   * Save custom Google OAuth Client ID
-   */
-  saveClientId(clientId: string): void {
-    try {
-      if (clientId.trim()) {
-        localStorage.setItem(STORAGE_KEY_CLIENT_ID, clientId.trim());
-      } else {
-        localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
-      }
-    } catch (err) {
-      console.error('Failed to save Google Client ID:', err);
-    }
   },
 
   /**
@@ -169,30 +147,5 @@ export const googleAuthRepository = {
     } catch (err) {
       console.error('Failed to remove cloud backup:', err);
     }
-  },
-
-  /**
-   * Preset accounts for 1-click test linking
-   */
-  getPresetDemoAccounts(): Array<{
-    name: string;
-    email: string;
-    picture: string;
-    description: string;
-  }> {
-    return [
-      {
-        name: '推し活アカウント (メイン)',
-        email: 'oshikatsu.fan@gmail.com',
-        picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        description: 'Googleフォト・予定連動用メインアカウント',
-      },
-      {
-        name: 'ライブ・遠征専用アカウント',
-        email: 'live.ticket.fan@gmail.com',
-        picture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        description: 'チケット申込・スケジュール専用アカウント',
-      },
-    ];
   },
 };

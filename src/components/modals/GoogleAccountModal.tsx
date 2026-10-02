@@ -20,13 +20,11 @@ import {
 interface GoogleAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSwitchAccount: () => void;
 }
 
 export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
   isOpen,
   onClose,
-  onSwitchAccount,
 }) => {
   const {
     googleUser,
@@ -132,14 +130,6 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
                 </p>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={onSwitchAccount}
-              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline shrink-0"
-            >
-              切替
-            </button>
           </div>
 
           {/* Cloud Storage Status */}
