@@ -142,7 +142,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       navigator.storage.persist().catch(() => {});
     }
     refreshAllData();
-  }, [refreshAllData]);
+
+    // Google OAuth リダイレクト戻りの検出とログイン処理
+    googleAuthRepository.handleOAuthRedirectCallback().then((user) => {
+      if (user) {
+        setGoogleUserState(user);
+        showToast(`Googleアカウント「${user.name}」でログインしました`, 'success');
+        backupRepository.exportBackup().then((backup) => {
+          const meta = googleAuthRepository.saveCloudBackup(user.id, backup);
+          const updated = { ...user, lastSyncedAt: meta.updatedAt };
+          googleAuthRepository.saveUser(updated);
+          setGoogleUserState(updated);
+        }).catch(() => {});
+      }
+    }).catch((err) => {
+      console.error('Google OAuth callback error:', err);
+    });
+  }, [refreshAllData, showToast]);
 
   const setActiveOshiId = useCallback(
     async (id: string) => {

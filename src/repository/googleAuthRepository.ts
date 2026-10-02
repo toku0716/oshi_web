@@ -49,6 +49,74 @@ export const googleAuthRepository = {
   },
 
   /**
+   * Redirect browser to Google's genuine OAuth 2.0 authorization endpoint (accounts.google.com)
+   */
+  redirectToGoogleAuth(): void {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      throw new Error('Google OAuth クライアントIDが設定されていません');
+    }
+    const redirectUri = window.location.origin + window.location.pathname;
+    const scope = encodeURIComponent('openid profile email');
+    const state = Math.random().toString(36).substring(2);
+    sessionStorage.setItem('oshiss_oauth_state', state);
+
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+      clientId
+    )}&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}&response_type=token&scope=${scope}&state=${state}&prompt=select_account`;
+
+    window.location.href = url;
+  },
+
+  /**
+   * Check URL hash on page load and extract Google access token if returning from Google OAuth redirect
+   */
+  async handleOAuthRedirectCallback(): Promise<GoogleUser | null> {
+    if (typeof window === 'undefined') return null;
+    const hash = window.location.hash;
+    if (!hash || !hash.includes('access_token=')) return null;
+
+    try {
+      const params = new URLSearchParams(hash.replace(/^#/, ''));
+      const accessToken = params.get('access_token');
+      if (!accessToken) return null;
+
+      // Clean the URL hash so tokens aren't left visible in the address bar
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+
+      // Verify token and fetch genuine user profile directly from Google
+      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        console.error('Failed to fetch userinfo from Google:', res.status, res.statusText);
+        return null;
+      }
+
+      const data = await res.json();
+      const user: GoogleUser = {
+        id: data.sub || `google-${Date.now()}`,
+        name: data.name || data.given_name || 'Googleユーザー',
+        email: data.email,
+        picture: data.picture,
+        linkedAt: new Date().toISOString(),
+        autoSync: true,
+      };
+
+      this.saveUser(user);
+      return user;
+    } catch (err) {
+      console.error('OAuth redirect parsing error:', err);
+      return null;
+    }
+  },
+
+  /**
    * Safely decode Google Identity Services credential JWT
    */
   parseJwt(token: string): { sub: string; name: string; email: string; picture?: string } | null {
