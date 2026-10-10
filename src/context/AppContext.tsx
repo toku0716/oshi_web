@@ -34,7 +34,6 @@ interface AppContextType {
   // Data Recovery
   recoverableBackup: BackupData | null;
   restoreRecoverableBackup: () => Promise<void>;
-  restoreSampleData: () => Promise<void>;
   // Action triggers
   fireConfetti: () => void;
 }
@@ -194,20 +193,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [recoverableBackup, refreshAllData, showToast]);
 
-  const restoreSampleData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      await backupRepository.seedSampleData();
-      await refreshAllData();
-      showToast('サンプルデータを読み込みました', 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('サンプルデータの読み込みに失敗しました', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [refreshAllData, showToast]);
-
   const activeOshi = oshis.find((o) => o.id === activeOshiId);
 
   return (
@@ -230,7 +215,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         refreshAllData,
         recoverableBackup,
         restoreRecoverableBackup,
-        restoreSampleData,
         fireConfetti,
       }}
     >

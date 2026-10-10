@@ -49,22 +49,22 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Card */}
       <div
-        className={`relative w-full ${maxWidthClass} bg-white dark:bg-[#161824] rounded-2xl shadow-2xl dark:shadow-2xl dark:shadow-black/80 border border-gray-200/90 dark:border-[#383d56] overflow-hidden z-10 flex flex-col max-h-[90vh] transition-all transform scale-100 text-gray-800 dark:text-gray-100`}
+        className={`relative w-full ${maxWidthClass} bg-[var(--bg-surface)] rounded-xl shadow-xl border border-[var(--border-subtle)] overflow-hidden z-10 flex flex-col max-h-[90vh] transition-all transform scale-100 text-neutral-900 dark:text-neutral-100`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200/80 dark:border-[#2b2f45] bg-gray-50/90 dark:bg-[#1c1f30]">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-subtle)] bg-black/[0.01] dark:bg-white/[0.02]">
+          <h3 className="text-base font-bold text-neutral-950 dark:text-white">{title}</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#2b2f46] transition"
+            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition"
             aria-label="閉じる"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">{children}</div>
+        <div className="p-5 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );

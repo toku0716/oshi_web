@@ -79,11 +79,11 @@ export const EventModal: React.FC<EventModalProps> = ({
 
       await eventRepository.save(eventData);
       await refreshAllData();
-      showToast(targetEvent ? '予定を更新しました' : '予定を追加しました！📅', 'success');
+      showToast(targetEvent ? 'イベント情報を更新しました' : 'イベントを登録しました', 'success');
       onClose();
     } catch (err) {
       console.error(err);
-      showToast('予定の保存に失敗しました', 'error');
+      showToast('イベントの保存に失敗しました', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,78 +93,78 @@ export const EventModal: React.FC<EventModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={targetEvent ? 'イベント予定の編集' : 'イベント予定の追加'}
+      title={targetEvent ? 'イベントの編集' : '新規イベントの登録'}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Title */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            イベント・予定名 <span className="text-rose-500">*</span>
+          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+            イベント名 / 公演名 <span className="text-rose-500">*</span>
           </label>
           <input
             type="text"
             required
-            placeholder="例: 全国ツアー2026 東京ドーム公演"
+            placeholder="例: 全国ツアー2026 東京公演"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
           />
         </div>
 
         {/* Date & Time */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              日付 <span className="text-rose-500">*</span>
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              開催日 <span className="text-rose-500">*</span>
             </label>
             <input
               type="date"
               required
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              時間
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              開演・開催時間
             </label>
             <input
               type="text"
-              placeholder="例: 18:00〜 / 17:30開場"
+              placeholder="例: 18:00 (開場 17:00)"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
         </div>
 
         {/* Location */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            場所 / 会場 / 配信先
+          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+            会場 / 開催場所 / 配信プラットフォーム
           </label>
           <input
             type="text"
-            placeholder="例: 日本武道館 / YouTube公式"
+            placeholder="例: 日本武道館 / オンライン配信"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
           />
         </div>
 
         {/* Oshi & Category */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
               関連する推し
             </label>
             <select
               value={oshiId}
               onChange={(e) => setOshiId(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             >
               <option value="">指定なし</option>
               {oshis.map((o) => (
@@ -176,13 +176,13 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              カテゴリ
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              イベントカテゴリー
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as EventCategory)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             >
               {(Object.keys(EVENT_CATEGORY_CONFIG) as EventCategory[]).map((cat) => (
                 <option key={cat} value={cat}>
@@ -195,13 +195,13 @@ export const EventModal: React.FC<EventModalProps> = ({
 
         {/* Ticket Status */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
+          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
             チケット状況
           </label>
           <select
             value={ticketStatus}
             onChange={(e) => setTicketStatus(e.target.value as TicketStatus)}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
           >
             {(Object.keys(TICKET_STATUS_CONFIG) as TicketStatus[]).map((st) => (
               <option key={st} value={st}>
@@ -213,15 +213,15 @@ export const EventModal: React.FC<EventModalProps> = ({
 
         {/* Memo */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            メモ・準備事項
+          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+            備考 / メモ
           </label>
           <textarea
             rows={3}
-            placeholder="持ち物、座席番号、注意事項など"
+            placeholder="座席番号、整理券、注意事項など"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 resize-none"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition resize-none"
           />
         </div>
 
@@ -230,16 +230,16 @@ export const EventModal: React.FC<EventModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition"
+            className="px-4 py-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition"
           >
             キャンセル
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-5 py-2 text-sm font-bold text-white bg-pink-500 hover:bg-pink-600 rounded-xl transition shadow-xs disabled:opacity-50"
+            className="px-4 py-2 text-xs font-semibold text-white dark:text-neutral-900 bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 rounded-lg transition shadow-xs disabled:opacity-50"
           >
-            {isSubmitting ? '保存中...' : targetEvent ? '更新する' : '追加する'}
+            {isSubmitting ? '保存中...' : targetEvent ? '更新する' : '登録する'}
           </button>
         </div>
       </form>

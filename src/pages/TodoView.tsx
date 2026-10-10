@@ -11,8 +11,6 @@ import {
   Clock,
   Trash2,
   Edit,
-  Filter,
-  CheckSquare,
   Heart,
   Calendar,
 } from 'lucide-react';
@@ -53,12 +51,12 @@ export const TodoView: React.FC<TodoViewProps> = ({ onOpenTodoModal }) => {
       const updated = await todoRepository.toggleComplete(todo.id);
       await refreshAllData();
       if (updated?.completed) {
-        showToast('TODOを完了しました', 'success');
+        showToast('TODOを完了しました！', 'success');
       } else {
         showToast('未完了に戻しました', 'info');
       }
     } catch {
-      showToast('更新に失敗しました', 'error');
+      showToast('TODOの更新に失敗しました', 'error');
     }
   };
 
@@ -70,7 +68,7 @@ export const TodoView: React.FC<TodoViewProps> = ({ onOpenTodoModal }) => {
       showToast('TODOを削除しました', 'info');
       setTodoToDelete(null);
     } catch {
-      showToast('削除に失敗しました', 'error');
+      showToast('TODOの削除に失敗しました', 'error');
     }
   };
 
@@ -78,105 +76,97 @@ export const TodoView: React.FC<TodoViewProps> = ({ onOpenTodoModal }) => {
   const completedCount = oshiFiltered.filter((t) => t.completed).length;
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="space-y-4 pb-24 md:pb-12 max-w-5xl mx-auto">
       {/* Header and Add Button */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xs p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bento-card rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <CheckSquare className="w-6 h-6 text-pink-500" />
+          <h2 className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white flex items-center gap-2">
             <span>推し活TODO</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-neutral-500 dark:text-neutral-400 num-tabular">
+              {uncompletedCount}件未完了
+            </span>
           </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            ライブ準備、チケット発券、ファンレター、グッズ購入などのタスクを整理
+          <p className="text-xs text-neutral-400 mt-0.5">
+            ライブ準備、チケット発券、グッズ購入などの推し活やることリスト
           </p>
         </div>
 
         <button
           onClick={() => onOpenTodoModal()}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs shadow-xs transition transform active:scale-95 self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 font-semibold text-xs shadow-xs active:scale-95 transition self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <Plus className="w-3.5 h-3.5" />
           <span>TODOを追加</span>
         </button>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setFilterStatus('uncompleted')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-              filterStatus === 'uncompleted'
-                ? 'bg-pink-600 text-white shadow-xs'
-                : 'bg-white border border-gray-200/80 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <span>未完了</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                filterStatus === 'uncompleted' ? 'bg-white/20' : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {uncompletedCount}
-            </span>
-          </button>
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <button
+          onClick={() => setFilterStatus('uncompleted')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+            filterStatus === 'uncompleted'
+              ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+              : 'bg-black/[0.03] dark:bg-white/[0.05] border border-[var(--border-subtle)] text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+          }`}
+        >
+          <span>未完了</span>
+          <span className="text-[10px] opacity-80 num-tabular">
+            {uncompletedCount}
+          </span>
+        </button>
 
-          <button
-            onClick={() => setFilterStatus('completed')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-              filterStatus === 'completed'
-                ? 'bg-pink-600 text-white shadow-xs'
-                : 'bg-white border border-gray-200/80 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <span>完了済み</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                filterStatus === 'completed' ? 'bg-white/20' : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {completedCount}
-            </span>
-          </button>
+        <button
+          onClick={() => setFilterStatus('completed')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+            filterStatus === 'completed'
+              ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+              : 'bg-black/[0.03] dark:bg-white/[0.05] border border-[var(--border-subtle)] text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+          }`}
+        >
+          <span>完了済み</span>
+          <span className="text-[10px] opacity-80 num-tabular">
+            {completedCount}
+          </span>
+        </button>
 
-          <button
-            onClick={() => setFilterStatus('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              filterStatus === 'all'
-                ? 'bg-pink-600 text-white shadow-xs'
-                : 'bg-white border border-gray-200/80 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            すべて ({oshiFiltered.length})
-          </button>
-        </div>
+        <button
+          onClick={() => setFilterStatus('all')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            filterStatus === 'all'
+              ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+              : 'bg-black/[0.03] dark:bg-white/[0.05] border border-[var(--border-subtle)] text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+          }`}
+        >
+          すべて ({oshiFiltered.length})
+        </button>
       </div>
 
       {/* Todos List */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xs p-4 sm:p-6">
+      <div className="bento-card rounded-xl p-4 sm:p-5">
         {displayedTodos.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-            <CheckCircle2 className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm font-bold text-gray-600 mb-1">
+          <div className="text-center py-10 bg-black/[0.01] dark:bg-white/[0.01] rounded-lg border border-dashed border-[var(--border-subtle)]">
+            <CheckCircle2 className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+            <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
               {filterStatus === 'uncompleted'
                 ? '未完了のTODOはありません'
                 : filterStatus === 'completed'
                 ? '完了したTODOはまだありません'
-                : 'TODOが登録されていません'}
+                : '登録されているTODOはありません'}
             </p>
-            <p className="text-xs text-gray-400 mb-4">
-              ライブの持ち物チェックや予約タスクを登録しましょう！
+            <p className="text-[11px] text-neutral-400 mb-3">
+              ライブの持ち物チェックやチケット申し込み等のTODOを登録しましょう！
             </p>
             <button
               onClick={() => onOpenTodoModal()}
-              className="px-4 py-2 rounded-xl bg-pink-50 text-pink-600 hover:bg-pink-100 font-bold text-xs transition inline-flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-neutral-800 dark:text-neutral-200 font-semibold text-xs transition inline-flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>TODOを登録する</span>
+              <span>TODOを登録</span>
             </button>
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {displayedTodos.map((todo) => {
               const isDueToday = todo.dueDate === todayStr;
               const isOverdue = !todo.completed && todo.dueDate && todo.dueDate < todayStr;
@@ -186,61 +176,61 @@ export const TodoView: React.FC<TodoViewProps> = ({ onOpenTodoModal }) => {
               return (
                 <div
                   key={todo.id}
-                  className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 group ${
+                  className={`p-3.5 rounded-xl border transition flex items-center justify-between gap-3 group ${
                     todo.completed
-                      ? 'bg-gray-50/60 border-gray-100 opacity-60'
+                      ? 'bg-black/[0.02] dark:bg-white/[0.02] border-[var(--border-subtle)] opacity-55'
                       : isOverdue
-                      ? 'bg-rose-50/30 border-rose-200/80 shadow-2xs'
+                      ? 'bg-rose-500/10 border-rose-500/25'
                       : isDueToday
-                      ? 'bg-amber-50/30 border-amber-200/80 shadow-2xs'
-                      : 'bg-white border-gray-100 hover:border-pink-200 hover:bg-pink-50/20 shadow-2xs'
+                      ? 'bg-amber-500/10 border-amber-500/25'
+                      : 'border-[var(--border-subtle)] hover:border-[var(--border-muted)] bg-[var(--bg-surface)]'
                   }`}
                 >
                   {/* Left: Complete Toggle & Info */}
                   <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
                     <button
                       onClick={() => handleToggleTodo(todo)}
-                      className="p-1 text-gray-300 hover:text-emerald-500 transition shrink-0 mt-0.5 sm:mt-0"
+                      className="p-1 text-neutral-400 hover:text-emerald-500 transition shrink-0 mt-0.5 sm:mt-0"
                       title={todo.completed ? '未完了に戻す' : '完了にする'}
                     >
                       {todo.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50" />
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50 dark:fill-emerald-950" />
                       ) : (
-                        <Circle className="w-5 h-5 stroke-[2]" />
+                        <Circle className="w-5 h-5 stroke-[1.8]" />
                       )}
                     </button>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-0.5">
                         <span
-                          className={`text-sm font-bold ${
-                            todo.completed ? 'line-through text-gray-400' : 'text-gray-900'
+                          className={`text-xs font-semibold ${
+                            todo.completed ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'
                           }`}
                         >
                           {todo.title}
                         </span>
 
                         {todo.priority === 'high' && (
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                             優先度: 高
                           </span>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-neutral-400">
                         {todo.dueDate && (
                           <span
-                            className={`flex items-center gap-1 font-semibold ${
+                            className={`flex items-center gap-1 font-medium num-tabular ${
                               todo.completed
-                                ? 'text-gray-400'
+                                ? 'text-neutral-400'
                                 : isOverdue
-                                ? 'text-rose-600 font-bold'
+                                ? 'text-rose-600 dark:text-rose-400 font-bold'
                                 : isDueToday
-                                ? 'text-amber-600 font-bold'
-                                : 'text-gray-500'
+                                ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                : 'text-neutral-400'
                             }`}
                           >
-                            <Clock className="w-3.5 h-3.5" />
+                            <Clock className="w-3 h-3" />
                             {isDueToday
                               ? '今日が期限！'
                               : isOverdue
@@ -251,45 +241,39 @@ export const TodoView: React.FC<TodoViewProps> = ({ onOpenTodoModal }) => {
 
                         {oshi && (
                           <span
-                            className="inline-flex items-center gap-1 text-[11px] font-bold"
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold"
                             style={{ color: oshi.color }}
                           >
                             <Heart className="w-3 h-3 fill-current" />
-                            {oshi.name}
+                            <span>{oshi.name}</span>
                           </span>
                         )}
 
                         {event && (
-                          <span className="text-[11px] text-gray-400 flex items-center gap-1 truncate max-w-[200px]">
-                            <Calendar className="w-3 h-3" />
-                            {event.title}
+                          <span className="flex items-center gap-1 text-[10px] text-neutral-400">
+                            <Calendar className="w-3 h-3 text-neutral-400" />
+                            <span>{event.title}</span>
                           </span>
                         )}
                       </div>
-
-                      {todo.memo && (
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">
-                          {todo.memo}
-                        </p>
-                      )}
                     </div>
                   </div>
 
-                  {/* Right: Actions */}
+                  {/* Right Actions */}
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => onOpenTodoModal(todo)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+                      className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition"
                       title="編集"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setTodoToDelete(todo)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                      className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-500 transition"
                       title="削除"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -299,6 +283,7 @@ export const TodoView: React.FC<TodoViewProps> = ({ onOpenTodoModal }) => {
         )}
       </div>
 
+      {/* Confirm Modal */}
       <ConfirmModal
         isOpen={!!todoToDelete}
         onClose={() => setTodoToDelete(null)}

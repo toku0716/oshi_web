@@ -133,8 +133,6 @@ const MainApp: React.FC = () => {
     handleOpenTodoModal(undefined, event.id);
   };
 
-  const uncompletedTodoCount = todos.filter((t) => !t.completed).length;
-
   // Maintenance Preview Mode (triggered from admin menu)
   if (isPreviewingMaintenance) {
     return (
@@ -142,10 +140,10 @@ const MainApp: React.FC = () => {
         maintenance={
           maintenance || {
             enabled: true,
-            title: 'ただいまメンテナンス中です',
+            title: 'システムメンテナンス実施中',
             message:
-              'より快適にご利用いただけるよう、システムの改善および更新作業を行っております。\nご不便をおかけいたしますが、完了まで今しばらくお待ちください。',
-            estimatedEnd: '本日 18:00頃',
+              '機能向上およびインフラストラクチャ保守作業を実施しております。\n完了まで今しばらくお待ちください。',
+            estimatedEnd: '本日 18:00',
           }
         }
         onRecheck={checkMaintenance}
@@ -174,31 +172,34 @@ const MainApp: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#121318] text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center p-4 transition-colors">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center text-white font-extrabold text-2xl shadow-lg shadow-pink-500/20 mb-4">
+      <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col items-center justify-center p-4 transition-colors">
+        <div className="w-12 h-12 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-xl shadow-xs mb-3">
           推
         </div>
-        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">推し活データを読み込み中...</p>
+        <p className="text-xs font-semibold text-neutral-400">データを読み込み中...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-[#121318] text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200 relative">
+    <div className="min-h-screen flex bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200 relative">
       {/* Admin Bypass Sticky Notice */}
       {maintenance?.enabled && isAdminBypass && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2 text-xs font-bold shadow-md">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-neutral-900 text-white px-4 py-2 text-xs font-bold shadow-xs">
           <div className="flex items-center justify-between max-w-6xl mx-auto gap-2">
-            <span className="truncate">🔧 メンテナンス中モードが有効です（現在、管理者プレビュー中）</span>
+            <span className="truncate flex items-center gap-1.5">
+              <Wrench className="w-3.5 h-3.5 text-amber-400" />
+              <span>システム保守モード稼働中（管理者プレビュー）</span>
+            </span>
             <div className="flex items-center gap-2 shrink-0">
               <a
                 href="https://github.com/toku0716/oshi_web/actions/workflows/maintenance.yml"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2.5 py-1 rounded bg-black/30 hover:bg-black/40 transition text-xs font-semibold flex items-center gap-1 text-white shadow-2xs"
+                className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 transition text-xs font-semibold flex items-center gap-1 text-white shadow-2xs"
               >
-                <Wrench className="w-3 h-3 text-amber-300" />
-                <span>メンテナンス終了（GitHub）</span>
+                <Wrench className="w-3 h-3 text-neutral-300" />
+                <span>GitHub Actions</span>
                 <ExternalLink className="w-2.5 h-2.5" />
               </a>
               <button
@@ -209,7 +210,7 @@ const MainApp: React.FC = () => {
                   } catch {}
                   setIsAdminBypass(false);
                 }}
-                className="px-2.5 py-1 rounded bg-black/20 hover:bg-black/30 transition text-xs font-semibold"
+                className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 transition text-xs font-semibold"
               >
                 プレビュー終了
               </button>

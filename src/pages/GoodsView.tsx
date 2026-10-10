@@ -16,7 +16,6 @@ import {
   List,
   Heart,
   MapPin,
-  TrendingUp,
   X,
 } from 'lucide-react';
 
@@ -41,23 +40,18 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
   // Filter logic
   const filteredGoods = useMemo(() => {
     return goods.filter((item) => {
-      // Oshi filter
       if (activeOshiId !== 'all' && item.oshiId !== activeOshiId) {
         return false;
       }
-      // Favorite filter
       if (onlyFavorites && !item.isFavorite) {
         return false;
       }
-      // Category filter
       if (selectedCategory !== 'all' && item.category !== selectedCategory) {
         return false;
       }
-      // Status filter
       if (selectedStatus !== 'all' && item.openStatus !== selectedStatus) {
         return false;
       }
-      // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesName = item.name.toLowerCase().includes(q);
@@ -83,7 +77,6 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
       if (sortBy === 'date-desc') {
         return (b.purchaseDate || '').localeCompare(a.purchaseDate || '');
       }
-      // Default: recent
       return (b.purchaseDate || b.createdAt).localeCompare(a.purchaseDate || a.createdAt);
     });
   }, [filteredGoods, sortBy]);
@@ -107,45 +100,47 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header & Add Button */}
-      <div className="bg-white dark:bg-[#161822] rounded-xl border border-gray-200 dark:border-[#262838] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4 pb-24 md:pb-12 max-w-5xl mx-auto">
+      {/* Header & Quick Summary */}
+      <div className="bento-card rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Package className="w-5 h-5 text-pink-500" />
+          <h2 className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white flex items-center gap-2">
             <span>グッズ管理</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-neutral-500 dark:text-neutral-400 num-tabular">
+              {goods.length}点
+            </span>
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            登録した推しグッズと投資額を管理できます。
+          <p className="text-xs text-neutral-400 mt-0.5">
+            コレクション一覧と購入金額まとめ
           </p>
         </div>
 
         <button
           onClick={() => onOpenGoodsModal()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-semibold text-xs transition self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 font-semibold text-xs shadow-xs active:scale-95 transition self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>グッズを登録</span>
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white dark:bg-[#161822] rounded-xl border border-gray-200 dark:border-[#262838] p-4 sm:p-5 space-y-3">
-        {/* Top search & View toggles */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      <div className="bento-card rounded-xl p-3.5 sm:p-4 space-y-3">
+        {/* Search & View toggles */}
+        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="グッズ名、保管場所、メモから検索..."
+              placeholder="品名、保管場所、メモ等で検索..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-[var(--border-muted)] transition"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 p-0.5"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -157,7 +152,7 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500/20 cursor-pointer"
+              className="px-3 py-2 text-xs font-medium rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-800 dark:text-neutral-200 focus:outline-none cursor-pointer"
             >
               <option value="recent">登録が新しい順</option>
               <option value="date-desc">購入日が新しい順</option>
@@ -166,37 +161,37 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
             </select>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-xl p-1">
+            <div className="flex items-center bg-black/[0.03] dark:bg-white/[0.05] rounded-xl p-1 border border-[var(--border-subtle)]">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-1.5 rounded-lg transition ${
-                  viewMode === 'grid' ? 'bg-white text-pink-600 shadow-xs' : 'text-gray-400 hover:text-gray-600'
+                  viewMode === 'grid' ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-2xs' : 'text-neutral-400 hover:text-neutral-600'
                 }`}
                 title="グリッド表示"
               >
-                <LayoutGrid className="w-4 h-4" />
+                <LayoutGrid className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-1.5 rounded-lg transition ${
-                  viewMode === 'list' ? 'bg-white text-pink-600 shadow-xs' : 'text-gray-400 hover:text-gray-600'
+                  viewMode === 'list' ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-2xs' : 'text-neutral-400 hover:text-neutral-600'
                 }`}
                 title="リスト表示"
               >
-                <List className="w-4 h-4" />
+                <List className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         </div>
 
         {/* Filter chips */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-subtle)]">
           <button
             onClick={() => setOnlyFavorites(!onlyFavorites)}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 border ${
+            className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 border ${
               onlyFavorites
-                ? 'bg-rose-50 border-rose-200 text-rose-600'
-                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+                : 'bg-black/[0.02] dark:bg-white/[0.03] border-[var(--border-subtle)] text-neutral-600 dark:text-neutral-300 hover:bg-black/[0.05]'
             }`}
           >
             <Heart className={`w-3 h-3 ${onlyFavorites ? 'fill-rose-500' : ''}`} />
@@ -207,7 +202,7 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value as any)}
-            className="px-2.5 py-1 text-xs font-semibold rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none"
+            className="px-2.5 py-1 text-xs font-medium rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-700 dark:text-neutral-300 focus:outline-none"
           >
             <option value="all">すべてのカテゴリ</option>
             {(Object.keys(GOODS_CATEGORY_CONFIG) as GoodsCategory[]).map((cat) => (
@@ -221,7 +216,7 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as any)}
-            className="px-2.5 py-1 text-xs font-semibold rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none"
+            className="px-2.5 py-1 text-xs font-medium rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-700 dark:text-neutral-300 focus:outline-none"
           >
             <option value="all">すべての状態</option>
             {(Object.keys(GOODS_STATUS_CONFIG) as GoodsOpenStatus[]).map((st) => (
@@ -234,61 +229,51 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
           {hasActiveFilters && (
             <button
               onClick={resetFilters}
-              className="text-xs text-rose-500 hover:text-rose-700 font-bold px-2 py-1 ml-auto flex items-center gap-1"
+              className="text-xs text-rose-500 hover:text-rose-600 font-medium px-2 py-1 ml-auto flex items-center gap-1 transition"
             >
               <X className="w-3.5 h-3.5" />
-              条件をリセット
+              <span>解除</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Summary KPI Bar */}
-      <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-blue-500/10 border border-pink-100 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-pink-600" />
-          <span className="font-bold text-gray-800">
-            表示中: {sortedGoods.length}種類 ({totalItemsCount}点)
-          </span>
-        </div>
-        <div className="text-right">
-          <span className="text-xs text-gray-500 font-medium mr-1.5">合計投資額:</span>
-          <span className="text-lg font-black text-pink-600 tracking-tight">
-            {formatCurrency(totalSpent)}
-          </span>
-        </div>
+      {/* Summary Stat Line */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-2 text-xs text-neutral-500 dark:text-neutral-400 num-tabular font-medium">
+        <span>表示中: <strong className="text-neutral-900 dark:text-white">{sortedGoods.length}</strong> 種類 ({totalItemsCount}点)</span>
+        <span>購入総額: <strong className="text-neutral-950 dark:text-white font-bold">{formatCurrency(totalSpent)}</strong></span>
       </div>
 
       {/* Goods Collection Output */}
       {sortedGoods.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-xs p-12 text-center">
-          <Package className="w-12 h-12 text-gray-300 mx-auto mb-2 stroke-1" />
-          <h3 className="text-base font-bold text-gray-700 mb-1">
+        <div className="bento-card rounded-xl p-12 text-center">
+          <Package className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mx-auto mb-2 stroke-1" />
+          <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-1">
             該当するグッズがありません
           </h3>
-          <p className="text-xs text-gray-400 mb-5">
-            {hasActiveFilters ? '絞り込み条件を変更してみてください。' : '推しのグッズを登録してコレクションを楽しみましょう！'}
+          <p className="text-xs text-neutral-400 mb-4">
+            {hasActiveFilters ? '検索・絞り込み条件に一致するグッズがありません。' : '登録されているグッズはありません。最初のグッズを登録してみましょう。'}
           </p>
           {hasActiveFilters ? (
             <button
               onClick={resetFilters}
-              className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition"
+              className="px-3.5 py-1.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-neutral-700 dark:text-neutral-200 font-semibold text-xs transition"
             >
-              検索条件を解除
+              条件をリセット
             </button>
           ) : (
             <button
               onClick={() => onOpenGoodsModal()}
-              className="px-5 py-2.5 rounded-xl bg-pink-500 text-white font-bold text-xs hover:bg-pink-600 transition shadow-xs inline-flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-xs transition inline-flex items-center gap-1.5 shadow-xs"
             >
-              <Plus className="w-4 h-4" />
-              <span>グッズを登録する</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>グッズを登録</span>
             </button>
           )}
         </div>
       ) : viewMode === 'grid' ? (
         /* Grid View */
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {sortedGoods.map((item) => {
             const oshi = oshis.find((o) => o.id === item.oshiId);
 
@@ -296,10 +281,10 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
               <div
                 key={item.id}
                 onClick={() => onSelectGoods(item)}
-                className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-pink-200 transition duration-200 cursor-pointer flex flex-col"
+                className="group bento-card rounded-xl overflow-hidden hover:shadow-md cursor-pointer flex flex-col transition-all"
               >
                 {/* Image Aspect ratio container */}
-                <div className="aspect-square bg-gray-50 relative overflow-hidden flex items-center justify-center border-b border-gray-50">
+                <div className="aspect-square bg-black/[0.02] dark:bg-white/[0.02] relative overflow-hidden flex items-center justify-center border-b border-[var(--border-subtle)]">
                   {item.image ? (
                     <img
                       src={item.image}
@@ -307,47 +292,45 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
                   ) : (
-                    <Package className="w-12 h-12 text-gray-200 stroke-1" />
+                    <Package className="w-8 h-8 text-neutral-300 dark:text-neutral-600 stroke-1" />
                   )}
 
                   {/* Favorite badge */}
                   {item.isFavorite && (
-                    <span className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-white/90 backdrop-blur-xs shadow-xs text-rose-500">
-                      <Heart className="w-3.5 h-3.5 fill-current" />
+                    <span className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 border border-black/5 dark:border-white/10 shadow-xs text-rose-500">
+                      <Heart className="w-3 h-3 fill-current" />
                     </span>
                   )}
 
                   {/* Status chip */}
-                  <span className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-xs shadow-xs text-gray-700">
+                  <span className="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/90 dark:bg-neutral-900/90 border border-black/5 dark:border-white/10 text-neutral-700 dark:text-neutral-200">
                     {GOODS_STATUS_CONFIG[item.openStatus]?.label || '所持'}
                   </span>
                 </div>
 
                 {/* Details */}
-                <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
+                <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between">
                   <div>
                     {oshi && (
                       <p
-                        className="text-[11px] font-bold truncate mb-1"
+                        className="text-[10px] font-semibold truncate mb-0.5"
                         style={{ color: oshi.color }}
                       >
                         {oshi.name}
                       </p>
                     )}
-                    <h3 className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-pink-600 transition leading-snug">
+                    <h3 className="text-xs font-semibold text-neutral-900 dark:text-white line-clamp-2 leading-snug">
                       {item.name}
                     </h3>
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-baseline justify-between">
-                    <div>
-                      <span className="text-sm sm:text-base font-black text-pink-600">
-                        {formatCurrency(item.price)}
-                      </span>
-                    </div>
+                  <div className="mt-2.5 pt-2 border-t border-[var(--border-subtle)] flex items-baseline justify-between num-tabular">
+                    <span className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white">
+                      {formatCurrency(item.price)}
+                    </span>
                     {item.quantity > 1 && (
-                      <span className="text-xs text-gray-400 font-semibold">
-                        × {item.quantity}個
+                      <span className="text-[10px] text-neutral-400 font-medium">
+                        ×{item.quantity}
                       </span>
                     )}
                   </div>
@@ -358,7 +341,7 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
         </div>
       ) : (
         /* List View */
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-xs divide-y divide-gray-100 overflow-hidden">
+        <div className="bento-card rounded-xl divide-y divide-[var(--border-subtle)] overflow-hidden">
           {sortedGoods.map((item) => {
             const oshi = oshis.find((o) => o.id === item.oshiId);
 
@@ -366,50 +349,50 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
               <div
                 key={item.id}
                 onClick={() => onSelectGoods(item)}
-                className="p-3.5 sm:p-4 hover:bg-pink-50/20 transition cursor-pointer flex items-center justify-between gap-4 group"
+                className="p-3 sm:p-3.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition cursor-pointer flex items-center justify-between gap-3 group"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-[var(--border-subtle)] overflow-hidden shrink-0 flex items-center justify-center">
                     {item.image ? (
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     ) : (
-                      <Package className="w-6 h-6 text-gray-300 stroke-1" />
+                      <Package className="w-5 h-5 text-neutral-400 stroke-1" />
                     )}
                   </div>
 
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
                       <GoodsCategoryBadge category={item.category} />
                       <GoodsStatusBadge status={item.openStatus} />
                       {oshi && (
-                        <span className="text-xs font-bold truncate" style={{ color: oshi.color }}>
+                        <span className="text-[11px] font-semibold truncate" style={{ color: oshi.color }}>
                           {oshi.name}
                         </span>
                       )}
                       {item.isFavorite && (
-                        <Heart className="w-3.5 h-3.5 text-rose-500 fill-current" />
+                        <Heart className="w-3 h-3 text-rose-500 fill-current" />
                       )}
                     </div>
 
-                    <h3 className="text-sm font-bold text-gray-900 truncate group-hover:text-pink-600 transition">
+                    <h3 className="text-xs font-semibold text-neutral-900 dark:text-white truncate">
                       {item.name}
                     </h3>
 
                     {item.storageLocation && (
-                      <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 text-pink-500" />
-                        {item.storageLocation}
+                      <p className="text-[10px] text-neutral-400 flex items-center gap-0.5 mt-0.5">
+                        <MapPin className="w-3 h-3 text-neutral-400" />
+                        <span>{item.storageLocation}</span>
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <p className="text-sm sm:text-base font-black text-pink-600">
+                <div className="text-right shrink-0 num-tabular">
+                  <p className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white">
                     {formatCurrency(item.price)}
                   </p>
                   {item.quantity > 1 && (
-                    <p className="text-xs text-gray-400">×{item.quantity}個</p>
+                    <p className="text-[10px] text-neutral-400">×{item.quantity}</p>
                   )}
                 </div>
               </div>

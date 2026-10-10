@@ -76,7 +76,7 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      showToast('グッズ名を入力してください', 'error');
+      showToast('品名を入力してください', 'error');
       return;
     }
 
@@ -102,11 +102,11 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
 
       await goodsRepository.save(goodsData);
       await refreshAllData();
-      showToast(targetGoods ? 'グッズ情報を更新しました' : 'グッズを登録しました！✨', 'success');
+      showToast(targetGoods ? 'グッズ情報を更新しました' : 'グッズを登録しました', 'success');
       onClose();
     } catch (err) {
       console.error(err);
-      showToast('グッズの保存に失敗しました', 'error');
+      showToast('グッズ情報の保存に失敗しました', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -116,17 +116,17 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={targetGoods ? 'グッズの編集' : '新しいグッズの登録'}
+      title={targetGoods ? 'グッズの編集' : '新しいグッズを登録'}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Image Upload & Preview */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-            グッズ写真
+          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">
+            アイテム写真 / 画像
           </label>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="relative w-24 h-24 rounded-xl border border-dashed border-gray-300 dark:border-[#35384d] bg-gray-50 dark:bg-[#1a1c28] flex items-center justify-center overflow-hidden shrink-0 group">
+            <div className="relative w-24 h-24 rounded-xl border border-dashed border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] flex items-center justify-center overflow-hidden shrink-0 group">
               {image ? (
                 <>
                   <img src={image} alt="グッズプレビュー" className="w-full h-full object-cover" />
@@ -141,9 +141,9 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
                   </button>
                 </>
               ) : (
-                <div className="text-center p-2 text-gray-400">
+                <div className="text-center p-2 text-neutral-400">
                   <ImageIcon className="w-6 h-6 mx-auto mb-1 stroke-1" />
-                  <span className="text-[10px] block leading-tight">写真なし</span>
+                  <span className="text-[10px] block leading-tight">画像なし</span>
                 </div>
               )}
             </div>
@@ -151,7 +151,7 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
             <div className="space-y-1.5 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 {/* カメラで直接撮影 */}
-                <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold cursor-pointer transition shadow-sm">
+                <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-semibold cursor-pointer transition shadow-xs">
                   <Camera className="w-3.5 h-3.5" />
                   <span>カメラで撮影</span>
                   <input
@@ -164,9 +164,9 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
                 </label>
 
                 {/* アルバムから選択 */}
-                <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35384d] hover:bg-gray-50 dark:hover:bg-[#202230] text-gray-700 dark:text-gray-200 text-xs font-semibold cursor-pointer transition">
-                  <ImageIcon className="w-3.5 h-3.5 text-gray-500" />
-                  <span>アルバムから選択</span>
+                <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--border-subtle)] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] text-neutral-700 dark:text-neutral-200 text-xs font-semibold cursor-pointer transition">
+                  <ImageIcon className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>ファイルから選択</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -180,15 +180,15 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setImage(undefined)}
-                    className="inline-flex items-center gap-1 px-2 py-2 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-medium transition"
+                    className="inline-flex items-center gap-1 px-2 py-2 rounded-lg text-rose-500 hover:bg-rose-500/10 text-xs font-medium transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>写真を削除</span>
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-tight">
-                「カメラで撮影」を押すと端末のカメラが起動します。
+              <p className="text-[11px] text-neutral-400 leading-tight">
+                端末のカメラ撮影または保存されている画像ファイルを取り込めます。
               </p>
             </div>
           </div>
@@ -196,29 +196,29 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
 
         {/* Goods Name */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            グッズ名 <span className="text-rose-500">*</span>
+          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+            品名 / グッズ名 <span className="text-rose-500">*</span>
           </label>
           <input
             type="text"
             required
-            placeholder="例: アクリルスタンド 2026夏ver."
+            placeholder="例: アクリルスタンド 2026年ツアーver."
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
           />
         </div>
 
         {/* Oshi & Category */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              推し
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              関連する推し
             </label>
             <select
               value={oshiId}
               onChange={(e) => setOshiId(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             >
               <option value="">指定なし</option>
               {oshis.map((o) => (
@@ -230,13 +230,13 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              カテゴリ
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              カテゴリー
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as GoodsCategory)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             >
               {(Object.keys(GOODS_CATEGORY_CONFIG) as GoodsCategory[]).map((cat) => (
                 <option key={cat} value={cat}>
@@ -250,8 +250,8 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
         {/* Price & Quantity & Purchase Date */}
         <div className="grid grid-cols-3 gap-2.5">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              金額 (円)
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              単価 (円)
             </label>
             <input
               type="number"
@@ -260,12 +260,12 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
               placeholder="0"
               value={price}
               onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
-              className="w-full px-2.5 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full px-2.5 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition num-tabular"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
               数量
             </label>
             <input
@@ -274,19 +274,19 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
               max="999"
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
-              className="w-full px-2.5 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full px-2.5 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition num-tabular"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
               購入日
             </label>
             <input
               type="date"
               value={purchaseDate}
               onChange={(e) => setPurchaseDate(e.target.value)}
-              className="w-full px-2 py-2 text-xs sm:text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white"
+              className="w-full px-2 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
         </div>
@@ -294,13 +294,13 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
         {/* Open Status & Storage */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              開封状態
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              状態
             </label>
             <select
               value={openStatus}
               onChange={(e) => setOpenStatus(e.target.value as GoodsOpenStatus)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             >
               {(Object.keys(GOODS_STATUS_CONFIG) as GoodsOpenStatus[]).map((st) => (
                 <option key={st} value={st}>
@@ -311,15 +311,15 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              保管場所
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              保管場所 / 収納場所
             </label>
             <input
               type="text"
-              placeholder="例: 自宅祭壇 / ファイル3"
+              placeholder="例: キャビネット上段 / ファイルケースA"
               value={storageLocation}
               onChange={(e) => setStorageLocation(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
         </div>
@@ -329,28 +329,28 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
           <button
             type="button"
             onClick={() => setIsFavorite(!isFavorite)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${
               isFavorite
-                ? 'bg-rose-50 border-rose-200 text-rose-600'
-                : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+                : 'bg-black/[0.02] dark:bg-white/[0.03] border-[var(--border-subtle)] text-neutral-600 dark:text-neutral-400 hover:bg-black/[0.05]'
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-rose-500' : ''}`} />
-            <span>お気に入りグッズに設定</span>
+            <span>お気に入り登録</span>
           </button>
         </div>
 
         {/* Memo */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            メモ
+          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+            備考 / メモ
           </label>
           <textarea
             rows={2}
-            placeholder="特典情報、ロット、感想など"
+            placeholder="購入場所、特典、ロット番号、メモなど"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 resize-none"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition resize-none"
           />
         </div>
 
@@ -359,14 +359,14 @@ export const GoodsModal: React.FC<GoodsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition"
+            className="px-4 py-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition"
           >
             キャンセル
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-5 py-2 text-sm font-bold text-white bg-pink-500 hover:bg-pink-600 rounded-xl transition shadow-xs disabled:opacity-50"
+            className="px-4 py-2 text-xs font-semibold text-white dark:text-neutral-900 bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 rounded-lg transition shadow-xs disabled:opacity-50"
           >
             {isSubmitting ? '保存中...' : targetGoods ? '更新する' : '登録する'}
           </button>

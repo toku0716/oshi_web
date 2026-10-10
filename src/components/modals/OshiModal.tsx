@@ -5,7 +5,7 @@ import { ColorPicker } from '../common/ColorPicker';
 import { oshiRepository } from '../../repository';
 import { useApp } from '../../context/AppContext';
 import { resizeAndConvertImageToBase64 } from '../../utils/helpers';
-import { Camera, Trash2, Heart } from 'lucide-react';
+import { Camera, Trash2, User } from 'lucide-react';
 
 interface OshiModalProps {
   isOpen: boolean;
@@ -92,7 +92,7 @@ export const OshiModal: React.FC<OshiModalProps> = ({
       onClose();
     } catch (err) {
       console.error(err);
-      showToast('保存に失敗しました', 'error');
+      showToast('情報の保存に失敗しました', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +102,7 @@ export const OshiModal: React.FC<OshiModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={targetOshi ? '推し情報の編集' : '新しい推しを登録'}
+      title={targetOshi ? '推しの編集' : '新しい推しを登録'}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -110,19 +110,19 @@ export const OshiModal: React.FC<OshiModalProps> = ({
         <div className="flex flex-col items-center justify-center gap-2">
           <div className="relative group">
             <div
-              className="w-24 h-24 rounded-full border-4 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-[#1a1c28] shadow-md relative"
+              className="w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center bg-black/[0.03] dark:bg-white/[0.05] shadow-xs relative"
               style={{ borderColor: color }}
             >
               {image ? (
-                <img src={image} alt="推しプレビュー" className="w-full h-full object-cover" />
+                <img src={image} alt="プレビュー" className="w-full h-full object-cover" />
               ) : (
-                <Heart className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                <User className="w-10 h-10 text-neutral-300 dark:text-neutral-600" />
               )}
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold cursor-pointer transition shadow-sm">
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-semibold cursor-pointer transition shadow-xs">
               <Camera className="w-3.5 h-3.5" />
               <span>カメラで撮影</span>
               <input
@@ -134,8 +134,8 @@ export const OshiModal: React.FC<OshiModalProps> = ({
               />
             </label>
 
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-[#35384d] hover:bg-gray-50 dark:hover:bg-[#202230] text-gray-700 dark:text-gray-200 text-xs font-semibold cursor-pointer transition">
-              <span>アルバムから選択</span>
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] text-neutral-700 dark:text-neutral-200 text-xs font-semibold cursor-pointer transition">
+              <span>ファイルから選択</span>
               <input
                 type="file"
                 accept="image/*"
@@ -148,7 +148,7 @@ export const OshiModal: React.FC<OshiModalProps> = ({
               <button
                 type="button"
                 onClick={() => setImage(undefined)}
-                className="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-1 font-medium px-2 py-1.5"
+                className="text-xs text-rose-500 hover:text-rose-600 flex items-center gap-1 font-medium px-2 py-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>写真を削除</span>
@@ -160,29 +160,29 @@ export const OshiModal: React.FC<OshiModalProps> = ({
         {/* Name & Ruby */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
               推しの名前 <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               required
-              placeholder="例: 山田 花子"
+              placeholder="例: アイドル名、キャラクター名など"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              ふりがな
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              フリガナ (読み)
             </label>
             <input
               type="text"
-              placeholder="例: やまだ　はなこ "
+              placeholder="例: やまだ はなこ"
               value={ruby}
               onChange={(e) => setRuby(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
         </div>
@@ -190,16 +190,16 @@ export const OshiModal: React.FC<OshiModalProps> = ({
         {/* Category (Genre) & Group */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              種類 / ジャンル
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              カテゴリー
             </label>
             <input
               type="text"
               list="oshi-category-presets"
-              placeholder="例: アイドル、アニメなど"
+              placeholder="例: アイドル、アニメ、VTuberなど"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-[#35384d] focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white dark:bg-[#1a1b26] text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
             <datalist id="oshi-category-presets">
               {OSHI_CATEGORIES.map((cat) => (
@@ -209,22 +209,22 @@ export const OshiModal: React.FC<OshiModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              グループ / 所属
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+              所属 / グループ名
             </label>
             <input
               type="text"
-              placeholder="例: グループ名、作品名など"
+              placeholder="例: グループ名、所属事務所、作品名など"
               value={group}
               onChange={(e) => setGroup(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-[#35384d] focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white dark:bg-[#1a1b26] text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
         </div>
 
         {/* Quick Select Chips */}
         <div>
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1.5">種類をワンタップで選択（自由入力も可）:</p>
+          <p className="text-[11px] text-neutral-400 mb-1.5">カテゴリー選択（自由入力も可）:</p>
           <div className="flex flex-wrap gap-1.5">
             {OSHI_CATEGORIES.map((cat) => {
               const isSelected = category === cat;
@@ -235,8 +235,8 @@ export const OshiModal: React.FC<OshiModalProps> = ({
                   onClick={() => setCategory(isSelected ? '' : cat)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
                     isSelected
-                      ? 'bg-pink-500 text-white border-pink-500 shadow-sm'
-                      : 'bg-gray-50 dark:bg-[#1f212d] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-[#35384d] hover:bg-gray-100 dark:hover:bg-[#282a3a]'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-2xs'
+                      : 'bg-black/[0.02] dark:bg-white/[0.03] text-neutral-600 dark:text-neutral-400 border-[var(--border-subtle)] hover:bg-black/[0.05]'
                   }`}
                 >
                   {cat}
@@ -247,21 +247,21 @@ export const OshiModal: React.FC<OshiModalProps> = ({
         </div>
 
         {/* Member Color */}
-        <div className="p-3 bg-gray-50/70 rounded-xl border border-gray-100">
+        <div className="p-3 bg-black/[0.02] dark:bg-white/[0.03] rounded-xl border border-[var(--border-subtle)]">
           <ColorPicker value={color} onChange={setColor} />
         </div>
 
         {/* Anniversary / Debut Date */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              推し始めた日・記念日 <span className="text-[11px] font-normal text-gray-400">（未設定でもOK）</span>
+            <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+              活動開始日 / 記念日・推し始めた日 <span className="text-[11px] font-normal text-neutral-400">（任意）</span>
             </label>
             {debutDate && (
               <button
                 type="button"
                 onClick={() => setDebutDate('')}
-                className="text-[11px] text-gray-400 hover:text-rose-500 transition"
+                className="text-[11px] text-neutral-400 hover:text-rose-500 transition"
               >
                 ✕ 日付を解除
               </button>
@@ -271,24 +271,21 @@ export const OshiModal: React.FC<OshiModalProps> = ({
             type="date"
             value={debutDate}
             onChange={(e) => setDebutDate(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-[#35384d] focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 bg-white dark:bg-[#1a1b26] text-gray-900 dark:text-white"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
           />
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 leading-relaxed">
-            ※「いつの間にか好きになっていた」など正確な日付が分からない場合は空欄のままで構いません。大体の年月や、ファンクラブ入会日などを設定してもOKです。
-          </p>
         </div>
 
         {/* Memo */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            メモ / 好きなところ
+          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+            メモ・ファンクラブ情報
           </label>
           <textarea
             rows={2}
-            placeholder="ファンネーム、好きな歌、惹かれたきっかけなど"
+            placeholder="ファンクラブ会員番号、公式SNS、推し活メモなど"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 resize-none"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition resize-none"
           />
         </div>
 
@@ -297,16 +294,16 @@ export const OshiModal: React.FC<OshiModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition"
+            className="px-4 py-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition"
           >
             キャンセル
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-5 py-2 text-sm font-bold text-white bg-pink-500 hover:bg-pink-600 rounded-xl transition shadow-xs disabled:opacity-50"
+            className="px-4 py-2 text-xs font-semibold text-white dark:text-neutral-900 bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 rounded-lg transition shadow-xs disabled:opacity-50"
           >
-            {isSubmitting ? '保存中...' : targetOshi ? '更新' : '登録'}
+            {isSubmitting ? '保存中...' : targetOshi ? '更新する' : '登録する'}
           </button>
         </div>
       </form>

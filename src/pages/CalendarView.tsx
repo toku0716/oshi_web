@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { OshiEvent } from '../types';
 import { EventCategoryBadge, TicketStatusBadge, CountdownBadge } from '../components/common/Badge';
-import { formatJapaneseDate, getDaysDiff } from '../utils/helpers';
+import { formatJapaneseDate } from '../utils/helpers';
 import {
   ChevronLeft,
   ChevronRight,
@@ -115,34 +115,34 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const selectedDateEvents = eventsByDate[selectedDate] || [];
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Calendar Header */}
-      <div className="bg-white dark:bg-[#161822] rounded-xl border border-gray-200 dark:border-[#262838] p-4 sm:p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+    <div className="space-y-5 pb-24 md:pb-12 max-w-5xl mx-auto">
+      {/* Calendar Header Card */}
+      <div className="bento-card rounded-xl p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white num-tabular">
               {currentYear}年 {currentMonth}月
             </h2>
             <button
               onClick={goToToday}
-              className="text-xs px-2.5 py-1 rounded-lg bg-pink-50 text-pink-600 font-bold hover:bg-pink-100 transition"
+              className="text-[11px] px-2.5 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.12] text-neutral-700 dark:text-neutral-300 font-semibold transition"
             >
               今日
             </button>
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2">
-            <div className="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-200/60">
+            <div className="flex items-center bg-black/[0.03] dark:bg-white/[0.05] rounded-xl p-1 border border-[var(--border-subtle)]">
               <button
                 onClick={prevMonth}
-                className="p-1.5 rounded-lg text-gray-600 hover:bg-white hover:shadow-xs transition"
+                className="p-1 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 transition"
                 aria-label="前月"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={nextMonth}
-                className="p-1.5 rounded-lg text-gray-600 hover:bg-white hover:shadow-xs transition"
+                className="p-1 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 transition"
                 aria-label="次月"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -151,16 +151,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
             <button
               onClick={() => onOpenEventModal(selectedDate)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs shadow-xs transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 font-semibold text-xs shadow-xs active:scale-95 transition"
             >
-              <Plus className="w-4 h-4" />
-              <span>予定を追加</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>イベントを追加</span>
             </button>
           </div>
         </div>
 
         {/* Days of week */}
-        <div className="grid grid-cols-7 text-center text-xs font-bold text-gray-400 mb-2">
+        <div className="grid grid-cols-7 text-center text-xs font-semibold text-neutral-400 mb-1.5 tracking-tight">
           <span className="text-rose-500">日</span>
           <span>月</span>
           <span>火</span>
@@ -184,32 +184,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <button
                 key={cell.dateStr}
                 onClick={() => setSelectedDate(cell.dateStr)}
-                className={`min-h-[56px] sm:min-h-[78px] p-1 sm:p-1.5 rounded-xl sm:rounded-2xl transition flex flex-col justify-between text-left relative border ${
+                className={`min-h-[58px] sm:min-h-[76px] p-1.5 rounded-xl transition-all flex flex-col justify-between text-left relative border ${
                   isSelected
-                    ? 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/40 shadow-xs'
+                    ? 'ring-2 ring-neutral-900 dark:ring-white border-transparent bg-black/[0.03] dark:bg-white/[0.08]'
                     : isToday
-                    ? 'border-pink-300 bg-pink-50/20'
-                    : 'border-gray-100 hover:bg-gray-50/80 bg-white'
-                } ${!cell.isCurrentMonth ? 'opacity-40' : ''}`}
+                    ? 'border-neutral-400/60 dark:border-neutral-500/60 bg-black/[0.01] dark:bg-white/[0.02]'
+                    : 'border-[var(--border-subtle)] hover:border-[var(--border-muted)] bg-[var(--bg-surface)]'
+                } ${!cell.isCurrentMonth ? 'opacity-35' : ''}`}
               >
                 <div className="flex items-center justify-between w-full">
                   <span
-                    className={`text-xs font-extrabold w-6 h-6 flex items-center justify-center rounded-full ${
+                    className={`text-xs num-tabular w-5 h-5 flex items-center justify-center rounded-full ${
                       isToday
-                        ? 'bg-pink-500 text-white shadow-xs'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold'
                         : isSunday
-                        ? 'text-rose-600'
+                        ? 'text-rose-600 font-semibold'
                         : isSaturday
-                        ? 'text-sky-600'
-                        : 'text-gray-700'
+                        ? 'text-sky-600 font-semibold'
+                        : 'text-neutral-700 dark:text-neutral-300 font-medium'
                     }`}
                   >
                     {cell.day}
                   </span>
 
                   {dayEvents.length > 0 && (
-                    <span className="text-[10px] font-bold text-gray-400 hidden sm:inline">
-                      {dayEvents.length}件
+                    <span className="text-[10px] font-semibold text-neutral-400 hidden sm:inline num-tabular">
+                      {dayEvents.length}
                     </span>
                   )}
                 </div>
@@ -221,10 +221,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     return (
                       <div
                         key={ev.id}
-                        className="text-[10px] truncate px-1 py-0.2 rounded font-medium text-gray-700 hidden sm:block border-l-2"
+                        className="text-[10px] truncate px-1 py-0.2 rounded font-medium text-neutral-800 dark:text-neutral-200 hidden sm:block border-l-2"
                         style={{
                           borderColor: oshi?.color || '#ec4899',
-                          backgroundColor: oshi ? `${oshi.color}15` : '#fdf2f8',
+                          backgroundColor: oshi ? `${oshi.color}15` : 'rgba(0,0,0,0.04)',
                         }}
                       >
                         {ev.title}
@@ -246,8 +246,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     </div>
                   )}
                   {dayEvents.length > 2 && (
-                    <div className="hidden sm:block text-[9px] text-gray-400 font-semibold px-1">
-                      他 +{dayEvents.length - 2}件
+                    <div className="hidden sm:block text-[9px] text-neutral-400 font-medium px-1 num-tabular">
+                      +{dayEvents.length - 2}
                     </div>
                   )}
                 </div>
@@ -258,14 +258,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       </div>
 
       {/* Selected Date Events List */}
-      <div className="bg-white dark:bg-[#161822] rounded-3xl border border-gray-200 dark:border-[#262838] shadow-xs p-5 sm:p-6">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div className="bento-card rounded-xl p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-3.5 flex-wrap gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <CalendarIcon className="w-4 h-4 text-pink-500" />
-            <h3 className="font-extrabold text-base text-gray-900 dark:text-white">
-              {formatJapaneseDate(selectedDate)} の予定
+            <CalendarIcon className="w-4 h-4 text-neutral-400" />
+            <h3 className="font-bold text-sm text-neutral-950 dark:text-white num-tabular">
+              {formatJapaneseDate(selectedDate)}
             </h3>
-            <span className="text-xs text-gray-400 font-bold">
+            <span className="text-xs text-neutral-400 font-medium num-tabular">
               ({selectedDateEvents.length}件)
             </span>
             <CountdownBadge date={selectedDate} size="sm" />
@@ -273,27 +273,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           <button
             onClick={() => onOpenEventModal(selectedDate)}
-            className="text-xs font-bold text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 inline-flex items-center gap-1"
+            className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white inline-flex items-center gap-1 transition"
           >
             <Plus className="w-3.5 h-3.5" />
-            この日に予定を追加
+            <span>イベントを追加</span>
           </button>
         </div>
 
         {selectedDateEvents.length === 0 ? (
-          <div className="text-center py-10 bg-gray-50/60 dark:bg-[#1d202d] rounded-2xl border border-dashed border-gray-200 dark:border-[#35384d]">
-            <CalendarIcon className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">この日の予定はありません</p>
+          <div className="text-center py-8 bg-black/[0.01] dark:bg-white/[0.01] rounded-lg border border-dashed border-[var(--border-subtle)]">
+            <p className="text-xs text-neutral-400 mb-2">この日の登録イベントはありません</p>
             <button
               onClick={() => onOpenEventModal(selectedDate)}
-              className="px-3.5 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 hover:bg-pink-100 text-xs font-bold transition inline-flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-neutral-800 dark:text-neutral-200 text-xs font-semibold transition inline-flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>予定を登録する</span>
+              <span>イベントを登録</span>
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {selectedDateEvents.map((ev) => {
               const oshi = oshis.find((o) => o.id === ev.oshiId);
 
@@ -301,20 +300,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 <div
                   key={ev.id}
                   onClick={() => onSelectEvent(ev)}
-                  className="p-4 rounded-2xl border border-gray-200 dark:border-[#2e3146] bg-white dark:bg-[#191a26] hover:border-pink-300 dark:hover:border-pink-500/50 hover:bg-pink-50/20 dark:hover:bg-[#202232] transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs group"
+                  className="p-3.5 rounded-xl border border-[var(--border-subtle)] hover:border-[var(--border-muted)] hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                 >
                   <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-pink-100 transition">
-                      <CalendarIcon className="w-5 h-5" />
-                    </div>
-
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <EventCategoryBadge category={ev.category} />
                         <TicketStatusBadge status={ev.ticketStatus} />
                         {oshi && (
                           <span
-                            className="inline-flex items-center gap-1 text-xs font-bold"
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold"
                             style={{ color: oshi.color }}
                           >
                             <Heart className="w-3 h-3 fill-current" />
@@ -323,36 +318,36 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         )}
                       </div>
 
-                      <h4 className="font-extrabold text-gray-900 dark:text-white text-base group-hover:text-pink-600 dark:group-hover:text-pink-400 transition truncate">
+                      <h4 className="font-semibold text-neutral-900 dark:text-white text-sm group-hover:text-rose-600 dark:group-hover:text-rose-400 transition truncate">
                         {ev.title}
                       </h4>
 
-                      <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-neutral-400">
                         {ev.time && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="flex items-center gap-1 num-tabular">
+                            <Clock className="w-3 h-3 text-neutral-400" />
                             {ev.time}
                           </span>
                         )}
                         {ev.location && (
                           <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                            <MapPin className="w-3 h-3 text-neutral-400" />
                             {ev.location}
                           </span>
                         )}
                       </div>
 
                       {ev.memo && (
-                        <p className="text-xs text-gray-400 dark:text-gray-400 line-clamp-1 mt-1 bg-gray-50 dark:bg-[#222434] px-2 py-0.5 rounded">
+                        <p className="text-[11px] text-neutral-400 line-clamp-1 mt-1">
                           {ev.memo}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-[#2e3146]">
-                    <CountdownBadge date={ev.date} size="md" />
-                    <ArrowRightIcon className="w-4 h-4 text-gray-400 group-hover:text-pink-600 group-hover:translate-x-1 transition" />
+                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--border-subtle)]">
+                    <CountdownBadge date={ev.date} size="sm" />
+                    <ArrowRightIcon className="w-4 h-4 text-neutral-400 group-hover:translate-x-0.5 transition" />
                   </div>
                 </div>
               );

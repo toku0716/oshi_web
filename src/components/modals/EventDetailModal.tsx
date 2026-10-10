@@ -6,7 +6,7 @@ import { EventCategoryBadge, TicketStatusBadge } from '../common/Badge';
 import { useApp } from '../../context/AppContext';
 import { eventRepository } from '../../repository';
 import { formatJapaneseDate, getDaysDiff } from '../../utils/helpers';
-import { Clock, MapPin, Heart, Edit, Trash2, CheckSquare } from 'lucide-react';
+import { Clock, MapPin, Heart, Edit, Trash2, CheckSquare, Calendar } from 'lucide-react';
 
 interface EventDetailModalProps {
   isOpen: boolean;
@@ -39,14 +39,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       setIsDeleteConfirmOpen(false);
       onClose();
     } catch {
-      showToast('削除に失敗しました', 'error');
+      showToast('削除処理に失敗しました', 'error');
     }
   };
 
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title="イベント詳細" maxWidth="md">
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* Header & Badges */}
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -66,58 +66,58 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               )}
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-snug">
+            <h2 className="text-lg font-bold text-neutral-900 dark:text-white leading-snug">
               {event.title}
             </h2>
           </div>
 
           {/* Countdown Highlight */}
-          <div className="bg-pink-50/80 dark:bg-[#2a1c28] border border-pink-200/80 dark:border-pink-900/50 rounded-2xl p-4 flex items-center justify-between shadow-2xs">
+          <div className="bg-black/[0.02] dark:bg-white/[0.03] border border-[var(--border-subtle)] rounded-xl p-3.5 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-pink-500 text-white flex items-center justify-center font-bold text-lg shadow-xs">
-                📅
+              <div className="w-9 h-9 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-neutral-800 dark:text-neutral-200 flex items-center justify-center font-bold text-sm">
+                <Calendar className="w-4 h-4 text-neutral-500" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-300 font-medium">開催日</p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">{formatJapaneseDate(event.date)}</p>
+                <p className="text-xs text-neutral-400 font-medium">開催日</p>
+                <p className="text-sm font-bold text-neutral-900 dark:text-white num-tabular">{formatJapaneseDate(event.date)}</p>
               </div>
             </div>
             <div className="text-right">
               {daysDiff > 0 ? (
                 <div>
-                  <span className="text-xs text-pink-600 dark:text-pink-400 font-semibold">本番まであと</span>
-                  <p className="text-2xl font-black text-pink-600 dark:text-pink-400 tracking-tight">
-                    {daysDiff} <span className="text-xs font-normal">日</span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">開催まであと</span>
+                  <p className="text-2xl font-black text-neutral-950 dark:text-white tracking-tight num-tabular">
+                    {daysDiff} <span className="text-xs font-normal text-neutral-400">日</span>
                   </p>
                 </div>
               ) : daysDiff === 0 ? (
-                <span className="inline-block px-3 py-1 rounded-full bg-rose-500 text-white text-xs font-bold shadow-xs">
+                <span className="inline-block px-2.5 py-1 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-bold shadow-xs">
                   本日開催
                 </span>
               ) : (
-                <span className="text-xs text-gray-400 dark:text-gray-400 font-medium">終了したイベント</span>
+                <span className="text-xs text-neutral-400 font-medium">開催終了</span>
               )}
             </div>
           </div>
 
           {/* Details list */}
-          <div className="space-y-3 bg-gray-50/80 dark:bg-[#1f2234] rounded-xl p-3.5 border border-gray-200/80 dark:border-[#353950] text-sm">
+          <div className="space-y-2.5 bg-black/[0.01] dark:bg-white/[0.02] rounded-xl p-3.5 border border-[var(--border-subtle)] text-xs">
             {event.time && (
-              <div className="flex items-center gap-2.5 text-gray-700 dark:text-gray-200">
-                <Clock className="w-4 h-4 text-gray-400 shrink-0" />
-                <span className="font-medium">{event.time}</span>
+              <div className="flex items-center gap-2.5 text-neutral-700 dark:text-neutral-300">
+                <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
+                <span className="font-medium num-tabular">{event.time}</span>
               </div>
             )}
             {event.location && (
-              <div className="flex items-center gap-2.5 text-gray-700 dark:text-gray-200">
-                <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
+              <div className="flex items-center gap-2.5 text-neutral-700 dark:text-neutral-300">
+                <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
                 <span className="font-medium">{event.location}</span>
               </div>
             )}
             {event.memo && (
-              <div className="pt-2 border-t border-gray-200/60 dark:border-[#353950]">
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">メモ</p>
-                <p className="text-gray-800 dark:text-gray-200 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
+              <div className="pt-2 border-t border-[var(--border-subtle)]">
+                <p className="text-xs font-semibold text-neutral-400 mb-1">備考 / メモ</p>
+                <p className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap leading-relaxed">
                   {event.memo}
                 </p>
               </div>
@@ -125,10 +125,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           </div>
 
           {/* Action Footer */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-[#2b2f45]">
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
             <button
               onClick={() => setIsDeleteConfirmOpen(true)}
-              className="text-xs text-rose-600 hover:text-rose-700 p-2 rounded-lg hover:bg-rose-50 flex items-center gap-1.5 font-medium transition"
+              className="text-xs text-rose-500 hover:text-rose-600 p-2 rounded-lg hover:bg-rose-500/10 flex items-center gap-1.5 font-medium transition"
             >
               <Trash2 className="w-4 h-4" />
               <span>削除</span>
@@ -141,9 +141,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     onClose();
                     onAddTodoForEvent(event);
                   }}
-                  className="px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-semibold text-gray-700 flex items-center gap-1.5 transition"
+                  className="px-3 py-2 rounded-lg border border-[var(--border-subtle)] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] text-xs font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1.5 transition"
                 >
-                  <CheckSquare className="w-4 h-4 text-pink-500" />
+                  <CheckSquare className="w-4 h-4 text-neutral-500" />
                   <span>準備TODOを追加</span>
                 </button>
               )}
@@ -152,7 +152,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   onClose();
                   onEdit(event);
                 }}
-                className="px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 text-xs font-bold text-white flex items-center gap-1.5 transition shadow-xs"
+                className="px-4 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-xs font-semibold text-white dark:text-neutral-900 flex items-center gap-1.5 transition shadow-xs"
               >
                 <Edit className="w-4 h-4" />
                 <span>編集</span>
@@ -166,7 +166,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
-        title="イベント予定の削除"
+        title="イベントの削除"
         message={`「${event.title}」を削除してもよろしいですか？`}
         confirmLabel="削除する"
         variant="danger"

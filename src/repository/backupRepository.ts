@@ -180,262 +180,35 @@ export const backupRepository = {
   },
 
   /**
-   * Seed sample data for first-time visitors
-   */
-  async seedSampleData(): Promise<void> {
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
-    const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const in10Days = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const in20Days = new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
-    const sampleOshis: Oshi[] = [
-      {
-        id: 'oshi-1',
-        name: '星野 ルカ',
-        ruby: 'ほしの るか',
-        group: 'Luminous Stars',
-        color: '#f43f5e', // Rose pink
-        image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-        debutDate: '2024-04-01',
-        memo: '圧倒的センター！笑顔と力強い歌声が最高。',
-        order: 1,
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'oshi-2',
-        name: '如月 ハル',
-        ruby: 'きさらぎ はる',
-        group: 'Blue Horizon',
-        color: '#3b82f6', // Bright blue
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-        debutDate: '2025-01-15',
-        memo: 'クールなダンスリーダー。作詞作曲も担当。',
-        order: 2,
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-    ];
-
-    const sampleEvents: OshiEvent[] = [
-      {
-        id: 'event-1',
-        title: 'Luminous Stars 2nd Anniversary LIVE',
-        date: in3Days,
-        time: '18:00 開場 / 19:00 開演',
-        location: '横浜アリーナ',
-        oshiId: 'oshi-1',
-        category: 'live',
-        ticketStatus: 'won',
-        memo: 'ペンライト電池交換忘れずに！うちわ持参。アリーナAブロック当選！',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'event-2',
-        title: '新曲リリース記念 オンライン生配信',
-        date: in10Days,
-        time: '20:00〜21:30',
-        location: 'YouTube公式チャンネル',
-        oshiId: 'oshi-1',
-        category: 'broadcast',
-        ticketStatus: 'none',
-        memo: 'リアルタイムチャットで応援コメントを送る！',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'event-3',
-        title: 'Blue Horizon 初ファンミーティング',
-        date: in20Days,
-        time: '14:00〜',
-        location: '豊洲PIT',
-        oshiId: 'oshi-2',
-        category: 'event',
-        ticketStatus: 'applied',
-        memo: '当落発表は来週金曜日18:00',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'event-4',
-        title: '音楽雑誌「SOUND WAVE」表紙巻頭特集発売',
-        date: todayStr,
-        time: '書店開店〜',
-        location: '全国書店 / アニメイト',
-        oshiId: 'oshi-1',
-        category: 'release',
-        ticketStatus: 'none',
-        memo: '特典ポストカード付きをアニメイトで予約済み',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-    ];
-
-    const sampleTodos: Todo[] = [
-      {
-        id: 'todo-1',
-        title: 'ライブ用ペンライトの乾電池（単4×3本）を購入する',
-        dueDate: in3Days,
-        completed: false,
-        priority: 'high',
-        oshiId: 'oshi-1',
-        eventId: 'event-1',
-        memo: '予備も含めて多めに買っておく',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'todo-2',
-        title: '遠征用ホテルのチェックイン時間確認＆新幹線切符発券',
-        dueDate: in3Days,
-        completed: false,
-        priority: 'high',
-        oshiId: 'oshi-1',
-        eventId: 'event-1',
-        memo: '新横浜駅到着 14:30 予定',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'todo-3',
-        title: '新作うちわの文字シール貼り付け仕上げ',
-        dueDate: todayStr,
-        completed: true,
-        completedAt: now.toISOString(),
-        priority: 'medium',
-        oshiId: 'oshi-1',
-        eventId: 'event-1',
-        memo: '「ルカちゃん見て！」の蛍光ピンクカッティングシート完了',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'todo-4',
-        title: 'ファンレター執筆＆投函準備',
-        dueDate: in10Days,
-        completed: false,
-        priority: 'medium',
-        oshiId: 'oshi-2',
-        memo: '新曲の感想を丁寧につづる',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-    ];
-
-    const sampleGoods: Goods[] = [
-      {
-        id: 'goods-1',
-        name: '2nd Anniversary 公式アクリルスタンド',
-        oshiId: 'oshi-1',
-        category: 'acrylic',
-        purchaseDate: todayStr,
-        price: 1800,
-        quantity: 2,
-        openStatus: 'opened',
-        storageLocation: 'デスクの推し祭壇',
-        image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300&auto=format&fit=crop&q=80',
-        isFavorite: true,
-        memo: '保存用と飾る用の2個買い！ビジュアル神すぎ！',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'goods-2',
-        name: 'Luminous Penlight ver.3',
-        oshiId: 'oshi-1',
-        category: 'penlight',
-        purchaseDate: '2026-08-10',
-        price: 3800,
-        quantity: 1,
-        openStatus: 'opened',
-        storageLocation: '遠征バッグ内',
-        image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop&q=80',
-        isFavorite: true,
-        memo: '14色カラーチェンジ対応。発光がとても綺麗。',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'goods-3',
-        name: 'ランダム生写真セット（全20種）',
-        oshiId: 'oshi-2',
-        category: 'photo',
-        purchaseDate: '2026-09-01',
-        price: 2500,
-        quantity: 5,
-        openStatus: 'storage',
-        storageLocation: 'トレカファイルA',
-        isFavorite: false,
-        memo: 'サイン入りシークレット1枚自引き！',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'goods-4',
-        name: 'オリジナルマフラータオル',
-        oshiId: 'oshi-1',
-        category: 'apparel',
-        purchaseDate: '2026-07-20',
-        price: 2200,
-        quantity: 1,
-        openStatus: 'opened',
-        storageLocation: 'クローゼット',
-        isFavorite: false,
-        memo: 'ライブ定番アイテム。手触り良好。',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-    ];
-
-    const sampleBackup: BackupData = {
-      app: 'oshiss',
-      backupVersion: BACKUP_CURRENT_VERSION,
-      createdAt: now.toISOString(),
-      data: {
-        oshis: sampleOshis,
-        events: sampleEvents,
-        todos: sampleTodos,
-        goods: sampleGoods,
-        settings: {
-          id: 'default',
-          activeOshiId: 'all',
-          themeColor: '#f43f5e',
-          createdAt: now.toISOString(),
-          updatedAt: now.toISOString(),
-        },
-      },
-    };
-
-    await this.importBackup(sampleBackup);
-  },
-
-  /**
    * Scan localStorage for any previous non-empty backup data to allow user recovery
    */
   findRecoverableBackup(): BackupData | null {
     const candidates: BackupData[] = [];
+    const sampleOshiIds = new Set(['oshi-1', 'oshi-2']);
 
     const checkAndAdd = (rawStr: string | null) => {
       if (!rawStr) return;
       try {
         const parsed = JSON.parse(rawStr);
         if (parsed && typeof parsed === 'object') {
-          if (parsed.data && Array.isArray(parsed.data.oshis) && parsed.data.oshis.length > 0) {
-            candidates.push(parsed);
-          } else if (Array.isArray(parsed.oshis) && parsed.oshis.length > 0) {
-            candidates.push({
-              app: 'oshiss',
-              backupVersion: 1,
-              createdAt: parsed.createdAt || new Date().toISOString(),
-              data: {
-                oshis: parsed.oshis || [],
-                events: parsed.events || [],
-                todos: parsed.todos || [],
-                goods: parsed.goods || [],
-              },
-            });
+          const oshiList: any[] = parsed.data?.oshis || parsed.oshis || [];
+          const realOshis = oshiList.filter((o) => !sampleOshiIds.has(o.id));
+          if (realOshis.length > 0) {
+            if (parsed.data && Array.isArray(parsed.data.oshis)) {
+              candidates.push(parsed);
+            } else if (Array.isArray(parsed.oshis)) {
+              candidates.push({
+                app: 'oshiss',
+                backupVersion: 1,
+                createdAt: parsed.createdAt || new Date().toISOString(),
+                data: {
+                  oshis: parsed.oshis || [],
+                  events: parsed.events || [],
+                  todos: parsed.todos || [],
+                  goods: parsed.goods || [],
+                },
+              });
+            }
           }
         }
       } catch {}

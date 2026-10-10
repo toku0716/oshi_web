@@ -206,32 +206,32 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
         cleanupPeer();
         onClose();
       }}
-      title="端末間のデータ同期"
+      title="デバイス間直接同期 (P2P)"
       maxWidth="sm"
     >
       <div className="py-2 space-y-4">
         {/* MODE 1: 選択画面 */}
         {mode === 'select' && (
           <div className="space-y-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center leading-relaxed">
-              パソコンとスマホの間で、6桁の数字を入力するだけでデータを同期します。
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center leading-relaxed">
+              WebRTCダイレクト暗号化通信により、2台のデバイス間で直接データを同期します。
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
                 onClick={startSend}
-                className="p-4 rounded-xl border border-gray-200 dark:border-[#383e5e] bg-gray-50/70 dark:bg-[#202438] hover:border-pink-500 hover:bg-pink-50/60 dark:hover:border-pink-500 dark:hover:bg-[#282d46] text-left transition group space-y-2 flex flex-col justify-between shadow-2xs"
+                className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-neutral-400 dark:hover:border-neutral-500 text-left transition group space-y-2 flex flex-col justify-between shadow-2xs"
               >
-                <div className="w-9 h-9 rounded-lg bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-300 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-neutral-800 dark:text-neutral-200 flex items-center justify-center">
                   <Send className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 transition">
-                    この端末から送る
+                  <h4 className="font-bold text-sm text-neutral-900 dark:text-white transition">
+                    データ送信
                   </h4>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-300 mt-0.5">
-                    画面に6桁の番号を表示します
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    認証コードを発行して待機
                   </p>
                 </div>
               </button>
@@ -239,25 +239,25 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
               <button
                 type="button"
                 onClick={startReceive}
-                className="p-4 rounded-xl border border-gray-200 dark:border-[#383e5e] bg-gray-50/70 dark:bg-[#202438] hover:border-indigo-500 hover:bg-indigo-50/60 dark:hover:border-indigo-500 dark:hover:bg-[#282d46] text-left transition group space-y-2 flex flex-col justify-between shadow-2xs"
+                className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-neutral-400 dark:hover:border-neutral-500 text-left transition group space-y-2 flex flex-col justify-between shadow-2xs"
               >
-                <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-neutral-800 dark:text-neutral-200 flex items-center justify-center">
                   <Download className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
-                    別の端末から受け取る
+                  <h4 className="font-bold text-sm text-neutral-900 dark:text-white transition">
+                    データ受信
                   </h4>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-300 mt-0.5">
-                    相手の6桁の番号を入力します
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    相手の認証コードを入力
                   </p>
                 </div>
               </button>
             </div>
 
             {/* Privacy & Direct Sync Notice */}
-            <div className="p-2.5 rounded-lg bg-indigo-50/90 dark:bg-[#181d33] border border-indigo-200/90 dark:border-indigo-500/40 text-[10.5px] text-indigo-950 dark:text-indigo-200 font-medium leading-relaxed text-center">
-              ※ 本アプリは、ユーザー自身の端末間でのみデータを直接同期する仕様です。データがサーバーに保存されたり、第三者に公開・共有されたりすることは一切ありません。
+            <div className="p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-[var(--border-subtle)] text-[10.5px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed text-center">
+              ※ 中継サーバーにデータ内容が保持・蓄積されることはありません。端末間の直接通信で安全に転送されます。
             </div>
           </div>
         )}
@@ -268,15 +268,15 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
             {step === 'done' ? (
               <div className="py-6 space-y-2">
                 <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-                <h4 className="font-bold text-base text-gray-900 dark:text-white">送信完了！</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  相手の端末にデータが届きました。
+                <h4 className="font-bold text-base text-neutral-900 dark:text-white">送信完了</h4>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  同期先デバイスへのデータ転送が正常に完了しました。
                 </p>
                 <div className="pt-4">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-6 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-xs"
+                    className="px-6 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-xs"
                   >
                     閉じる
                   </button>
@@ -289,45 +289,45 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                 <button
                   type="button"
                   onClick={startSend}
-                  className="px-4 py-2 rounded-lg bg-pink-500 text-white font-semibold text-xs inline-flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-xs inline-flex items-center gap-1.5"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>もう一度やり直す</span>
+                  <span>再試行</span>
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    相手の端末で「受け取る」を選び、下の番号を入力してください
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    受信側デバイスで「データ受信」を選択し、以下の6桁コードを入力してください
                   </p>
                 </div>
 
                 {/* 6桁の番号を大きく表示 */}
-                <div className="py-3 px-6 rounded-2xl bg-gray-50 dark:bg-[#1a1c28] border-2 border-dashed border-pink-300 dark:border-pink-900/50 inline-block shadow-inner">
+                <div className="py-3 px-6 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-dashed border-[var(--border-subtle)] inline-block">
                   {syncCode ? (
-                    <div className="text-3xl font-extrabold tracking-widest text-pink-600 dark:text-pink-400 font-mono">
+                    <div className="text-3xl font-extrabold tracking-widest text-neutral-900 dark:text-white font-mono">
                       {syncCode.slice(0, 3)} - {syncCode.slice(3, 6)}
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-400 py-1">番号を準備中...</div>
+                    <div className="text-sm text-neutral-400 py-1">コードを発行中...</div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-                  <div className="w-2 h-2 rounded-full bg-pink-500 animate-ping" />
+                <div className="flex items-center justify-center gap-2 text-xs text-neutral-400">
+                  <div className="w-2 h-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
                   <span>
                     {step === 'transferring'
-                      ? 'データを転送中...'
-                      : '相手の入力を待っています...'}
+                      ? 'データ転送中...'
+                      : '相手デバイスからの接続待機中...'}
                   </span>
                 </div>
 
-                <div className="pt-2 border-t border-gray-100 dark:border-[#262838]">
+                <div className="pt-2 border-t border-[var(--border-subtle)]">
                   <button
                     type="button"
                     onClick={() => setMode('select')}
-                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex items-center gap-1 mx-auto"
+                    className="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 flex items-center gap-1 mx-auto"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>戻る</span>
@@ -344,15 +344,15 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
             {step === 'done' ? (
               <div className="py-6 space-y-2">
                 <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-                <h4 className="font-bold text-base text-gray-900 dark:text-white">同期完了！</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  データが最新の内容に更新されました。
+                <h4 className="font-bold text-base text-neutral-900 dark:text-white">同期完了</h4>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  最新のデータセットが端末内に反映されました。
                 </p>
                 <div className="pt-4">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-6 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-xs"
+                    className="px-6 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-xs"
                   >
                     閉じる
                   </button>
@@ -361,8 +361,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    相手の画面に表示されている「6桁の番号」を入力してください
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    送信側デバイスに表示されている「6桁の認証コード」を入力してください
                   </p>
                 </div>
 
@@ -377,7 +377,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
                     disabled={step === 'connecting' || step === 'transferring'}
-                    className="w-full text-center py-2.5 px-4 text-2xl font-bold font-mono tracking-widest rounded-xl border-2 border-gray-300 dark:border-[#35384d] focus:border-indigo-500 focus:outline-none bg-white dark:bg-[#1a1c28] text-gray-900 dark:text-white disabled:opacity-50"
+                    className="w-full text-center py-2.5 px-4 text-2xl font-bold font-mono tracking-widest rounded-xl border border-[var(--border-subtle)] focus:border-neutral-900 dark:focus:border-white focus:outline-none bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white disabled:opacity-50"
                   />
                 </div>
 
@@ -390,12 +390,12 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                     type="button"
                     onClick={executeReceive}
                     disabled={inputCode.length !== 6 || step === 'connecting' || step === 'transferring'}
-                    className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
+                    className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 disabled:opacity-40 text-white dark:text-neutral-900 font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     {step === 'connecting' ? (
                       <>
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>相手を探しています...</span>
+                        <span>デバイスを検索中...</span>
                       </>
                     ) : step === 'transferring' ? (
                       <>
@@ -404,18 +404,18 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                       </>
                     ) : (
                       <>
-                        <span>データを受信して同期する</span>
+                        <span>データを受信して同期</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </>
                     )}
                   </button>
                 </div>
 
-                <div className="pt-2 border-t border-gray-100 dark:border-[#262838]">
+                <div className="pt-2 border-t border-[var(--border-subtle)]">
                   <button
                     type="button"
                     onClick={() => setMode('select')}
-                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex items-center gap-1 mx-auto"
+                    className="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 flex items-center gap-1 mx-auto"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>戻る</span>

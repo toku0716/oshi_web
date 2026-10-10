@@ -30,46 +30,46 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const getIcon = () => {
     switch (variant) {
       case 'danger':
-        return <AlertTriangle className="w-10 h-10 text-rose-500 mx-auto" />;
+        return <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto" />;
       case 'warning':
-        return <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />;
+        return <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />;
       default:
-        return <Info className="w-10 h-10 text-pink-500 mx-auto" />;
+        return <Info className="w-8 h-8 text-neutral-500 mx-auto" />;
     }
   };
 
   const getConfirmButtonClass = () => {
     switch (variant) {
       case 'danger':
-        return 'bg-rose-500 hover:bg-rose-600 focus:ring-rose-200 text-white';
+        return 'bg-rose-600 hover:bg-rose-700 text-white';
       case 'warning':
-        return 'bg-amber-500 hover:bg-amber-600 focus:ring-amber-200 text-white';
+        return 'bg-amber-600 hover:bg-amber-700 text-white';
       default:
-        return 'bg-pink-500 hover:bg-pink-600 focus:ring-pink-200 text-white';
+        return 'bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900';
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="sm">
-      <div className="text-center py-2">
-        <div className="mb-4">{getIcon()}</div>
-        <p className="text-gray-700 dark:text-gray-200 whitespace-pre-line text-sm leading-relaxed mb-4">
+      <div className="text-center py-1">
+        <div className="mb-3">{getIcon()}</div>
+        <p className="text-neutral-700 dark:text-neutral-200 whitespace-pre-line text-xs sm:text-sm leading-relaxed mb-4">
           {message}
         </p>
 
         {warningNote && (
-          <div className="bg-amber-50 dark:bg-[#2c2618] border border-amber-300/80 dark:border-amber-600/60 text-amber-950 dark:text-amber-100 rounded-xl p-3 text-xs leading-relaxed text-left mb-6 flex gap-2">
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-950 dark:text-amber-100 rounded-xl p-3 text-xs leading-relaxed text-left mb-5 flex gap-2">
             <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <span>{warningNote}</span>
           </div>
         )}
 
-        <div className="flex gap-3 justify-end mt-6">
+        <div className="flex gap-2.5 justify-end mt-5">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#383e5e] bg-white dark:bg-[#202438] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#282d46] font-medium text-sm transition focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-50"
+            className="flex-1 px-3.5 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-700 dark:text-neutral-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] font-semibold text-xs transition disabled:opacity-50"
           >
             {cancelLabel}
           </button>
@@ -77,12 +77,12 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50 flex items-center justify-center gap-1.5 ${getConfirmButtonClass()}`}
+            className={`flex-1 px-3.5 py-2 rounded-lg font-semibold text-xs transition shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5 ${getConfirmButtonClass()}`}
           >
             {isLoading ? (
-              <span className="inline-block w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin" />
+              <span className="inline-block w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin" />
             ) : (
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
             )}
             <span>{confirmLabel}</span>
           </button>
