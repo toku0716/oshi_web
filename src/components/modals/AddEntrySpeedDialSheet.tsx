@@ -9,9 +9,13 @@ import {
 } from '../../repository';
 import {
   EXPENSE_CATEGORY_META,
+  GOODS_CATEGORY_META,
+  GOODS_OPEN_STATUS_META,
   type ExpenseCategory,
   type ExpenseItem,
   type Goods,
+  type GoodsCategory,
+  type GoodsOpenStatus,
   type OshiEvent,
   type Todo,
 } from '../../types';
@@ -88,6 +92,13 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
   );
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [isWish, setIsWish] = useState<boolean>(initialIsWish);
+  const [goodsStatus, setGoodsStatus] = useState<'owned' | 'preorder' | 'wish'>(() =>
+    initialIsWish ? 'wish' : 'owned'
+  );
+  const [goodsCategory, setGoodsCategory] = useState<GoodsCategory>('other');
+  const [goodsStorageLocation, setGoodsStorageLocation] = useState<string>('');
+  const [goodsOpenStatus, setGoodsOpenStatus] = useState<GoodsOpenStatus>('unopened');
+  const [goodsQuantity, setGoodsQuantity] = useState<number>(1);
   const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('goods');
   const [imageDataUrl, setImageDataUrl] = useState<string>('');
   const [isTimeKeypadOpen, setIsTimeKeypadOpen] = useState<boolean>(false);
@@ -133,7 +144,17 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
             ? editingGoods.price.toLocaleString('ja-JP')
             : ''
         );
+        const status = editingGoods.isWish
+          ? 'wish'
+          : editingGoods.isPreorder
+          ? 'preorder'
+          : 'owned';
+        setGoodsStatus(status);
         setIsWish(!!editingGoods.isWish);
+        setGoodsCategory(editingGoods.category || 'other');
+        setGoodsStorageLocation(editingGoods.storageLocation || '');
+        setGoodsOpenStatus(editingGoods.openStatus || 'unopened');
+        setGoodsQuantity(editingGoods.quantity || 1);
         setSelectedDate(
           editingGoods.purchaseDate || formatIsoDate(getTodayMidnight())
         );
@@ -168,6 +189,11 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
       setSelectedDate(initialDate || formatIsoDate(getTodayMidnight()));
       setSelectedTime('');
       setIsWish(initialIsWish);
+      setGoodsStatus(initialIsWish ? 'wish' : 'owned');
+      setGoodsCategory('other');
+      setGoodsStorageLocation('');
+      setGoodsOpenStatus('unopened');
+      setGoodsQuantity(1);
       setExpenseCategory('goods');
       setImageDataUrl('');
       setIsTimeKeypadOpen(false);
@@ -334,13 +360,17 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
       await goodsRepository.save({
         id,
         name: trimmedTitle,
-        category: 'other',
+        category: goodsCategory,
         price,
-        quantity: 1,
-        isWish,
+        quantity: Math.max(1, goodsQuantity),
+        isWish: goodsStatus === 'wish',
+        isPreorder: goodsStatus === 'preorder',
         image: imageDataUrl || undefined,
-        openStatus: 'unopened',
+        openStatus: goodsOpenStatus,
+        storageLocation: goodsStorageLocation.trim() || undefined,
         purchaseDate: selectedDate,
+        isFavorite: (editingGoods as Goods | null)?.isFavorite ?? false,
+        memo: (editingGoods as Goods | null)?.memo,
         createdAt: now,
         updatedAt: now,
       });
@@ -620,70 +650,260 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
             </div>
           )}
 
-          {/* グッズ: 価格 & 持ってる/欲しい */}
+          {/* グッズ: 状態・カテゴリ・金額・数量・保管場所 */}
           {type === 2 && (
-            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  backgroundColor: inputBg,
-                  borderRadius: 14,
-                  padding: '0 14px',
-                }}
-              >
-                <span style={{ fontWeight: 900, fontSize: 16, color: '#8E8E93' }}>¥</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={priceDisplay}
-                  onChange={(e) => handlePriceChange(e.target.value)}
-                  placeholder="金額 (円・任意)"
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* 1. 所持状態セレクター (3択: 持ってる / 予約・注文中 / 欲しい) */}
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                  ステータス
+                </label>
+                <div
                   style={{
-                    width: '100%',
-                    padding: '14px 8px',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    color: textColor,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    outline: 'none',
+                    display: 'flex',
+                    backgroundColor: inputBg,
+                    padding: 3,
+                    borderRadius: 12,
+                    gap: 4,
                   }}
-                />
+                >
+                  {[
+                    { key: 'owned', label: '持ってる' },
+                    { key: 'preorder', label: '予約・注文中' },
+                    { key: 'wish', label: '欲しいもの' },
+                  ].map((s) => {
+                    const sel = goodsStatus === s.key;
+                    return (
+                      <button
+                        key={s.key}
+                        type="button"
+                        onClick={() => {
+                          setGoodsStatus(s.key as any);
+                          setIsWish(s.key === 'wish');
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '9px 0',
+                          borderRadius: 9,
+                          border: 'none',
+                          backgroundColor: sel ? themeColor : 'transparent',
+                          color: sel ? '#FFFFFF' : textColor,
+                          fontWeight: sel ? 800 : 600,
+                          fontSize: 12.5,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsWish(false)}
-                style={{
-                  padding: '12px 14px',
-                  borderRadius: 12,
-                  border: `1.5px solid ${!isWish ? themeColor : 'transparent'}`,
-                  backgroundColor: !isWish ? `${themeColor}26` : inputBg,
-                  color: !isWish ? themeColor : textColor,
-                  fontWeight: 800,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                持ってる
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsWish(true)}
-                style={{
-                  padding: '12px 14px',
-                  borderRadius: 12,
-                  border: `1.5px solid ${isWish ? themeColor : 'transparent'}`,
-                  backgroundColor: isWish ? `${themeColor}26` : inputBg,
-                  color: isWish ? themeColor : textColor,
-                  fontWeight: 800,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                欲しい
-              </button>
+
+              {/* 2. カテゴリ選択 */}
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                  カテゴリ
+                </label>
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                  {(Object.keys(GOODS_CATEGORY_META) as GoodsCategory[]).map((cat) => {
+                    const sel = goodsCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setGoodsCategory(cat)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 20,
+                          fontSize: 12,
+                          fontWeight: sel ? 800 : 600,
+                          backgroundColor: sel ? `${themeColor}26` : inputBg,
+                          color: sel ? themeColor : 'var(--text-secondary)',
+                          border: `1px solid ${sel ? themeColor : 'transparent'}`,
+                          whiteSpace: 'nowrap',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {GOODS_CATEGORY_META[cat].label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. 価格 & 数量 */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div
+                  style={{
+                    flex: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor: inputBg,
+                    borderRadius: 14,
+                    padding: '0 14px',
+                  }}
+                >
+                  <span style={{ fontWeight: 900, fontSize: 16, color: '#8E8E93' }}>¥</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={priceDisplay}
+                    onChange={(e) => handlePriceChange(e.target.value)}
+                    placeholder="購入価格 (円)"
+                    style={{
+                      width: '100%',
+                      padding: '12px 8px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: textColor,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: inputBg,
+                    borderRadius: 14,
+                    padding: '0 10px',
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>数量</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => setGoodsQuantity((q) => Math.max(1, q - 1))}
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 6,
+                        backgroundColor: 'var(--bg-surface)',
+                        border: '1px solid var(--border-subtle)',
+                        color: textColor,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      -
+                    </button>
+                    <span style={{ fontSize: 13, fontWeight: 800, minWidth: 16, textAlign: 'center', color: textColor }}>
+                      {goodsQuantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setGoodsQuantity((q) => q + 1)}
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 6,
+                        backgroundColor: 'var(--bg-surface)',
+                        border: '1px solid var(--border-subtle)',
+                        color: textColor,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. 保管場所（持ってる場合） */}
+              {goodsStatus === 'owned' && (
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      backgroundColor: inputBg,
+                      borderRadius: 14,
+                      padding: '0 12px',
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={goodsStorageLocation}
+                      onChange={(e) => setGoodsStorageLocation(e.target.value)}
+                      placeholder="保管場所 (例: アクリルケース、本棚、自室クローゼット)"
+                      style={{
+                        width: '100%',
+                        padding: '12px 6px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        color: textColor,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  {/* クイック場所タグ */}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                    {['自室デスク', 'アクリルケース', '収納ボックス', '本棚', 'バッグ'].map((loc) => (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => setGoodsStorageLocation(loc)}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          backgroundColor: 'var(--bg-surface-subtle)',
+                          border: '1px solid var(--border-subtle)',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {loc}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 5. 開封・ディスプレイ状態（持ってる場合） */}
+              {goodsStatus === 'owned' && (
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                    保存状態
+                  </label>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {(Object.keys(GOODS_OPEN_STATUS_META) as GoodsOpenStatus[]).map((st) => {
+                      const sel = goodsOpenStatus === st;
+                      const meta = GOODS_OPEN_STATUS_META[st];
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setGoodsOpenStatus(st)}
+                          style={{
+                            padding: '5px 11px',
+                            borderRadius: 8,
+                            fontSize: 12,
+                            fontWeight: sel ? 700 : 500,
+                            backgroundColor: sel ? `${meta.color}22` : inputBg,
+                            color: sel ? meta.color : 'var(--text-secondary)',
+                            border: `1.2px solid ${sel ? meta.color : 'transparent'}`,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {meta.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

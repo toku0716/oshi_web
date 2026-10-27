@@ -67,6 +67,25 @@ export type GoodsCategory =
 
 export type GoodsOpenStatus = 'unopened' | 'opened' | 'display' | 'storage';
 
+export const GOODS_CATEGORY_META: Record<GoodsCategory, { label: string; iconName?: string }> = {
+  acrylic: { label: 'アクスタ' },
+  photo: { label: '生写真・チェキ' },
+  badge: { label: '缶バッジ' },
+  penlight: { label: 'ペンライト' },
+  fan: { label: 'うちわ' },
+  apparel: { label: 'アパレル・Tシャツ' },
+  plush: { label: 'ぬいぐるみ' },
+  media: { label: 'CD・DVD・本' },
+  other: { label: 'その他' },
+};
+
+export const GOODS_OPEN_STATUS_META: Record<GoodsOpenStatus, { label: string; color: string }> = {
+  unopened: { label: '未開封', color: '#10B981' },
+  opened: { label: '開封済み', color: '#3B82F6' },
+  display: { label: '飾っている', color: '#F59E0B' },
+  storage: { label: '保管中', color: '#6B7280' },
+};
+
 export interface Goods {
   id: string;
   name: string;
