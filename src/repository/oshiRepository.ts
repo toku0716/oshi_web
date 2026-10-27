@@ -5,7 +5,7 @@ export const oshiRepository = {
   async getAll(): Promise<Oshi[]> {
     const db = await getDB();
     const list = await db.getAll('oshis');
-    return list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.createdAt.localeCompare(b.createdAt));
+    return list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || (a.createdAt || '').localeCompare(b.createdAt || ''));
   },
 
   async getById(id: string): Promise<Oshi | undefined> {

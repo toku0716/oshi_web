@@ -12,7 +12,7 @@ export const todoRepository = {
       if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
       if (a.dueDate) return -1;
       if (b.dueDate) return 1;
-      return a.createdAt.localeCompare(b.createdAt);
+      return (a.createdAt || '').localeCompare(b.createdAt || '');
     });
   },
 
@@ -25,7 +25,7 @@ export const todoRepository = {
         if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
         if (a.dueDate) return -1;
         if (b.dueDate) return 1;
-        return a.createdAt.localeCompare(b.createdAt);
+        return (a.createdAt || '').localeCompare(b.createdAt || '');
       })
       .slice(0, limit);
   },

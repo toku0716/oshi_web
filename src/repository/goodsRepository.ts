@@ -5,14 +5,18 @@ export const goodsRepository = {
   async getAll(): Promise<Goods[]> {
     const db = await getDB();
     const list = await db.getAll('goods');
-    return list.sort((a, b) => (b.purchaseDate || b.createdAt).localeCompare(a.purchaseDate || a.createdAt));
+    return list.sort((a, b) =>
+      (b.purchaseDate || b.createdAt || '').localeCompare(a.purchaseDate || a.createdAt || '')
+    );
   },
 
   async getRecent(limit = 6): Promise<Goods[]> {
     const db = await getDB();
     const list = await db.getAll('goods');
     return list
-      .sort((a, b) => (b.purchaseDate || b.createdAt).localeCompare(a.purchaseDate || a.createdAt))
+      .sort((a, b) =>
+        (b.purchaseDate || b.createdAt || '').localeCompare(a.purchaseDate || a.createdAt || '')
+      )
       .slice(0, limit);
   },
 

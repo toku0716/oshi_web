@@ -91,7 +91,6 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
     initialDate || formatIsoDate(getTodayMidnight())
   );
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [isWish, setIsWish] = useState<boolean>(initialIsWish);
   const [goodsStatus, setGoodsStatus] = useState<'owned' | 'preorder' | 'wish'>(() =>
     initialIsWish ? 'wish' : 'owned'
   );
@@ -150,7 +149,6 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
           ? 'preorder'
           : 'owned';
         setGoodsStatus(status);
-        setIsWish(!!editingGoods.isWish);
         setGoodsCategory(editingGoods.category || 'other');
         setGoodsStorageLocation(editingGoods.storageLocation || '');
         setGoodsOpenStatus(editingGoods.openStatus || 'unopened');
@@ -188,7 +186,6 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
       setPriceDisplay('');
       setSelectedDate(initialDate || formatIsoDate(getTodayMidnight()));
       setSelectedTime('');
-      setIsWish(initialIsWish);
       setGoodsStatus(initialIsWish ? 'wish' : 'owned');
       setGoodsCategory('other');
       setGoodsStorageLocation('');
@@ -302,8 +299,13 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
       await goodsRepository.save({
         ...editingGoods,
         name: trimmedTitle,
+        category: goodsCategory,
         price,
-        isWish,
+        quantity: Math.max(1, goodsQuantity),
+        isWish: goodsStatus === 'wish',
+        isPreorder: goodsStatus === 'preorder',
+        openStatus: goodsOpenStatus,
+        storageLocation: goodsStorageLocation.trim() || undefined,
         image: imageDataUrl || undefined,
         purchaseDate: selectedDate,
         updatedAt: now,
@@ -679,7 +681,6 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
                         type="button"
                         onClick={() => {
                           setGoodsStatus(s.key as any);
-                          setIsWish(s.key === 'wish');
                         }}
                         style={{
                           flex: 1,

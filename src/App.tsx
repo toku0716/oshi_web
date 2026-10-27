@@ -3,6 +3,7 @@ import { Calendar, Heart, Home, Plus, ShoppingBag, User } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { GoogleAccessGate } from './components/auth/GoogleAccessGate';
 import { ToastContainer } from './components/common/ToastContainer';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { HomeView } from './pages/HomeView';
 import { CalendarView } from './pages/CalendarView';
 import { GoodsView } from './pages/GoodsView';
@@ -387,9 +388,11 @@ const MainApp: React.FC = () => {
 
 export function App() {
   return (
-    <AppProvider>
-      <MainApp />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <MainApp />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 
