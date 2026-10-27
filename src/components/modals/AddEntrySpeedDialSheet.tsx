@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useDialog } from '../../hooks/useDialog';
 import {
   eventRepository,
   todoRepository,
@@ -97,6 +98,8 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
 
   const isEditing =
     !!editingEvent || !!editingTodo || !!editingGoods || !!editingExpense;
+
+  const dialogRef = useDialog<HTMLFormElement>(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {
@@ -359,9 +362,9 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
     onClose();
   };
 
-  const bgColor = isDark ? '#1C1D26' : '#FFFFFF';
-  const inputBg = isDark ? '#242636' : '#F3F4F7';
-  const textColor = isDark ? '#FFFFFF' : '#11141C';
+  const sheetBg = 'var(--bg-surface-elevated)';
+  const inputBg = 'var(--bg-surface-subtle)';
+  const textColor = 'var(--text-primary)';
 
   const placeholderText =
     type === 0
@@ -378,13 +381,23 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
     ? TYPE_META[type]?.editTitle || '項目を編集'
     : TYPE_META[type]?.modalTitle || '項目を追加';
 
+  if (!isOpen) return null;
+
   return (
     <>
       <div className="flutter-sheet-backdrop" onClick={onClose}>
         <form
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-entry-sheet-title"
           onSubmit={handleSubmit}
           className="flutter-bottom-sheet"
-          style={{ backgroundColor: bgColor, padding: '16px 20px 24px' }}
+          style={{
+            backgroundColor: sheetBg,
+            padding: '16px 20px calc(24px + var(--safe-bottom))',
+            maxHeight: '90dvh',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flutter-sheet-handle" />
@@ -399,16 +412,19 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
               justifyContent: 'space-between',
             }}
           >
-            <span style={{ fontSize: 18, fontWeight: 900, color: textColor }}>
+            <h2
+              id="add-entry-sheet-title"
+              style={{ fontSize: 18, fontWeight: 900, color: textColor, margin: 0 }}
+            >
               {headerTitle}
-            </span>
+            </h2>
             <button
               type="button"
               onClick={onClose}
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#8E8E93',
+                color: 'var(--text-secondary)',
                 padding: 4,
                 cursor: 'pointer',
                 display: 'flex',
@@ -426,6 +442,8 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
           {/* 編集時でなく、許可された項目が複数ある場合のみタイプ切替タブを表示 */}
           {!isEditing && allowedTypes.length > 1 && (
             <div
+              role="tablist"
+              aria-label="登録種別の切り替え"
               style={{
                 marginBottom: 14,
                 padding: 4,
@@ -440,6 +458,8 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
                   <button
                     key={idx}
                     type="button"
+                    role="tab"
+                    aria-selected={selected}
                     onClick={() => setType(idx)}
                     style={{
                       flex: 1,
@@ -449,9 +469,7 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
                       backgroundColor: selected ? themeColor : 'transparent',
                       color: selected
                         ? '#FFFFFF'
-                        : isDark
-                          ? 'rgba(255,255,255,0.6)'
-                          : 'rgba(0,0,0,0.6)',
+                        : 'var(--text-secondary)',
                       fontSize: 13.5,
                       fontWeight: 800,
                       cursor: 'pointer',

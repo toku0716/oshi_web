@@ -4,12 +4,11 @@
     <meta charset="UTF-8" />
     <script>
       (function() {
-        var mode = localStorage.getItem('oshiss_theme_mode');
-        if (mode === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        var mode = null;
+        try { mode = localStorage.getItem('oshiss_theme_mode'); } catch (e) {}
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = mode === 'dark' || ((mode === 'system' || !mode) && prefersDark);
+        document.documentElement.classList.toggle('dark', isDark);
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />

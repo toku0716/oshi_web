@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useDialog } from '../../hooks/useDialog';
 
 interface SmartTimeKeypadSheetProps {
   isOpen: boolean;
@@ -14,8 +15,9 @@ export const SmartTimeKeypadSheet: React.FC<SmartTimeKeypadSheetProps> = ({
   onClose,
   onConfirm,
 }) => {
-  const { themeColor, isDark } = useApp();
+  const { themeColor } = useApp();
   const [digits, setDigits] = useState<string>('');
+  const dialogRef = useDialog<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {
@@ -142,9 +144,9 @@ export const SmartTimeKeypadSheet: React.FC<SmartTimeKeypadSheetProps> = ({
 
   if (!isOpen) return null;
 
-  const bgColor = isDark ? '#1A1C24' : '#FFFFFF';
-  const keyBg = isDark ? '#252834' : '#F2F4F8';
-  const textColor = isDark ? '#FFFFFF' : '#111111';
+  const sheetBg = 'var(--bg-surface-elevated)';
+  const keyBg = 'var(--bg-surface-subtle)';
+  const textColor = 'var(--text-primary)';
 
   const renderDigitBox = (index: number) => {
     const active = digits.length === index;
@@ -164,7 +166,7 @@ export const SmartTimeKeypadSheet: React.FC<SmartTimeKeypadSheetProps> = ({
           border: `2px solid ${active ? themeColor : 'transparent'}`,
           fontSize: 28,
           fontWeight: 900,
-          color: index < digits.length ? textColor : 'rgba(142,142,147,0.45)',
+          color: index < digits.length ? textColor : 'var(--text-muted)',
         }}
       >
         {ch}
@@ -201,8 +203,15 @@ export const SmartTimeKeypadSheet: React.FC<SmartTimeKeypadSheetProps> = ({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="時間を入力"
         className="flutter-bottom-sheet"
-        style={{ backgroundColor: bgColor, padding: '14px 20px 24px' }}
+        style={{
+          backgroundColor: sheetBg,
+          padding: '14px 20px calc(24px + var(--safe-bottom))',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flutter-sheet-handle" />

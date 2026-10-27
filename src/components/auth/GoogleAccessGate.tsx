@@ -63,7 +63,6 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
 
   useEffect(() => {
     if (!googleClientId) {
-      setGsiReady(false);
       return;
     }
 

@@ -96,10 +96,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     await refreshAllData();
   };
 
-  const cardBg = isDark ? '#14161F' : '#FFFFFF';
-  const borderColor = isDark ? '#232634' : '#E5E7EB';
-  const textColor = isDark ? '#F3F4F6' : '#111827';
-  const subtextColor = isDark ? '#9CA3AF' : '#6B7280';
+  const cardBg = 'var(--bg-surface-elevated)';
+  const borderColor = 'var(--border-subtle)';
+  const textColor = 'var(--text-primary)';
+  const subtextColor = 'var(--text-secondary)';
 
   const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
   const totalCells = startWeekday + daysInMonth;
@@ -237,17 +237,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 type="button"
                 onClick={() => setFocusedMonth(new Date(year, month - 1, 1))}
                 style={{
-                  background: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6',
+                  background: 'var(--bg-surface-subtle)',
                   border: `1px solid ${borderColor}`,
                   color: textColor,
-                  width: 30,
-                  height: 30,
-                  borderRadius: 8,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: 0,
+                  fontSize: 18,
                   fontWeight: 700,
                 }}
                 aria-label="前月"
@@ -258,17 +259,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 type="button"
                 onClick={() => setFocusedMonth(new Date(year, month + 1, 1))}
                 style={{
-                  background: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6',
+                  background: 'var(--bg-surface-subtle)',
                   border: `1px solid ${borderColor}`,
                   color: textColor,
-                  width: 30,
-                  height: 30,
-                  borderRadius: 8,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: 0,
+                  fontSize: 18,
                   fontWeight: 700,
                 }}
                 aria-label="次月"
@@ -326,6 +328,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 <button
                   key={day}
                   type="button"
+                  role="gridcell"
+                  aria-pressed={isSelected}
+                  aria-current={isToday ? 'date' : undefined}
+                  aria-label={`${year}年${month + 1}月${day}日${hasDot ? '（予定あり）' : ''}${isBday ? '（推しの誕生日）' : ''}`}
                   onClick={() => {
                     setSelectedDate(date);
                     if (isBday || isDeb) {

@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Peer, type DataConnection } from 'peerjs';
-import { Modal } from '../common/Modal';
-import { backupRepository } from '../../repository';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Peer, { type DataConnection } from 'peerjs';
 import { useApp } from '../../context/AppContext';
+import { backupRepository } from '../../repository';
+import { Modal } from '../common/Modal';
 
 interface DeviceSyncModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultMode?: 'send' | 'receive' | null;
+  defaultMode?: 'send' | 'receive';
 }
 
 export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
   isOpen,
   onClose,
-  defaultMode = null,
+  defaultMode,
 }) => {
-  const { refreshAllData, showToast } = useApp();
-
+  const { showToast, refreshAllData } = useApp();
   const [mode, setMode] = useState<'select' | 'send' | 'receive'>('select');
   const [step, setStep] = useState<'idle' | 'connecting' | 'transferring' | 'done' | 'error'>('idle');
   const [syncCode, setSyncCode] = useState<string>('');
@@ -26,24 +25,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
   const peerRef = useRef<Peer | null>(null);
   const connRef = useRef<DataConnection | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      cleanupPeer();
-      setMode('select');
-      setStep('idle');
-      setSyncCode('');
-      setInputCode('');
-      setErrorMessage('');
-      return;
-    }
-
-    if (defaultMode) {
-      if (defaultMode === 'send') startSend();
-      if (defaultMode === 'receive') startReceive();
-    }
-  }, [isOpen, defaultMode]);
-
-  const cleanupPeer = () => {
+  const cleanupPeer = useCallback(() => {
     if (connRef.current) {
       connRef.current.close();
       connRef.current = null;
@@ -52,9 +34,9 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
       peerRef.current.destroy();
       peerRef.current = null;
     }
-  };
+  }, []);
 
-  const startSend = () => {
+  const startSend = useCallback(() => {
     cleanupPeer();
     setMode('send');
     setStep('connecting');
@@ -94,21 +76,39 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     peer.on('error', (err) => {
       console.error(err);
       if (err.type === 'unavailable-id') {
-        startSend();
+        setTimeout(() => startSend(), 200);
       } else {
         setErrorMessage('接続の待機に失敗しました。もう一度お試しください。');
         setStep('error');
       }
     });
-  };
+  }, [cleanupPeer, showToast]);
 
-  const startReceive = () => {
+  const startReceive = useCallback(() => {
     cleanupPeer();
     setMode('receive');
     setStep('idle');
     setInputCode('');
     setErrorMessage('');
-  };
+  }, [cleanupPeer]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      cleanupPeer();
+      setMode('select');
+      setStep('idle');
+      setSyncCode('');
+      setInputCode('');
+      setErrorMessage('');
+      return;
+    }
+
+    if (defaultMode === 'send') {
+      startSend();
+    } else if (defaultMode === 'receive') {
+      startReceive();
+    }
+  }, [isOpen, defaultMode, cleanupPeer, startSend, startReceive]);
 
   const executeReceive = () => {
     const trimmed = inputCode.trim().replace(/\D/g, '');
@@ -142,10 +142,11 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
         setStep('transferring');
       });
 
-      conn.on('data', async (data: any) => {
+      conn.on('data', async (data: unknown) => {
         try {
-          if (data && data.app === 'oshiss' && data.data) {
-            await backupRepository.importBackup(data);
+          const payload = data as { app?: string; data?: unknown };
+          if (payload && payload.app === 'oshiss' && payload.data) {
+            await backupRepository.importBackup(payload as any);
             await refreshAllData();
             setStep('done');
             showToast('データの同期が完了しました', 'success');
@@ -190,15 +191,20 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
       <div className="form-stack">
         {mode === 'select' && (
           <div className="form-stack">
-            <p className="text-muted">
+            <p className="text-muted" style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
               2台のデバイス間で直接データを同期します。中継サーバーにデータは保存されません。
             </p>
-            <div className="form-row">
+            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
               <button type="button" className="btn-primary" onClick={startSend}>
-                この端末からデータを送信する
+                データを送信する
               </button>
-              <button type="button" onClick={startReceive}>
-                別の端末からデータを受信する
+              <button
+                type="button"
+                className="btn-sm"
+                onClick={startReceive}
+                style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700 }}
+              >
+                データを受信する
               </button>
             </div>
           </div>
@@ -207,31 +213,37 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
         {mode === 'send' && (
           <div className="form-stack">
             {step === 'done' ? (
-              <div>
-                <p><strong>送信完了</strong>: データの転送が完了しました。</p>
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>
+                  データの転送が完了しました。
+                </p>
                 <button type="button" className="btn-primary" onClick={onClose}>
                   閉じる
                 </button>
               </div>
             ) : step === 'error' ? (
               <div>
-                <p>{errorMessage}</p>
-                <button type="button" onClick={startSend}>
+                <p style={{ color: 'var(--color-danger)', fontSize: 13, marginBottom: 12 }}>{errorMessage}</p>
+                <button type="button" className="btn-primary" onClick={startSend}>
                   再試行
                 </button>
               </div>
             ) : (
-              <div>
-                <p className="text-muted">
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
                   受信側の端末で以下の6桁コードを入力してください:
                 </p>
-                <p style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                <p style={{ fontSize: 32, fontWeight: 900, letterSpacing: '0.1em', margin: '14px 0', color: 'var(--oshi-color)' }}>
                   {syncCode ? `${syncCode.slice(0, 3)} - ${syncCode.slice(3, 6)}` : '発行中...'}
                 </p>
-                <p className="text-muted">
+                <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 16 }}>
                   {step === 'transferring' ? 'データ転送中...' : '相手デバイスからの接続待機中...'}
                 </p>
-                <button type="button" onClick={() => setMode('select')}>
+                <button
+                  type="button"
+                  className="btn-sm"
+                  onClick={() => setMode('select')}
+                >
                   戻る
                 </button>
               </div>
@@ -242,8 +254,10 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
         {mode === 'receive' && (
           <div className="form-stack">
             {step === 'done' ? (
-              <div>
-                <p><strong>同期完了</strong>: データが反映されました。</p>
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>
+                  データが正常に反映されました。
+                </p>
                 <button type="button" className="btn-primary" onClick={onClose}>
                   閉じる
                 </button>
@@ -251,8 +265,9 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
             ) : (
               <div className="form-stack">
                 <div className="form-group">
-                  <label>送信側に表示されている6桁の認証コード</label>
+                  <label htmlFor="sync-verify-code">送信側に表示されている6桁の認証コード</label>
                   <input
+                    id="sync-verify-code"
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -261,24 +276,26 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
                     disabled={step === 'connecting' || step === 'transferring'}
+                    style={{ textAlign: 'center', fontSize: 20, fontWeight: 800, letterSpacing: '0.15em' }}
                   />
                 </div>
-                {errorMessage && <p>{errorMessage}</p>}
-                <div className="flex-row">
-                  <button type="button" onClick={() => setMode('select')}>
+                {errorMessage && <p style={{ color: 'var(--color-danger)', fontSize: 13 }}>{errorMessage}</p>}
+                <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                  <button type="button" className="btn-sm" onClick={() => setMode('select')}>
                     戻る
                   </button>
                   <button
                     type="button"
                     className="btn-primary"
+                    style={{ flex: 1 }}
                     onClick={executeReceive}
                     disabled={inputCode.length !== 6 || step === 'connecting' || step === 'transferring'}
                   >
                     {step === 'connecting'
-                      ? '検索中...'
+                      ? '接続中...'
                       : step === 'transferring'
                       ? '受信中...'
-                      : 'データを受信して同期'}
+                      : '受信して同期'}
                   </button>
                 </div>
               </div>

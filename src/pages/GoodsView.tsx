@@ -1,21 +1,14 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
   Package,
-  Heart,
   Plus,
   Search,
-  Filter,
   MapPin,
-  Clock,
-  Sparkles,
-  Camera,
-  CheckCircle,
-  Tag,
-  ChevronRight,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { goodsRepository } from '../repository';
 import type { Goods, GoodsCategory, GoodsOpenStatus } from '../types';
+import { pressable } from '../utils/a11y';
 import { resizeAndConvertImageToBase64 } from '../utils/oshiUtils';
 
 interface GoodsViewProps {
@@ -46,13 +39,12 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
   onOpenAddGoods,
   onOpenEditGoods,
 }) => {
-  const { goods, oshis, activeOshiId, activeOshi, themeColor, isDark, refreshAllData, showToast } =
+  const { goods, oshis, activeOshiId, themeColor, refreshAllData, showToast } =
     useApp();
 
   const [activeSubtab, setActiveSubtab] = useState<'owned' | 'preorder' | 'wish'>('owned');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [targetGoodsForImage, setTargetGoodsForImage] = useState<Goods | null>(null);
@@ -326,8 +318,9 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
             return (
               <div
                 key={item.id}
+                {...pressable(() => onOpenEditGoods(item))}
                 className="goods-card"
-                onClick={() => onOpenEditGoods(item)}
+                aria-label={`グッズ: ${item.name}`}
               >
                 {/* 写真エリア */}
                 <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', backgroundColor: 'var(--bg-surface-subtle)', overflow: 'hidden' }}>
@@ -349,11 +342,11 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
                       position: 'absolute',
                       top: 8,
                       left: 8,
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: 700,
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      backgroundColor: 'rgba(0,0,0,0.65)',
+                      padding: '2px 7px',
+                      borderRadius: 6,
+                      backgroundColor: 'rgba(0,0,0,0.68)',
                       color: '#FFFFFF',
                     }}
                   >
@@ -367,10 +360,10 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
                         position: 'absolute',
                         top: 8,
                         right: 8,
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: 700,
-                        padding: '2px 6px',
-                        borderRadius: 4,
+                        padding: '2px 7px',
+                        borderRadius: 6,
                         backgroundColor: statusInfo.color,
                         color: '#FFFFFF',
                       }}

@@ -11,10 +11,20 @@ import {
   backupRepository,
 } from '../repository';
 
-interface ToastMessage {
+export interface ToastOptions {
+  /** トースト内に表示するアクションボタン（例: 「元に戻す」） */
+  actionLabel?: string;
+  onAction?: () => void | Promise<void>;
+  /** 表示時間 (ms)。省略時はアクション付き 5000ms / なし 3500ms */
+  duration?: number;
+}
+
+export interface ToastMessage {
   id: string;
   type: 'success' | 'error' | 'info';
   message: string;
+  actionLabel?: string;
+  onAction?: () => void | Promise<void>;
 }
 
 interface AppContextType {
@@ -34,7 +44,11 @@ interface AppContextType {
   themeColor: string;
   setThemeColor: (color: string) => Promise<void>;
   toasts: ToastMessage[];
-  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  showToast: (
+    message: string,
+    type?: 'success' | 'error' | 'info',
+    options?: ToastOptions
+  ) => void;
   removeToast: (id: string) => void;
   setActiveOshiId: (id: string) => Promise<void>;
   refreshAllData: () => Promise<void>;
@@ -84,19 +98,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem('oshiss_theme_mode', themeMode);
+    // ステータスバー / アドレスバーの色をテーマに追従させる
+    const bg = isDark ? '#090A0D' : '#F9FAFB';
+    document
+      .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
+      .forEach((m) => m.setAttribute('content', bg));
   }, [isDark, themeMode]);
 
   const setThemeMode = useCallback((mode: ThemeModeOption) => {
     setThemeModeState(mode);
   }, []);
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3500);
-  }, []);
+  const showToast = useCallback(
+    (
+      message: string,
+      type: 'success' | 'error' | 'info' = 'success',
+      options: ToastOptions = {}
+    ) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      setToasts((prev) => [
+        ...prev.slice(-2),
+        { id, type, message, actionLabel: options.actionLabel, onAction: options.onAction },
+      ]);
+      const duration = options.duration ?? (options.onAction ? 5000 : 3500);
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, duration);
+    },
+    []
+  );
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

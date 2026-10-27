@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Pencil, Heart, Gift, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useDialog } from '../hooks/useDialog';
 import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
 import { ResetDataModal } from '../components/modals/ResetDataModal';
 import { backupRepository, oshiRepository } from '../repository';
@@ -53,6 +54,10 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
   const [birthday, setBirthday] = useState<string>('');
   const [debutDate, setDebutDate] = useState<string>('');
   const [confirmDeleteOshi, setConfirmDeleteOshi] = useState<boolean>(false);
+
+  const oshiSheetRef = useDialog<HTMLFormElement>(isOshiSheetOpen, () =>
+    setIsOshiSheetOpen(false)
+  );
 
   const sinceInputRef = useRef<HTMLInputElement>(null);
   const birthdayInputRef = useRef<HTMLInputElement>(null);
@@ -588,9 +593,11 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
             外観
           </div>
           <div
+            role="radiogroup"
+            aria-label="外観モード"
             style={{
               padding: 3,
-              backgroundColor: isDark ? '#1C1F2B' : '#F3F4F6',
+              backgroundColor: 'var(--bg-surface-subtle)',
               borderRadius: 10,
               display: 'flex',
             }}
@@ -607,6 +614,8 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                 <button
                   key={opt.mode}
                   type="button"
+                  role="radio"
+                  aria-checked={selected}
                   onClick={() => setThemeMode(opt.mode)}
                   style={{
                     flex: 1,
@@ -614,7 +623,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                     borderRadius: 8,
                     border: 'none',
                     backgroundColor: selected ? cardBg : 'transparent',
-                    color: selected ? textColor : '#8E8E93',
+                    color: selected ? textColor : 'var(--text-secondary)',
                     fontWeight: selected ? 700 : 500,
                     fontSize: 12.5,
                     cursor: 'pointer',
@@ -938,22 +947,32 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
           onClick={() => setIsOshiSheetOpen(false)}
         >
           <form
+            ref={oshiSheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="oshi-sheet-title"
             onSubmit={handleSaveOshi}
             className="flutter-bottom-sheet"
-            style={{ backgroundColor: sheetBg, padding: '14px 20px 24px' }}
+            style={{
+              backgroundColor: sheetBg,
+              padding: '14px 20px calc(24px + var(--safe-bottom))',
+              maxHeight: '90dvh',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flutter-sheet-handle" />
-            <div
+            <h2
+              id="oshi-sheet-title"
               style={{
                 marginTop: 14,
                 fontSize: 18,
                 fontWeight: 900,
                 color: textColor,
+                margin: '14px 0 0',
               }}
             >
               {editingOshi === null ? '推しを登録' : '推し情報を編集'}
-            </div>
+            </h2>
 
             {/* 推しの画像選択（IndexedDBに保存） */}
             <div

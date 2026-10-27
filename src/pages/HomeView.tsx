@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar,
   MapPin,
@@ -6,16 +6,16 @@ import {
   CheckSquare,
   Sparkles,
   Gift,
-  Clock,
-  Plus,
   ChevronDown,
   ChevronRight,
   Check,
   Sliders,
+  UserPlus,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { oshiRepository, todoRepository } from '../repository';
 import type { OshiEvent, Todo } from '../types';
+import { pressable } from '../utils/a11y';
 import {
   getDaysUntilDate,
   getDebutYears,
@@ -35,6 +35,7 @@ interface HomeViewProps {
   onOpenEditEvent: (event: OshiEvent) => void;
   onOpenAddTodo: () => void;
   onOpenEditTodo: (todo: Todo) => void;
+  onNavigateToMyPage?: () => void;
 }
 
 function parseImagePositionY(pos?: string): number {
@@ -48,13 +49,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenEditEvent,
   onOpenAddTodo,
   onOpenEditTodo,
+  onNavigateToMyPage,
 }) => {
   const {
     oshis,
     events,
     todos,
     themeColor,
-    isDark,
+    activeOshiId,
+    setActiveOshiId,
     refreshAllData,
     recoverableBackup,
     restoreRecoverableBackup,
@@ -62,8 +65,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   } = useApp();
 
   const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
-  const [selectedOshiIndex, setSelectedOshiIndex] = useState<number>(0);
   const [showCompletedTodos, setShowCompletedTodos] = useState<boolean>(false);
+  const [showAllIncompleteTodos, setShowAllIncompleteTodos] = useState<boolean>(false);
   const [isAdjustingPosition, setIsAdjustingPosition] = useState<boolean>(false);
   const [adjustPositionY, setAdjustPositionY] = useState<number>(20);
   const [isSavingPosition, setIsSavingPosition] = useState<boolean>(false);
@@ -73,13 +76,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const activeOshi = oshis[selectedOshiIndex] || oshis[0] || null;
+  // アクティブな推し（activeOshiIdと同期）
+  const activeOshi = useMemo(() => {
+    if (activeOshiId && activeOshiId !== 'all') {
+      const found = oshis.find((o) => o.id === activeOshiId);
+      if (found) return found;
+    }
+    return oshis[0] || null;
+  }, [oshis, activeOshiId]);
+
   const oColor = activeOshi?.color || themeColor;
 
-  useEffect(() => {
+  const handleSelectOshi = (oshiId: string) => {
     setIsAdjustingPosition(false);
-    setAdjustPositionY(parseImagePositionY(activeOshi?.imagePosition));
-  }, [activeOshi?.id, activeOshi?.imagePosition]);
+    setActiveOshiId(oshiId);
+    const target = oshis.find((o) => o.id === oshiId);
+    setAdjustPositionY(parseImagePositionY(target?.imagePosition));
+  };
 
   const handleSavePosition = async () => {
     if (!activeOshi) return;
@@ -107,7 +120,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const futureEvents = sortEventsByDateAndTime(
     events.filter((e) => getDaysUntilDate(e.date) > 0)
   );
-  const upcomingEvents = futureEvents;
   const incompleteTodos = [...todos.filter((t) => !t.completed)].sort((a, b) =>
     (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31')
   );
@@ -142,7 +154,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
     });
     await refreshAllData();
     if (nextCompleted) {
-      showToast('完了にしました', 'success');
+      showToast('完了にしました', 'success', {
+        actionLabel: '元に戻す',
+        onAction: async () => {
+          await todoRepository.save({
+            ...todo,
+            completed: false,
+            completedAt: undefined,
+            updatedAt: new Date().toISOString(),
+          });
+          await refreshAllData();
+        },
+      });
     }
   };
 
@@ -183,6 +206,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* 複数推しがいる場合のセレクタータブ */}
           {oshis.length > 1 && (
             <div
+              role="tablist"
+              aria-label="推し選択"
               style={{
                 display: 'flex',
                 gap: 8,
@@ -191,14 +216,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 paddingBottom: 4,
               }}
             >
-              {oshis.map((o, idx) => {
-                const isSelected = idx === selectedOshiIndex;
+              {oshis.map((o) => {
+                const isSelected = o.id === activeOshi?.id;
                 const c = o.color || themeColor;
                 return (
                   <button
                     key={o.id}
                     type="button"
-                    onClick={() => setSelectedOshiIndex(idx)}
+                    role="tab"
+                    aria-selected={isSelected}
+                    onClick={() => handleSelectOshi(o.id)}
                     className={`oshi-pill ${isSelected ? 'active' : ''}`}
                     style={isSelected ? { borderColor: c, backgroundColor: `${c}15` } : {}}
                   >
@@ -306,7 +333,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     style={{ color: oColor, borderColor: `${oColor}33`, backgroundColor: `${oColor}12` }}
                   >
                     <Heart size={11} fill="currentColor" />
-                    <span>推しメン</span>
+                    <span>{activeOshi.category || '推し'}</span>
                   </div>
                 </div>
 
@@ -483,17 +510,34 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
             あなたの推しを登録しましょう
           </div>
-          <div
+          <p
             style={{
               fontSize: 13,
               color: 'var(--text-secondary)',
               marginTop: 6,
+              marginBottom: 18,
               lineHeight: 1.6,
             }}
           >
-            マイページから推しの写真や記念日を設定すると、<br />
-            あなた専用の推し活スペースが完成します。
-          </div>
+            写真や記念日を設定すると、あなた専用の推し活スペースが完成します。
+          </p>
+          {onNavigateToMyPage && (
+            <button
+              type="button"
+              onClick={onNavigateToMyPage}
+              className="btn-primary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 20px',
+                fontSize: 13,
+              }}
+            >
+              <UserPlus size={16} />
+              <span>推しを登録する</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -528,9 +572,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
                 return (
                   <div
-                    onClick={() => onOpenEditEvent(nextEvent)}
+                    {...pressable(() => onOpenEditEvent(nextEvent))}
                     className={`event-row ${isToday ? 'is-today' : ''}`}
                     style={isToday ? { borderColor: `${oColor}88` } : {}}
+                    aria-label={`イベント: ${nextEvent.title}`}
                   >
                     {/* Apple Music風 日付ブロック */}
                     <div
@@ -585,24 +630,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 );
               })()
             ) : (
-              <div
+              <button
+                type="button"
                 onClick={onOpenAddEvent}
                 style={{
+                  width: '100%',
                   backgroundColor: 'var(--bg-surface)',
                   borderRadius: 18,
                   border: '1px solid var(--border-subtle)',
                   padding: '32px 20px',
                   textAlign: 'center',
                   cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                   予定はありません
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                  ライブ・イベント・配信などの予定を記録しよう
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  タップしてライブ・イベント・配信などの予定を登録
                 </div>
-              </div>
+              </button>
             )}
           </div>
 
@@ -637,9 +688,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   return (
                     <div
                       key={e.id}
-                      onClick={() => onOpenEditEvent(e)}
+                      {...pressable(() => onOpenEditEvent(e))}
                       className="event-row"
                       style={{ padding: '12px 14px' }}
+                      aria-label={`イベント: ${e.title}`}
                     >
                       <div
                         className="event-date-block"
@@ -700,68 +752,99 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
 
           {incompleteTodos.length === 0 ? (
-            <div
+            <button
+              type="button"
+              onClick={onOpenAddTodo}
               style={{
+                width: '100%',
                 backgroundColor: 'var(--bg-surface)',
                 borderRadius: 18,
                 border: '1px solid var(--border-subtle)',
                 padding: '32px 20px',
                 textAlign: 'center',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 4,
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                 すべての準備が完了しています
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                チケット申込、入金、持ち物チェックなどをメモしよう
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                タップしてチケット申込、入金、持ち物チェックをメモ
               </div>
-            </div>
+            </button>
           ) : (
-            <div className="reminder-list">
-              {incompleteTodos.map((t) => {
-                const dueDays = t.dueDate ? getDaysUntilDate(t.dueDate) : null;
-                const dueParsed = parseLocalDate(t.dueDate);
-                const isOverdue = dueDays !== null && dueDays < 0;
-                const isDueSoon = dueDays !== null && (dueDays === 0 || dueDays === 1);
-                const dueLabel = dueParsed
-                  ? dueDays === 0
-                    ? '今日まで'
-                    : dueDays === 1
-                      ? '明日まで'
-                      : isOverdue
-                        ? '期限切れ'
-                        : `${dueParsed.getMonth() + 1}/${dueParsed.getDate()}`
-                  : null;
+            <div>
+              <div className="reminder-list">
+                {(showAllIncompleteTodos ? incompleteTodos : incompleteTodos.slice(0, 5)).map((t) => {
+                  const dueDays = t.dueDate ? getDaysUntilDate(t.dueDate) : null;
+                  const dueParsed = parseLocalDate(t.dueDate);
+                  const isOverdue = dueDays !== null && dueDays < 0;
+                  const isDueSoon = dueDays !== null && (dueDays === 0 || dueDays === 1);
+                  const dueLabel = dueParsed
+                    ? dueDays === 0
+                      ? '今日まで'
+                      : dueDays === 1
+                        ? '明日まで'
+                        : isOverdue
+                          ? '期限切れ'
+                          : `${dueParsed.getMonth() + 1}/${dueParsed.getDate()}`
+                    : null;
 
-                return (
-                  <div
-                    key={t.id}
-                    onClick={() => onOpenEditTodo(t)}
-                    className="reminder-item"
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleTodo(t);
-                      }}
-                      aria-label="完了にする"
-                      className="reminder-check-btn"
-                      style={isDueSoon ? { borderColor: '#FF3B30' } : {}}
-                    />
+                  return (
+                    <div
+                      key={t.id}
+                      {...pressable(() => onOpenEditTodo(t))}
+                      className="reminder-item"
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleTodo(t);
+                        }}
+                        aria-label={`「${t.title}」を完了にする`}
+                        className="reminder-check-btn"
+                        style={isDueSoon ? { borderColor: '#FF3B30' } : {}}
+                      />
 
-                    <div className="reminder-text">
-                      {t.title}
+                      <div className="reminder-text">
+                        {t.title}
+                      </div>
+
+                      {dueLabel && (
+                        <span className={`reminder-tag ${isOverdue ? 'urgent' : ''}`}>
+                          {dueLabel}
+                        </span>
+                      )}
                     </div>
+                  );
+                })}
+              </div>
 
-                    {dueLabel && (
-                      <span className={`reminder-tag ${isOverdue ? 'urgent' : ''}`}>
-                        {dueLabel}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+              {incompleteTodos.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllIncompleteTodos((prev) => !prev)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 0',
+                    marginTop: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {showAllIncompleteTodos
+                    ? '折りたたむ'
+                    : `他 ${incompleteTodos.length - 5} 件の準備を表示`}
+                </button>
+              )}
             </div>
           )}
 
@@ -793,7 +876,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   {completedTodos.map((t) => (
                     <div
                       key={t.id}
-                      onClick={() => onOpenEditTodo(t)}
+                      {...pressable(() => onOpenEditTodo(t))}
                       className="reminder-item"
                     >
                       <button
@@ -802,6 +885,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                           e.stopPropagation();
                           handleToggleTodo(t);
                         }}
+                        aria-label={`「${t.title}」を未完了に戻す`}
                         className="reminder-check-btn checked"
                         style={{ backgroundColor: oColor, borderColor: oColor }}
                       >

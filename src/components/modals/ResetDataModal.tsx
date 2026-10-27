@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Heart, Calendar, CheckSquare, Package, Wallet, Settings, AlertTriangle } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useDialog } from '../../hooks/useDialog';
 
 interface ResetDataModalProps {
   isOpen: boolean;
@@ -13,17 +13,26 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
   onClose,
   onConfirmReset,
 }) => {
-  const { isDark } = useApp();
   const [isAgreed, setIsAgreed] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
+  const handleClose = () => {
+    if (isProcessing) return;
+    setIsAgreed(false);
+    onClose();
+  };
+
+  const dialogRef = useDialog<HTMLDivElement>(isOpen, handleClose);
+
   if (!isOpen) return null;
 
-  const sheetBg = isDark ? '#1C1D26' : '#FFFFFF';
-  const cardBg = isDark ? '#252736' : '#F6F7FA';
-  const borderColor = isDark ? '#323447' : '#E6E8EE';
-  const textColor = isDark ? '#FFFFFF' : '#111111';
-  const subTextColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
+  const sheetBg = 'var(--bg-surface-elevated)';
+  const cardBg = 'var(--bg-surface-subtle)';
+  const borderColor = 'var(--border-medium)';
+  const textColor = 'var(--text-primary)';
+  const subTextColor = 'var(--text-secondary)';
+  const dangerColor = 'var(--color-danger)';
+  const dangerBg = 'var(--color-danger-bg)';
 
   const handleReset = async () => {
     if (!isAgreed || isProcessing) return;
@@ -37,12 +46,6 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
     }
   };
 
-  const handleClose = () => {
-    if (isProcessing) return;
-    setIsAgreed(false);
-    onClose();
-  };
-
   return (
     <div
       className="flutter-sheet-backdrop"
@@ -50,11 +53,16 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
       onClick={handleClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reset-data-title"
+        aria-describedby="reset-data-desc"
         className="flutter-bottom-sheet"
         style={{
           backgroundColor: sheetBg,
-          padding: '20px 22px 28px',
-          maxHeight: '90vh',
+          padding: '20px 22px calc(28px + var(--safe-bottom))',
+          maxHeight: '90dvh',
           maxWidth: 480,
           margin: '0 auto',
           borderRadius: '24px 24px 0 0',
@@ -78,7 +86,7 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
               width: 44,
               height: 44,
               borderRadius: 14,
-              backgroundColor: 'rgba(255, 59, 48, 0.14)',
+              backgroundColor: dangerBg,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -90,7 +98,8 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
               height="24"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#FF3B30"
+              stroke="currentColor"
+              aria-hidden="true"
               strokeWidth="2.4"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -101,20 +110,23 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
             </svg>
           </div>
           <div>
-            <div
+            <h2
+              id="reset-data-title"
               style={{
+                margin: 0,
                 fontSize: 18,
                 fontWeight: 900,
                 color: textColor,
               }}
             >
               全データの初期化
-            </div>
+            </h2>
             <div
+              id="reset-data-desc"
               style={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: '#FF3B30',
+                color: dangerColor,
                 marginTop: 2,
               }}
             >
@@ -155,22 +167,22 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Heart size={14} color="#FF2D55" /> <span>推しプロフィール</span>
+              <Heart size={14} color="#FF2D55" aria-hidden="true" /> <span>推しプロフィール</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Calendar size={14} color="#0A84FF" /> <span>予定・スケジュール</span>
+              <Calendar size={14} color="#0A84FF" aria-hidden="true" /> <span>予定・スケジュール</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <CheckSquare size={14} color="#30D158" /> <span>やること（ToDo）</span>
+              <CheckSquare size={14} color="#30D158" aria-hidden="true" /> <span>やること（ToDo）</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Package size={14} color="#BF5AF2" /> <span>グッズ・保管場所</span>
+              <Package size={14} color="#BF5AF2" aria-hidden="true" /> <span>グッズ・保管場所</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Wallet size={14} color="#FF9F0A" /> <span>推し活の支出記録</span>
+              <Wallet size={14} color="#FF9F0A" aria-hidden="true" /> <span>推し活の支出記録</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Settings size={14} color="#8E8E93" /> <span>アプリ各種設定</span>
+              <Settings size={14} color="#8E8E93" aria-hidden="true" /> <span>アプリ各種設定</span>
             </div>
           </div>
         </div>
@@ -181,17 +193,17 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
             marginTop: 14,
             padding: '12px 14px',
             borderRadius: 14,
-            backgroundColor: 'rgba(255, 59, 48, 0.08)',
-            border: '1px solid rgba(255, 59, 48, 0.25)',
+            backgroundColor: dangerBg,
+            border: `1px solid ${dangerColor}`,
             fontSize: 12,
             lineHeight: 1.6,
             fontWeight: 600,
-            color: isDark ? '#FFA39E' : '#D92D20',
+            color: dangerColor,
             display: 'flex',
             gap: 10,
           }}
         >
-          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
           <div>
             <strong>ご注意：</strong>
             <br />
@@ -208,9 +220,9 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
             gap: 10,
             padding: '12px 14px',
             borderRadius: 14,
-            backgroundColor: isAgreed ? 'rgba(255, 59, 48, 0.08)' : cardBg,
-            border: `1.5px solid ${isAgreed ? '#FF3B30' : borderColor}`,
-            cursor: 'pointer',
+            backgroundColor: isAgreed ? dangerBg : cardBg,
+            border: `1.5px solid ${isAgreed ? dangerColor : borderColor}`,
+            cursor: isProcessing ? 'not-allowed' : 'pointer',
             userSelect: 'none',
             transition: 'all 0.15s ease',
           }}
@@ -223,15 +235,16 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
             style={{
               width: 18,
               height: 18,
-              accentColor: '#FF3B30',
-              cursor: 'pointer',
+              flexShrink: 0,
+              accentColor: dangerColor,
+              cursor: 'inherit',
             }}
           />
           <span
             style={{
               fontSize: 12.5,
               fontWeight: 800,
-              color: isAgreed ? (isDark ? '#FFA39E' : '#D92D20') : textColor,
+              color: isAgreed ? dangerColor : textColor,
             }}
           >
             すべてのデータを完全に消去することを理解しました
@@ -273,8 +286,8 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
               height: 48,
               borderRadius: 14,
               border: 'none',
-              backgroundColor: isAgreed && !isProcessing ? '#FF3B30' : (isDark ? '#3A282B' : '#E5C4C7'),
-              color: isAgreed && !isProcessing ? '#FFFFFF' : (isDark ? '#7A5B60' : '#A38B8E'),
+              backgroundColor: isAgreed && !isProcessing ? dangerColor : dangerBg,
+              color: isAgreed && !isProcessing ? 'var(--text-on-accent)' : 'var(--text-muted)',
               fontSize: 14,
               fontWeight: 900,
               cursor: isAgreed && !isProcessing ? 'pointer' : 'not-allowed',
@@ -286,7 +299,7 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
             }}
           >
             {isProcessing ? (
-              <span>初期化中...</span>
+              <span role="status">初期化中...</span>
             ) : (
               <>
                 <svg
@@ -298,6 +311,7 @@ export const ResetDataModal: React.FC<ResetDataModalProps> = ({
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <path d="M3 6h18" />
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />

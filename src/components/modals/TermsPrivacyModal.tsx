@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { getEffectivePolicyInfo } from '../../types';
+import { useDialog } from '../../hooks/useDialog';
 
 interface TermsPrivacyModalProps {
   isOpen: boolean;
@@ -17,26 +18,33 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
   onAccept,
   onClose,
 }) => {
-  const { themeColor, isDark, settings } = useApp();
+  const { themeColor, settings } = useApp();
   const [tab, setTab] = useState<'terms' | 'privacy'>('terms');
 
-  if (!isOpen) return null;
-
-  const policyInfo = getEffectivePolicyInfo(settings);
-
-  const sheetBg = isDark ? '#1C1D26' : '#FFFFFF';
-  const headerBg = isDark ? '#1C1D26' : '#FFFFFF';
-  const borderColor = isDark ? '#2B2D3B' : '#E8EAEE';
-  const textColor = isDark ? '#FFFFFF' : '#111111';
-  const subTextColor = isDark ? 'rgba(255,255,255,0.72)' : '#444444';
-  const labelColor = isDark ? 'rgba(255,255,255,0.45)' : '#8E8E93';
-  const segmentBg = isDark ? '#252735' : '#EFEFF4';
+  const isConsent = mode === 'consent';
 
   const handleBackdropClick = () => {
     if (mode === 'view' && onClose) {
       onClose();
     }
   };
+
+  // 同意モードでは Esc で閉じられない（同意必須）
+  const dialogRef = useDialog<HTMLDivElement>(isOpen, handleBackdropClick, {
+    closeOnEscape: !isConsent,
+  });
+
+  if (!isOpen) return null;
+
+  const policyInfo = getEffectivePolicyInfo(settings);
+
+  const sheetBg = 'var(--bg-surface-elevated)';
+  const headerBg = 'var(--bg-surface-elevated)';
+  const borderColor = 'var(--border-medium)';
+  const textColor = 'var(--text-primary)';
+  const subTextColor = 'var(--text-secondary)';
+  const labelColor = 'var(--text-muted)';
+  const segmentBg = 'var(--bg-surface-subtle)';
 
   return (
     <div
@@ -45,11 +53,16 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
+        ref={dialogRef}
+        role={isConsent ? 'alertdialog' : 'dialog'}
+        aria-modal="true"
+        aria-labelledby="terms-privacy-title"
+        aria-describedby={isConsent ? 'terms-privacy-consent-desc' : undefined}
         className="flutter-bottom-sheet"
         style={{
           backgroundColor: sheetBg,
           padding: 0,
-          maxHeight: '88vh',
+          maxHeight: '88dvh',
           maxWidth: 560,
           margin: '0 auto',
           borderRadius: '20px 20px 0 0',
@@ -81,9 +94,12 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
             }}
           >
             <div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: textColor }}>
+              <h2
+                id="terms-privacy-title"
+                style={{ margin: 0, fontSize: 17, fontWeight: 800, color: textColor }}
+              >
                 利用規約・プライバシーポリシー
-              </div>
+              </h2>
               <div style={{ fontSize: 12, color: labelColor, marginTop: 2 }}>
                 改定日: {policyInfo.dateLabel} (Ver. {policyInfo.version})
               </div>
@@ -94,11 +110,12 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
                 type="button"
                 onClick={onClose}
                 style={{
-                  background: isDark ? 'rgba(255,255,255,0.08)' : '#F2F3F7',
+                  background: segmentBg,
                   border: 'none',
                   color: textColor,
-                  width: 32,
-                  height: 32,
+                  width: 36,
+                  height: 36,
+                  flexShrink: 0,
                   borderRadius: '50%',
                   cursor: 'pointer',
                   display: 'flex',
@@ -108,7 +125,7 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
                 }}
                 aria-label="閉じる"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -118,6 +135,8 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
 
           {/* シンプルなセグメントコントロール */}
           <div
+            role="tablist"
+            aria-label="表示する文書"
             style={{
               display: 'flex',
               padding: 3,
@@ -127,6 +146,10 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
           >
             <button
               type="button"
+              role="tab"
+              id="terms-privacy-tab-terms"
+              aria-selected={tab === 'terms'}
+              aria-controls="terms-privacy-panel"
               onClick={() => setTab('terms')}
               style={{
                 flex: 1,
@@ -138,7 +161,7 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
                 fontWeight: tab === 'terms' ? 800 : 600,
                 fontSize: 13,
                 cursor: 'pointer',
-                boxShadow: tab === 'terms' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                boxShadow: tab === 'terms' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                 transition: 'all 0.15s ease',
               }}
             >
@@ -146,6 +169,10 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
             </button>
             <button
               type="button"
+              role="tab"
+              id="terms-privacy-tab-privacy"
+              aria-selected={tab === 'privacy'}
+              aria-controls="terms-privacy-panel"
               onClick={() => setTab('privacy')}
               style={{
                 flex: 1,
@@ -157,7 +184,7 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
                 fontWeight: tab === 'privacy' ? 800 : 600,
                 fontSize: 13,
                 cursor: 'pointer',
-                boxShadow: tab === 'privacy' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                boxShadow: tab === 'privacy' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                 transition: 'all 0.15s ease',
               }}
             >
@@ -169,6 +196,7 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
         {/* 同意メッセージ（必要な場合のみ） */}
         {mode === 'consent' && (
           <div
+            id="terms-privacy-consent-desc"
             style={{
               margin: '14px 20px 0',
               padding: '12px 14px',
@@ -188,6 +216,10 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
 
         {/* スクロール本文エリア */}
         <div
+          role="tabpanel"
+          id="terms-privacy-panel"
+          aria-labelledby={tab === 'terms' ? 'terms-privacy-tab-terms' : 'terms-privacy-tab-privacy'}
+          tabIndex={0}
           style={{
             flex: 1,
             overflowY: 'auto',
@@ -342,7 +374,7 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
         {/* フッターアクション */}
         <div
           style={{
-            padding: '12px 20px 20px',
+            padding: '12px 20px calc(20px + var(--safe-bottom))',
             borderTop: `1px solid ${borderColor}`,
             backgroundColor: headerBg,
           }}
@@ -357,7 +389,7 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
                 borderRadius: 12,
                 border: 'none',
                 backgroundColor: themeColor,
-                color: '#FFFFFF',
+                color: 'var(--text-on-accent)',
                 fontSize: 15,
                 fontWeight: 800,
                 cursor: 'pointer',
@@ -374,7 +406,7 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
                 height: 44,
                 borderRadius: 12,
                 border: 'none',
-                backgroundColor: isDark ? '#2A2C3A' : '#E8EAEE',
+                backgroundColor: segmentBg,
                 color: textColor,
                 fontSize: 14,
                 fontWeight: 700,
