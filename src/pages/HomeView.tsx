@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar,
   MapPin,
   Heart,
   CheckSquare,
+  Sparkles,
   Gift,
   Clock,
   Plus,
+  ChevronDown,
+  ChevronRight,
+  Check,
   Sliders,
-  AlertCircle,
-  CreditCard,
-  Package,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { oshiRepository, todoRepository } from '../repository';
 import type { OshiEvent, Todo } from '../types';
 import {
-  formatIsoDate,
   getDaysUntilDate,
   getDebutYears,
   getEventCountdownInfo,
@@ -35,7 +35,6 @@ interface HomeViewProps {
   onOpenEditEvent: (event: OshiEvent) => void;
   onOpenAddTodo: () => void;
   onOpenEditTodo: (todo: Todo) => void;
-  onNavigateToTab?: (tabIndex: number) => void;
 }
 
 function parseImagePositionY(pos?: string): number {
@@ -49,15 +48,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenEditEvent,
   onOpenAddTodo,
   onOpenEditTodo,
-  onNavigateToTab,
 }) => {
   const {
     oshis,
     events,
     todos,
-    goods,
-    expenses,
-    settings,
     themeColor,
     isDark,
     refreshAllData,
@@ -66,11 +61,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
     showToast,
   } = useApp();
 
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
   const [selectedOshiIndex, setSelectedOshiIndex] = useState<number>(0);
   const [showCompletedTodos, setShowCompletedTodos] = useState<boolean>(false);
   const [isAdjustingPosition, setIsAdjustingPosition] = useState<boolean>(false);
   const [adjustPositionY, setAdjustPositionY] = useState<number>(20);
   const [isSavingPosition, setIsSavingPosition] = useState<boolean>(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const activeOshi = oshis[selectedOshiIndex] || oshis[0] || null;
   const oColor = activeOshi?.color || themeColor;
@@ -92,9 +93,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
       await oshiRepository.save(updated);
       await refreshAllData();
       setIsAdjustingPosition(false);
-      showToast('画像の位置を保存しました', 'success');
+      showToast('推しの表示位置を保存しました', 'success');
     } catch {
-      showToast('保存に失敗しました', 'error');
+      showToast('表示位置の保存に失敗しました', 'error');
     } finally {
       setIsSavingPosition(false);
     }
@@ -106,6 +107,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const futureEvents = sortEventsByDateAndTime(
     events.filter((e) => getDaysUntilDate(e.date) > 0)
   );
+  const upcomingEvents = futureEvents;
   const incompleteTodos = [...todos.filter((t) => !t.completed)].sort((a, b) =>
     (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31')
   );
@@ -122,6 +124,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       ? futureEvents[0]
       : null;
 
+  // 次のイベント以外の直近予定（最大4件）
   const otherUpcomingEvents = nextEvent
     ? [
         ...todayEvents.filter((e) => e.id !== nextEvent.id),
@@ -138,54 +141,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
       updatedAt: new Date().toISOString(),
     });
     await refreshAllData();
+    if (nextCompleted) {
+      showToast('完了にしました', 'success');
+    }
   };
-
-  // 直近の重要締切（チケット申込・入金・予約締切）
-  const upcomingDeadlines = useMemo(() => {
-    const list: { id: string; title: string; date: string; type: 'ticket' | 'payment' | 'todo'; daysLeft: number }[] = [];
-    events.forEach((ev) => {
-      if (ev.ticketDeadline) {
-        const d = getDaysUntilDate(ev.ticketDeadline);
-        if (d >= 0 && d <= 14) {
-          list.push({ id: `${ev.id}_td`, title: `${ev.title} (チケット申込締切)`, date: ev.ticketDeadline, type: 'ticket', daysLeft: d });
-        }
-      }
-      if (ev.paymentDeadline) {
-        const d = getDaysUntilDate(ev.paymentDeadline);
-        if (d >= 0 && d <= 14) {
-          list.push({ id: `${ev.id}_pd`, title: `${ev.title} (チケット入金締切)`, date: ev.paymentDeadline, type: 'payment', daysLeft: d });
-        }
-      }
-    });
-    todos.filter((t) => !t.completed && t.dueDate).forEach((td) => {
-      const d = getDaysUntilDate(td.dueDate!);
-      if (d >= 0 && d <= 7) {
-        list.push({ id: td.id, title: td.title, date: td.dueDate!, type: 'todo', daysLeft: d });
-      }
-    });
-    return list.sort((a, b) => a.daysLeft - b.daysLeft);
-  }, [events, todos]);
-
-  // 今月の支出サマリー
-  const currentMonthPrefix = formatIsoDate(new Date()).slice(0, 7);
-  const currentMonthExpenses = expenses.filter((e) => e.date.startsWith(currentMonthPrefix));
-  const currentMonthTotal = currentMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const monthlyBudget = settings?.monthlyBudget || 30000;
-  const budgetRatio = Math.min(100, Math.round((currentMonthTotal / (monthlyBudget || 1)) * 100));
-
-  // 予約・注文中グッズ数
-  const preorderedGoodsCount = goods.filter((g) => g.isPreorder).length;
 
   return (
     <div className="page-padding">
-      {/* バックアップ復元通知 */}
+      {/* 復元可能なバックアップが見つかった場合の通知 */}
       {recoverableBackup && (
         <div
           style={{
-            marginBottom: 16,
-            padding: '12px 16px',
-            backgroundColor: 'var(--bg-surface)',
-            borderRadius: 12,
+            marginBottom: 20,
+            padding: '12px 18px',
+            backgroundColor: 'var(--bg-surface-elevated)',
+            borderRadius: 14,
             border: '1px solid var(--border-medium)',
             display: 'flex',
             alignItems: 'center',
@@ -200,52 +170,27 @@ export const HomeView: React.FC<HomeViewProps> = ({
             type="button"
             onClick={restoreRecoverableBackup}
             className="btn-primary"
-            style={{ height: 32, padding: '0 12px', fontSize: 12 }}
+            style={{ padding: '6px 14px', fontSize: 12 }}
           >
             復元
           </button>
         </div>
       )}
 
-      {/* 推し未登録時 */}
-      {!activeOshi ? (
-        <div
-          className="clean-card"
-          style={{
-            textAlign: 'center',
-            padding: '36px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
-              backgroundColor: `${themeColor}18`,
-              color: themeColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Heart size={26} fill="currentColor" />
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            推しを登録しましょう
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 280, lineHeight: 1.5 }}>
-            マイページから推しの名前や写真、記念日を設定すると、あなた専用の推し活スペースが始まります。
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* 複数推し切り替えバー */}
+      {/* 1. トップ：推しのシネマティック・アーティストヒーロー */}
+      {activeOshi ? (
+        <div style={{ marginBottom: 32 }}>
+          {/* 複数推しがいる場合のセレクタータブ */}
           {oshis.length > 1 && (
-            <div className="oshi-switcher-bar">
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                overflowX: 'auto',
+                marginBottom: 14,
+                paddingBottom: 4,
+              }}
+            >
               {oshis.map((o, idx) => {
                 const isSelected = idx === selectedOshiIndex;
                 const c = o.color || themeColor;
@@ -254,505 +199,560 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     key={o.id}
                     type="button"
                     onClick={() => setSelectedOshiIndex(idx)}
-                    className={`oshi-switcher-item ${isSelected ? 'active' : ''}`}
-                    style={isSelected ? { borderColor: c } : {}}
+                    className={`oshi-pill ${isSelected ? 'active' : ''}`}
+                    style={isSelected ? { borderColor: c, backgroundColor: `${c}15` } : {}}
                   >
-                    {o.image ? (
-                      <img src={o.image} alt={o.name} className="oshi-switcher-avatar" />
-                    ) : (
-                      <span
-                        className="oshi-switcher-avatar-fallback"
-                        style={{ backgroundColor: c }}
-                      >
-                        {o.name.slice(0, 1)}
-                      </span>
-                    )}
-                    <span>{o.name}</span>
+                    <div
+                      className="oshi-pill-avatar"
+                      style={{ backgroundColor: `${c}25` }}
+                    >
+                      {o.image ? (
+                        <img src={o.image} alt={o.name} />
+                      ) : (
+                        <span style={{ fontSize: 11, fontWeight: 700, color: c }}>
+                          {o.name.slice(0, 1)}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className="oshi-pill-label"
+                      style={isSelected ? { color: c } : {}}
+                    >
+                      {o.name}
+                    </span>
                   </button>
                 );
               })}
             </div>
           )}
 
-          {/* 推しプロフィールヒーローカード (1:1正方形写真 + 属性 + 推し歴) */}
-          <div className="oshi-hero-card">
-            <div className="oshi-hero-main">
-              {/* 正方形写真 */}
-              <div className="oshi-hero-photo-box">
-                {activeOshi.image ? (
-                  <img
-                    src={activeOshi.image}
-                    alt={activeOshi.name}
-                    className="oshi-hero-photo"
-                    style={{
-                      objectPosition: isAdjustingPosition
-                        ? `center ${adjustPositionY}%`
-                        : (activeOshi.imagePosition || 'center 20%'),
-                    }}
-                  />
-                ) : (
-                  <span className="oshi-hero-fallback">
-                    {activeOshi.name.slice(0, 1)}
-                  </span>
-                )}
-              </div>
+          {/* シネマティック・アーティストカバー */}
+          <div className="artist-hero">
+            {activeOshi.image ? (
+              <>
+                <img
+                  src={activeOshi.image}
+                  alt={activeOshi.name}
+                  className="artist-hero-image"
+                  style={{
+                    objectPosition: isAdjustingPosition
+                      ? `center ${adjustPositionY}%`
+                      : (activeOshi.imagePosition || 'center 20%'),
+                  }}
+                />
+                <div className="artist-hero-gradient" />
 
-              {/* 右側情報 */}
-              <div className="oshi-hero-info">
-                {/* 名前 */}
-                <div className="oshi-hero-name">
-                  {activeOshi.name}
-                  {activeOshi.ruby && (
-                    <span className="oshi-hero-ruby">({activeOshi.ruby})</span>
-                  )}
-                </div>
-
-                {/* タグ (カテゴリ・所属) */}
-                <div className="oshi-hero-badges">
-                  {activeOshi.category && (
-                    <span className="oshi-pill-tag">
-                      <span
-                        style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: '50%',
-                          backgroundColor: oColor,
-                        }}
-                      />
-                      {activeOshi.category}
-                    </span>
-                  )}
-                  {activeOshi.group && (
-                    <span className="oshi-pill-tag">{activeOshi.group}</span>
-                  )}
-                </div>
-
-                {/* 推し歴カウント */}
-                <div className="oshi-hero-days">
-                  <span className="oshi-hero-days-label">推して</span>
-                  <span className="oshi-hero-days-num" style={{ color: oColor }}>
-                    {getOshiDaysSince(activeOshi) ?? '―'}
-                  </span>
-                  <span className="oshi-hero-days-label">日目</span>
-                </div>
-
-                {/* 写真の位置調整トリガー */}
-                {activeOshi.image && !isAdjustingPosition && (
+                {/* 位置調整ボタン */}
+                {!isAdjustingPosition && (
                   <button
                     type="button"
-                    onClick={() => setIsAdjustingPosition(true)}
-                    style={{
-                      alignSelf: 'flex-start',
-                      marginTop: 4,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--text-secondary)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '2px 6px',
-                      borderRadius: 6,
-                      backgroundColor: 'var(--bg-surface-subtle)',
-                      border: '1px solid var(--border-subtle)',
+                    className="artist-hero-adjust-btn"
+                    onClick={() => {
+                      setAdjustPositionY(parseImagePositionY(activeOshi.imagePosition));
+                      setIsAdjustingPosition(true);
                     }}
+                    aria-label="画像の位置を調整"
                   >
-                    <Sliders size={11} />
+                    <Sliders size={13} />
                     <span>位置調整</span>
                   </button>
                 )}
-              </div>
-            </div>
 
-            {/* 写真位置調整スライダー */}
-            {isAdjustingPosition && (
+                {/* 位置調整パネル */}
+                {isAdjustingPosition && (
+                  <div className="artist-hero-adjust-panel">
+                    <div className="artist-hero-adjust-header">
+                      <span className="artist-hero-adjust-title">推しの表示位置を調整</span>
+                      <span className="artist-hero-adjust-value">{adjustPositionY}%</span>
+                    </div>
+                    <div className="artist-hero-adjust-slider-wrap">
+                      <span className="artist-hero-adjust-hint">上</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={adjustPositionY}
+                        onChange={(e) => setAdjustPositionY(Number(e.target.value))}
+                        className="artist-hero-adjust-slider"
+                      />
+                      <span className="artist-hero-adjust-hint">下</span>
+                    </div>
+                    <div className="artist-hero-adjust-presets">
+                      {[
+                        { label: '顔優先 (15%)', val: 15 },
+                        { label: '標準 (25%)', val: 25 },
+                        { label: '中央 (50%)', val: 50 },
+                        { label: '下部 (75%)', val: 75 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.val}
+                          type="button"
+                          className={`artist-hero-preset-btn ${adjustPositionY === preset.val ? 'active' : ''}`}
+                          onClick={() => setAdjustPositionY(preset.val)}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="artist-hero-adjust-actions">
+                      <button
+                        type="button"
+                        className="artist-hero-adjust-cancel"
+                        onClick={() => {
+                          setIsAdjustingPosition(false);
+                          setAdjustPositionY(parseImagePositionY(activeOshi.imagePosition));
+                        }}
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        type="button"
+                        className="artist-hero-adjust-save"
+                        style={{ backgroundColor: oColor }}
+                        onClick={handleSavePosition}
+                        disabled={isSavingPosition}
+                      >
+                        <Check size={14} />
+                        <span>{isSavingPosition ? '保存中...' : '位置を保存'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
               <div
                 style={{
-                  padding: '12px',
-                  borderRadius: 10,
-                  backgroundColor: 'var(--bg-surface-subtle)',
+                  position: 'absolute',
+                  inset: 0,
+                  background: `linear-gradient(135deg, ${oColor}77 0%, #090A0D 100%)`,
+                }}
+              />
+            )}
+
+            {/* 下部：推し名 ＆ 静謐なメタ情報 */}
+            <div className="artist-hero-content">
+              <h1 className="artist-hero-name">{activeOshi.name}</h1>
+
+              <div className="artist-hero-meta">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Heart size={13} fill="currentColor" style={{ opacity: 0.9 }} />
+                  <span>
+                    {getOshiDaysSince(activeOshi) !== null
+                      ? `推して ${getOshiDaysSince(activeOshi)}日目`
+                      : '応援中'}
+                  </span>
+                </div>
+
+                {activeOshi.birthday && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Gift size={13} style={{ opacity: 0.85 }} />
+                    <span>誕生日 {activeOshi.birthday.replace(/-/g, '/')}</span>
+                    {isBirthdayToday(activeOshi) && (
+                      <span
+                        style={{
+                          backgroundColor: '#FF2D55',
+                          color: '#FFFFFF',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                        }}
+                      >
+                        TODAY
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {activeOshi.debutDate && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Sparkles size={13} style={{ opacity: 0.85 }} />
+                    <span>デビュー {activeOshi.debutDate.replace(/-/g, '/')}</span>
+                    {isDebutAnniversaryToday(activeOshi) && (
+                      <span
+                        style={{
+                          backgroundColor: '#FF9500',
+                          color: '#FFFFFF',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                        }}
+                      >
+                        {getDebutYears(activeOshi)}周年
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* 推し未登録時のウェルカム */
+        <div
+          style={{
+            marginBottom: 32,
+            padding: '36px 24px',
+            borderRadius: 24,
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                backgroundColor: 'rgba(var(--oshi-color-rgb), 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Heart size={24} color="var(--oshi-color)" />
+            </div>
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+            あなたの推しを登録しましょう
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--text-secondary)',
+              marginTop: 6,
+              lineHeight: 1.6,
+            }}
+          >
+            マイページから推しの写真や記念日を設定すると、<br />
+            あなた専用の推し活スペースが完成します。
+          </div>
+        </div>
+      )}
+
+      {/* 2. メインコンテンツ（左：スケジュール、右：参戦準備・ToDo） */}
+      <div className="home-grid">
+        {/* 左カラム：ライブ・イベントスケジュール */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div>
+            <div className="section-header">
+              <div className="section-title">
+                <Calendar size={17} strokeWidth={2.2} />
+                <span>直近の予定</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenAddEvent}
+                className="section-action"
+                style={{ color: oColor }}
+              >
+                ＋ 予定を追加
+              </button>
+            </div>
+
+            {nextEvent ? (
+              (() => {
+                const isToday = isTodayDate(nextEvent.date);
+                const parsedDate = parseLocalDate(nextEvent.date);
+                const monthText = parsedDate ? `${parsedDate.getMonth() + 1}月` : '--';
+                const dayText = parsedDate ? `${parsedDate.getDate()}` : '--';
+                const weekdayText = parsedDate ? getWeekdayJa(parsedDate) : '';
+                const countdown = getEventCountdownInfo(nextEvent, currentTime);
+
+                return (
+                  <div
+                    onClick={() => onOpenEditEvent(nextEvent)}
+                    className={`event-row ${isToday ? 'is-today' : ''}`}
+                    style={isToday ? { borderColor: `${oColor}88` } : {}}
+                  >
+                    {/* Apple Music風 日付ブロック */}
+                    <div
+                      className={`event-date-block ${isToday ? 'is-today' : ''}`}
+                      style={isToday ? { backgroundColor: oColor, borderColor: oColor } : {}}
+                    >
+                      <span className="event-date-month">{monthText}</span>
+                      <span className="event-date-day">{dayText}</span>
+                    </div>
+
+                    {/* イベント詳細 */}
+                    <div className="event-info">
+                      <div className="event-title" style={isToday ? { fontWeight: 700 } : {}}>
+                        {nextEvent.title}
+                      </div>
+                      <div className="event-meta">
+                        <div className="event-meta-item">
+                          <span>{weekdayText ? `(${weekdayText})` : ''} {nextEvent.time || '終日'}</span>
+                        </div>
+                        {nextEvent.location && nextEvent.location.trim() && (
+                          <div className="event-meta-item">
+                            <MapPin size={12} strokeWidth={2} />
+                            <span>{nextEvent.location}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* カウントダウン / 本日開催バッジ（この1箇所のみ） */}
+                    {isToday ? (
+                      <div
+                        className="live-badge"
+                        style={{
+                          backgroundColor: oColor,
+                          boxShadow: `0 2px 8px ${oColor}44`,
+                        }}
+                      >
+                        <span>本日開催</span>
+                      </div>
+                    ) : (
+                      <div
+                        className="event-countdown-pill"
+                        style={{
+                          backgroundColor: `${oColor}18`,
+                          color: oColor,
+                        }}
+                      >
+                        {countdown.shortCountdown || countdown.hoursLabel}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
+            ) : (
+              <div
+                onClick={onOpenAddEvent}
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  borderRadius: 18,
                   border: '1px solid var(--border-subtle)',
+                  padding: '32px 20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                  予定はありません
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  ライブ・イベント・配信などの予定を記録しよう
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 今後の予定リスト（複数ある場合） */}
+          {otherUpcomingEvents.length > 0 && (
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  marginBottom: 10,
+                }}
+              >
+                今後の予定
+              </div>
+              <div
+                style={{
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 8,
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600 }}>
-                  <span>写真の表示位置 (縦方向)</span>
-                  <span>{adjustPositionY}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={adjustPositionY}
-                  onChange={(e) => setAdjustPositionY(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: oColor }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => {
-                      setAdjustPositionY(parseImagePositionY(activeOshi.imagePosition));
-                      setIsAdjustingPosition(false);
-                    }}
-                    style={{ height: 32, padding: '0 12px', fontSize: 12 }}
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={handleSavePosition}
-                    disabled={isSavingPosition}
-                    style={{ height: 32, padding: '0 14px', fontSize: 12, backgroundColor: oColor }}
-                  >
-                    {isSavingPosition ? '保存中...' : '位置を保存'}
-                  </button>
-                </div>
+                {otherUpcomingEvents.map((e) => {
+                  const isToday = isTodayDate(e.date);
+                  const d = parseLocalDate(e.date);
+                  const m = isToday ? 'TODAY' : d ? `${d.getMonth() + 1}月` : '--';
+                  const dy = d ? `${d.getDate()}` : '--';
+                  const w = d ? `(${getWeekdayJa(d)})` : '';
+                  const cd = getEventCountdownInfo(e, currentTime);
+
+                  return (
+                    <div
+                      key={e.id}
+                      onClick={() => onOpenEditEvent(e)}
+                      className="event-row"
+                      style={{ padding: '12px 14px' }}
+                    >
+                      <div
+                        className="event-date-block"
+                        style={{ width: 44, height: 46 }}
+                      >
+                        <span className="event-date-month" style={{ fontSize: 9.5 }}>{m}</span>
+                        <span className="event-date-day" style={{ fontSize: 16 }}>{dy}</span>
+                      </div>
+                      <div className="event-info">
+                        <div className="event-title" style={{ fontSize: 14 }}>
+                          {e.title}
+                        </div>
+                        <div className="event-meta" style={{ fontSize: 12 }}>
+                          <span>{w} {e.time || '終日'}</span>
+                          {e.location && (
+                            <div className="event-meta-item">
+                              <MapPin size={11} strokeWidth={2} />
+                              <span>{e.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {cd.shortCountdown && (
+                        <div
+                          className="event-countdown-pill"
+                          style={{
+                            backgroundColor: `${oColor}12`,
+                            color: oColor,
+                            fontSize: 11,
+                          }}
+                        >
+                          {cd.shortCountdown}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* 2. 直近の重要締切（チケット申込・入金・予約締切） */}
-      {upcomingDeadlines.length > 0 && (
-        <div style={{ marginTop: 18 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-            <AlertCircle size={15} color="#EF4444" />
-            <span>直近の重要締切 ({upcomingDeadlines.length}件)</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {upcomingDeadlines.slice(0, 3).map((dl) => (
-              <div
-                key={dl.id}
-                className="clean-card"
-                style={{
-                  padding: '10px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 10,
-                  borderLeft: dl.daysLeft <= 1 ? '3px solid #EF4444' : '3px solid #F59E0B',
-                }}
-              >
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {dl.title}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
-                    期日: {dl.date.replace(/-/g, '/')}
-                  </div>
-                </div>
-
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 800,
-                    padding: '2px 8px',
-                    borderRadius: 6,
-                    backgroundColor: dl.daysLeft <= 1 ? '#EF444418' : '#F59E0B18',
-                    color: dl.daysLeft <= 1 ? '#EF4444' : '#F59E0B',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                >
-                  {dl.daysLeft === 0 ? '本日締切！' : dl.daysLeft === 1 ? '明日まで！' : `あと${dl.daysLeft}日`}
-                </span>
-              </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* 3. 今月の推し活支出スナップショット */}
-      <div style={{ marginTop: 18 }}>
-        <div
-          className="clean-card"
-          style={{
-            padding: '12px 16px',
-            cursor: onNavigateToTab ? 'pointer' : 'default',
-          }}
-          onClick={() => onNavigateToTab && onNavigateToTab(3)}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <CreditCard size={14} />
-              <span>今月の推し活支出</span>
-            </span>
-            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-              目標: ¥{monthlyBudget.toLocaleString()}
-            </span>
+        {/* 右カラム：参戦準備・ToDo */}
+        <div>
+          <div className="section-header">
+            <div className="section-title">
+              <CheckSquare size={17} strokeWidth={2.2} />
+              <span>参戦準備・ToDo ({incompleteTodos.length})</span>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenAddTodo}
+              className="section-action"
+              style={{ color: oColor }}
+            >
+              ＋ 追加
+            </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
-            <span style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-primary)' }}>
-              ¥{currentMonthTotal.toLocaleString()}
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: currentMonthTotal > monthlyBudget ? '#EF4444' : 'var(--text-secondary)' }}>
-              ({budgetRatio}%)
-            </span>
-          </div>
-
-          <div
-            style={{
-              width: '100%',
-              height: 5,
-              borderRadius: 3,
-              backgroundColor: 'var(--bg-surface-subtle)',
-              overflow: 'hidden',
-            }}
-          >
+          {incompleteTodos.length === 0 ? (
             <div
               style={{
-                height: '100%',
-                width: `${budgetRatio}%`,
-                backgroundColor: currentMonthTotal > monthlyBudget ? '#EF4444' : oColor,
-                borderRadius: 3,
+                backgroundColor: 'var(--bg-surface)',
+                borderRadius: 18,
+                border: '1px solid var(--border-subtle)',
+                padding: '32px 20px',
+                textAlign: 'center',
               }}
-            />
-          </div>
-        </div>
-      </div>
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                すべての準備が完了しています
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                チケット申込、入金、持ち物チェックなどをメモしよう
+              </div>
+            </div>
+          ) : (
+            <div className="reminder-list">
+              {incompleteTodos.map((t) => {
+                const dueDays = t.dueDate ? getDaysUntilDate(t.dueDate) : null;
+                const dueParsed = parseLocalDate(t.dueDate);
+                const isOverdue = dueDays !== null && dueDays < 0;
+                const isDueSoon = dueDays !== null && (dueDays === 0 || dueDays === 1);
+                const dueLabel = dueParsed
+                  ? dueDays === 0
+                    ? '今日まで'
+                    : dueDays === 1
+                      ? '明日まで'
+                      : isOverdue
+                        ? '期限切れ'
+                        : `${dueParsed.getMonth() + 1}/${dueParsed.getDate()}`
+                  : null;
 
-      {/* 4. 次の予定 (カウントダウン) */}
-      <div style={{ marginTop: 20 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 10,
-          }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
-            次の予定
-          </div>
-          <button
-            type="button"
-            onClick={onOpenAddEvent}
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: oColor,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <Plus size={14} />
-            <span>予定を追加</span>
-          </button>
-        </div>
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => onOpenEditTodo(t)}
+                    className="reminder-item"
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleTodo(t);
+                      }}
+                      aria-label="完了にする"
+                      className="reminder-check-btn"
+                      style={isDueSoon ? { borderColor: '#FF3B30' } : {}}
+                    />
 
-        {nextEvent ? (
-          (() => {
-            const isToday = isTodayDate(nextEvent.date);
-            const daysUntil = getDaysUntilDate(nextEvent.date);
-            const parsedDate = parseLocalDate(nextEvent.date) || new Date();
-            const label = isToday ? '本日' : daysUntil > 0 ? `あと${daysUntil}日` : '';
-            return (
-              <div
-                className="clean-card"
-                onClick={() => onOpenEditEvent(nextEvent)}
+                    <div className="reminder-text">
+                      {t.title}
+                    </div>
+
+                    {dueLabel && (
+                      <span className={`reminder-tag ${isOverdue ? 'urgent' : ''}`}>
+                        {dueLabel}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 完了済みアコーディオン */}
+          {completedTodos.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setShowCompletedTodos((prev) => !prev)}
                 style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px 0',
+                  color: 'var(--text-secondary)',
+                  fontSize: 12,
+                  fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 14,
+                  gap: 4,
                 }}
               >
-                <div
-                  className={`schedule-date-box ${isToday ? 'is-today' : ''}`}
-                  style={isToday ? { backgroundColor: oColor } : {}}
-                >
-                  <span className="schedule-date-month">{parsedDate.getMonth() + 1}月</span>
-                  <span className="schedule-date-day">{parsedDate.getDate()}</span>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                    {label && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          padding: '1px 6px',
-                          borderRadius: 4,
-                          backgroundColor: isToday ? `${oColor}20` : 'var(--bg-surface-subtle)',
-                          color: isToday ? oColor : 'var(--text-secondary)',
+                {showCompletedTodos ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <span>完了した準備 ({completedTodos.length})</span>
+              </button>
+
+              {showCompletedTodos && (
+                <div className="reminder-list" style={{ marginTop: 8 }}>
+                  {completedTodos.map((t) => (
+                    <div
+                      key={t.id}
+                      onClick={() => onOpenEditTodo(t)}
+                      className="reminder-item"
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleTodo(t);
                         }}
+                        className="reminder-check-btn checked"
+                        style={{ backgroundColor: oColor, borderColor: oColor }}
                       >
-                        {label}
+                        <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                      </button>
+                      <span className="reminder-text completed">
+                        {t.title}
                       </span>
-                    )}
-                    {nextEvent.time && (
-                      <span style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                        <Clock size={11} />
-                        {nextEvent.time}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {nextEvent.title}
-                  </div>
-                  {nextEvent.location && (
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <MapPin size={11} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextEvent.location}</span>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
-            );
-          })()
-        ) : (
-          <div
-            className="clean-card"
-            style={{
-              padding: '24px 16px',
-              textAlign: 'center',
-              color: 'var(--text-secondary)',
-              fontSize: 13,
-            }}
-          >
-            登録された予定はありません
-          </div>
-        )}
-      </div>
-
-      {/* 3. 直近の予定リスト */}
-      {otherUpcomingEvents.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>
-            その後の予定
-          </div>
-          <div className="schedule-list">
-            {otherUpcomingEvents.map((ev) => {
-              const d = parseLocalDate(ev.date) || new Date();
-              return (
-                <div
-                  key={ev.id}
-                  className="schedule-item"
-                  onClick={() => onOpenEditEvent(ev)}
-                >
-                  <div className="schedule-date-box">
-                    <span className="schedule-date-month">{d.getMonth() + 1}月</span>
-                    <span className="schedule-date-day">{d.getDate()}</span>
-                  </div>
-                  <div className="schedule-content">
-                    <div className="schedule-title">{ev.title}</div>
-                    <div className="schedule-meta">
-                      {ev.time && <span>{ev.time}</span>}
-                      {ev.location && <span>{ev.location}</span>}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
-
-      {/* 4. 参戦準備・TODO */}
-      <div style={{ marginTop: 24 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 10,
-          }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
-            参戦準備・やること ({incompleteTodos.length})
-          </div>
-          <button
-            type="button"
-            onClick={onOpenAddTodo}
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: oColor,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <Plus size={14} />
-            <span>TODOを追加</span>
-          </button>
-        </div>
-
-        {incompleteTodos.length === 0 && completedTodos.length === 0 ? (
-          <div
-            className="clean-card"
-            style={{
-              padding: '24px 16px',
-              textAlign: 'center',
-              color: 'var(--text-secondary)',
-              fontSize: 13,
-            }}
-          >
-            参戦準備やTODOはありません
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {incompleteTodos.map((todo) => (
-              <div
-                key={todo.id}
-                className="todo-item"
-                onClick={() => handleToggleTodo(todo)}
-              >
-                <div className="todo-checkbox" style={{ borderColor: oColor }} />
-                <span className="todo-title">{todo.title}</span>
-                {todo.dueDate && (
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                    {todo.dueDate.replace(/-/g, '/')}
-                  </span>
-                )}
-              </div>
-            ))}
-
-            {completedTodos.length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setShowCompletedTodos(!showCompletedTodos)}
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: 'var(--text-secondary)',
-                    padding: '4px 0',
-                  }}
-                >
-                  {showCompletedTodos ? '完了した項目を隠す' : `完了した項目を表示 (${completedTodos.length})`}
-                </button>
-                {showCompletedTodos && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
-                    {completedTodos.map((todo) => (
-                      <div
-                        key={todo.id}
-                        className="todo-item"
-                        onClick={() => handleToggleTodo(todo)}
-                        style={{ opacity: 0.6 }}
-                      >
-                        <div
-                          className="todo-checkbox checked"
-                          style={{ backgroundColor: oColor, borderColor: oColor }}
-                        >
-                          <CheckSquare size={14} color="#FFFFFF" />
-                        </div>
-                        <span className="todo-title completed">{todo.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

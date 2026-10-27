@@ -34,22 +34,10 @@ const MainApp: React.FC = () => {
     getSavedGoogleSession()
   );
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<string>(() =>
     formatIsoDate(getTodayMidnight())
   );
   const [goodsActiveTab, setGoodsActiveTab] = useState<number>(0);
-
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isMobileMenuOpen]);
 
   // モーダル制御ステート（追加・各種編集）
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
@@ -269,7 +257,7 @@ const MainApp: React.FC = () => {
       index: 0,
       label: 'ホーム',
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
@@ -277,9 +265,9 @@ const MainApp: React.FC = () => {
     },
     {
       index: 1,
-      label: '予定',
+      label: 'カレンダー',
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
           <line x1="16" y1="2" x2="16" y2="6" />
           <line x1="8" y1="2" x2="8" y2="6" />
@@ -289,9 +277,9 @@ const MainApp: React.FC = () => {
     },
     {
       index: 2,
-      label: 'コレクション',
+      label: 'グッズ',
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
           <path d="M3 6h18" />
           <path d="M16 10a4 4 0 0 1-8 0" />
@@ -300,19 +288,9 @@ const MainApp: React.FC = () => {
     },
     {
       index: 3,
-      label: '収支・レポ',
+      label: 'マイページ',
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="5" width="20" height="14" rx="2" />
-          <line x1="2" y1="10" x2="22" y2="10" />
-        </svg>
-      ),
-    },
-    {
-      index: 4,
-      label: '設定・推し',
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
@@ -320,18 +298,44 @@ const MainApp: React.FC = () => {
     },
   ];
 
-  const renderBottomNavTab = (item: { index: number; label: string; icon: React.ReactNode }) => {
+  const renderBottomTab = (item: { index: number; label: string; icon: React.ReactNode }) => {
     const selected = currentIndex === item.index;
+    const color = selected
+      ? themeColor
+      : isDark
+        ? 'rgba(255, 255, 255, 0.45)'
+        : 'rgba(0, 0, 0, 0.45)';
     return (
       <button
         key={item.index}
         type="button"
         onClick={() => setCurrentIndex(item.index)}
-        className={`mobile-bottom-nav-btn ${selected ? 'active' : ''}`}
-        style={selected ? { color: themeColor } : {}}
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 3,
+          backgroundColor: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '4px 0',
+          color,
+          WebkitTapHighlightColor: 'transparent',
+        }}
       >
         {item.icon}
-        <span className="mobile-bottom-nav-btn-label">{item.label}</span>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: selected ? 800 : 600,
+            color,
+            letterSpacing: '0.02em',
+          }}
+        >
+          {item.label}
+        </span>
       </button>
     );
   };
@@ -339,174 +343,6 @@ const MainApp: React.FC = () => {
   return (
     <div className="app-shell" style={{ backgroundColor: bgColor }}>
       <ToastContainer />
-
-      {/* Smartphone Top Header with Hamburger Menu Button */}
-      <header className="mobile-header">
-        <div className="mobile-header-left">
-          <button
-            type="button"
-            className="mobile-hamburger-btn"
-            onClick={() => setIsMobileMenuOpen(true)}
-            aria-label="メニューを開く"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="6" x2="20" y2="6" />
-              <line x1="4" y1="12" x2="20" y2="12" />
-              <line x1="4" y1="18" x2="20" y2="18" />
-            </svg>
-          </button>
-          <div className="mobile-brand" onClick={() => setCurrentIndex(0)}>
-            <div className="mobile-brand-icon" style={{ backgroundColor: themeColor }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-            </div>
-            <span className="mobile-brand-title">推しサポ</span>
-          </div>
-        </div>
-
-        <div className="mobile-header-right">
-          <button
-            type="button"
-            className="mobile-header-action-btn"
-            onClick={handleCenterAddClick}
-            aria-label="新規追加"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      {/* Smartphone Hamburger Drawer & Backdrop */}
-      <div
-        className={`mobile-drawer-backdrop ${isMobileMenuOpen ? 'open' : ''}`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      />
-      <aside className={`mobile-drawer ${isMobileMenuOpen ? 'open' : ''}`}>
-        <div className="mobile-drawer-header">
-          <div className="mobile-drawer-brand">
-            <div className="mobile-drawer-logo" style={{ backgroundColor: themeColor }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-            </div>
-            <span className="mobile-drawer-title">推しサポ</span>
-          </div>
-          <button
-            type="button"
-            className="mobile-drawer-close"
-            onClick={() => setIsMobileMenuOpen(false)}
-            aria-label="メニューを閉じる"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        {activeOshi && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '10px 12px',
-              borderRadius: 10,
-              backgroundColor: 'var(--bg-surface-subtle)',
-              border: '1px solid var(--border-subtle)',
-              marginBottom: 16,
-              cursor: 'pointer',
-            }}
-            onClick={() => {
-              setCurrentIndex(0);
-              setIsMobileMenuOpen(false);
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                overflow: 'hidden',
-                backgroundColor: `${themeColor}22`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              {activeOshi.image ? (
-                <img
-                  src={activeOshi.image}
-                  alt={activeOshi.name}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    objectPosition: activeOshi.imagePosition || 'center 20%',
-                  }}
-                />
-              ) : (
-                <span style={{ color: themeColor, fontWeight: 800, fontSize: 15 }}>
-                  {activeOshi.name.slice(0, 1)}
-                </span>
-              )}
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: textColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {activeOshi.name}
-              </div>
-              <div style={{ fontSize: 11, color: subtextColor, fontWeight: 500 }}>
-                応援中
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="mobile-drawer-links">
-          {navItems.map((item) => {
-            const selected = currentIndex === item.index;
-            return (
-              <button
-                key={item.index}
-                type="button"
-                className={`mobile-drawer-btn ${selected ? 'active' : ''}`}
-                onClick={() => {
-                  setCurrentIndex(item.index);
-                  setIsMobileMenuOpen(false);
-                }}
-                style={selected ? { backgroundColor: `${themeColor}1F`, color: themeColor } : {}}
-              >
-                <div className="mobile-drawer-btn-icon">{item.icon}</div>
-                <span className="mobile-drawer-btn-label">{item.label}</span>
-                {selected && <div className="mobile-drawer-btn-active-bar" style={{ backgroundColor: themeColor }} />}
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          className="mobile-drawer-add-btn"
-          onClick={() => {
-            setIsMobileMenuOpen(false);
-            handleCenterAddClick();
-          }}
-          style={{
-            backgroundColor: themeColor,
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          <span>新規追加</span>
-        </button>
-      </aside>
 
       {/* Tablet (Navigation Rail) & PC (Sidebar) */}
       <aside
@@ -594,7 +430,6 @@ const MainApp: React.FC = () => {
             onOpenEditEvent={(ev) => handleOpenEditEvent(ev)}
             onOpenAddTodo={() => handleOpenAddTodo()}
             onOpenEditTodo={(td) => handleOpenEditTodo(td)}
-            onNavigateToTab={(idx) => setCurrentIndex(idx)}
           />
         )}
         {currentIndex === 1 && (
@@ -612,19 +447,65 @@ const MainApp: React.FC = () => {
           />
         )}
         {currentIndex === 3 && (
-          <RecordsView
-            onOpenAddExpense={() => handleOpenAddExpense()}
-            onOpenEditExpense={(ex) => handleOpenEditExpense(ex)}
-          />
-        )}
-        {currentIndex === 4 && (
           <MyPageView onLogout={() => setAuthSession(null)} />
         )}
       </main>
 
-      {/* Grounded Mobile Bottom Navigation Bar (5 Primary Dedicated Sections) */}
-      <nav className="mobile-bottom-nav">
-        {navItems.map(renderBottomNavTab)}
+      {/* Smartphone Bottom Navigation Bar */}
+      <nav
+        className="bottom-nav"
+        style={{
+          backgroundColor: isDark ? 'rgba(20, 22, 31, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: `1px solid ${navBorder}`,
+          alignItems: 'center',
+          height: 60,
+          padding: '0 8px',
+        }}
+      >
+        {renderBottomTab(navItems[0])}
+        {renderBottomTab(navItems[1])}
+
+        {/* 中央の「＋」アクションボタン */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleCenterAddClick}
+            aria-label="追加する"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              border: 'none',
+              backgroundColor: themeColor,
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              padding: 0,
+              boxShadow: `0 4px 14px ${themeColor}66`,
+              transform: 'translateY(-2px)',
+              transition: 'transform 0.15s ease',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </div>
+
+        {renderBottomTab(navItems[2])}
+        {renderBottomTab(navItems[3])}
       </nav>
 
       <AddEntrySpeedDialSheet

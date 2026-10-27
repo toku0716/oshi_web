@@ -1,23 +1,9 @@
-import React, { useState, useRef, useMemo } from 'react';
-import {
-  Pencil,
-  Heart,
-  ExternalLink,
-  MessageSquare,
-  Search,
-  Wallet,
-  Smartphone,
-  Calendar,
-  Package,
-  BookOpen,
-  DollarSign,
-  X,
-  Check,
-} from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Pencil, Heart, Gift, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
 import { ResetDataModal } from '../components/modals/ResetDataModal';
-import { backupRepository, oshiRepository, settingsRepository } from '../repository';
+import { backupRepository, oshiRepository } from '../repository';
 import type { Oshi, ThemeModeOption } from '../types';
 import {
   clearGoogleSession,
@@ -44,10 +30,6 @@ interface MyPageViewProps {
 export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
   const {
     oshis,
-    events,
-    goods,
-    expenses,
-    journals,
     settings,
     themeColor,
     setThemeColor,
@@ -58,12 +40,6 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
     clearAllData,
     showToast,
   } = useApp();
-
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [budgetInput, setBudgetInput] = useState<string>(
-    settings?.monthlyBudget ? String(settings.monthlyBudget) : ''
-  );
-  const [isSavingBudget, setIsSavingBudget] = useState<boolean>(false);
 
   const [isOshiSheetOpen, setIsOshiSheetOpen] = useState<boolean>(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
@@ -187,83 +163,6 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
     }
   };
 
-  const searchResults = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return null;
-
-    const matchedOshis = oshis.filter(
-      (o) =>
-        o.name.toLowerCase().includes(q) ||
-        o.ruby?.toLowerCase().includes(q) ||
-        o.group?.toLowerCase().includes(q) ||
-        o.category?.toLowerCase().includes(q) ||
-        o.memo?.toLowerCase().includes(q)
-    );
-
-    const matchedEvents = events.filter(
-      (e) =>
-        e.title.toLowerCase().includes(q) ||
-        e.location?.toLowerCase().includes(q) ||
-        e.memo?.toLowerCase().includes(q) ||
-        e.seatInfo?.toLowerCase().includes(q)
-    );
-
-    const matchedGoods = goods.filter(
-      (g) =>
-        g.name.toLowerCase().includes(q) ||
-        g.category.toLowerCase().includes(q) ||
-        g.memo?.toLowerCase().includes(q) ||
-        g.storageLocation?.toLowerCase().includes(q)
-    );
-
-    const matchedExpenses = expenses.filter(
-      (ex) =>
-        ex.title.toLowerCase().includes(q) ||
-        ex.category.toLowerCase().includes(q) ||
-        ex.memo?.toLowerCase().includes(q)
-    );
-
-    const matchedJournals = journals.filter(
-      (j) =>
-        j.title.toLowerCase().includes(q) ||
-        j.content.toLowerCase().includes(q) ||
-        j.tags?.some((t) => t.toLowerCase().includes(q))
-    );
-
-    const totalCount =
-      matchedOshis.length +
-      matchedEvents.length +
-      matchedGoods.length +
-      matchedExpenses.length +
-      matchedJournals.length;
-
-    return {
-      totalCount,
-      oshis: matchedOshis,
-      events: matchedEvents,
-      goods: matchedGoods,
-      expenses: matchedExpenses,
-      journals: matchedJournals,
-    };
-  }, [searchQuery, oshis, events, goods, expenses, journals]);
-
-  const handleSaveBudget = async (amount: number | undefined) => {
-    setIsSavingBudget(true);
-    try {
-      await settingsRepository.saveSettings({ monthlyBudget: amount });
-      await refreshAllData();
-      setBudgetInput(amount ? String(amount) : '');
-      showToast(
-        amount ? `月間予算を ¥${amount.toLocaleString()} に設定しました` : '月間予算設定を解除しました',
-        'success'
-      );
-    } catch {
-      showToast('予算設定の保存に失敗しました', 'error');
-    } finally {
-      setIsSavingBudget(false);
-    }
-  };
-
   const cardBg = isDark ? '#171821' : '#FFFFFF';
   const borderColor = isDark ? '#262838' : '#E8EBF2';
   const textColor = isDark ? '#FFFFFF' : '#11141C';
@@ -368,225 +267,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
         マイページ
       </div>
 
-      <div style={{ height: 16 }} />
-
-      {/* 1. 横断グローバル検索バー */}
-      <div
-        style={{
-          backgroundColor: cardBg,
-          borderRadius: 14,
-          border: '1px solid var(--border-subtle)',
-          padding: '10px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          marginBottom: 16,
-        }}
-      >
-        <Search size={18} color={subtextColor} />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="推し、イベント、グッズ、収支、レポを横断検索..."
-          style={{
-            flex: 1,
-            background: 'none',
-            border: 'none',
-            outline: 'none',
-            fontSize: 14,
-            fontWeight: 600,
-            color: textColor,
-          }}
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery('')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: subtextColor,
-              cursor: 'pointer',
-              padding: 4,
-            }}
-          >
-            <X size={16} />
-          </button>
-        )}
-      </div>
-
-      {/* 検索結果パネル（検索ワード入力時のみ表示） */}
-      {searchResults && (
-        <div
-          style={{
-            backgroundColor: cardBg,
-            borderRadius: 16,
-            border: '1px solid var(--border-subtle)',
-            padding: 16,
-            marginBottom: 20,
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: textColor }}>
-              検索結果: {searchResults.totalCount}件
-            </span>
-            <span style={{ fontSize: 11, color: subtextColor }}>
-              キーワード「{searchQuery}」
-            </span>
-          </div>
-
-          {searchResults.totalCount === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px 0', color: subtextColor, fontSize: 13 }}>
-              一致するデータが見つかりませんでした
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* 推し結果 */}
-              {searchResults.oshis.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: themeColor, marginBottom: 6 }}>
-                    推し ({searchResults.oshis.length}件)
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {searchResults.oshis.map((o) => (
-                      <span
-                        key={o.id}
-                        onClick={() => openOshiSheet(o)}
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          padding: '4px 10px',
-                          borderRadius: 8,
-                          backgroundColor: `${o.color || themeColor}18`,
-                          color: o.color || themeColor,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {o.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 予定結果 */}
-              {searchResults.events.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: themeColor, marginBottom: 6 }}>
-                    予定・イベント ({searchResults.events.length}件)
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {searchResults.events.map((ev) => (
-                      <div
-                        key={ev.id}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 8,
-                          backgroundColor: 'var(--bg-surface-subtle)',
-                          fontSize: 12.5,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <span style={{ fontWeight: 700, color: textColor }}>{ev.title}</span>
-                        <span style={{ color: subtextColor, fontSize: 11 }}>{ev.date.replace(/-/g, '/')}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* グッズ結果 */}
-              {searchResults.goods.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: themeColor, marginBottom: 6 }}>
-                    グッズ ({searchResults.goods.length}件)
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {searchResults.goods.map((g) => (
-                      <div
-                        key={g.id}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 8,
-                          backgroundColor: 'var(--bg-surface-subtle)',
-                          fontSize: 12.5,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <span style={{ fontWeight: 700, color: textColor }}>{g.name}</span>
-                        <span style={{ color: subtextColor, fontSize: 11 }}>
-                          {g.category} {g.storageLocation ? `・${g.storageLocation}` : ''}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 収支結果 */}
-              {searchResults.expenses.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: themeColor, marginBottom: 6 }}>
-                    収支 ({searchResults.expenses.length}件)
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {searchResults.expenses.map((ex) => (
-                      <div
-                        key={ex.id}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 8,
-                          backgroundColor: 'var(--bg-surface-subtle)',
-                          fontSize: 12.5,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <span style={{ fontWeight: 700, color: textColor }}>{ex.title}</span>
-                        <span style={{ fontWeight: 800, color: textColor }}>¥{ex.amount.toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* レポ結果 */}
-              {searchResults.journals.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: themeColor, marginBottom: 6 }}>
-                    参戦レポ・思い出 ({searchResults.journals.length}件)
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {searchResults.journals.map((j) => (
-                      <div
-                        key={j.id}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 8,
-                          backgroundColor: 'var(--bg-surface-subtle)',
-                          fontSize: 12.5,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <span style={{ fontWeight: 700, color: textColor }}>{j.title}</span>
-                        <span style={{ color: subtextColor, fontSize: 11 }}>{j.date.replace(/-/g, '/')}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      <div style={{ height: 20 }} />
 
       {/* スマホは1カラム、タブレット・PCは2カラム（左：推しプロフィール、右：設定・データ管理） */}
       <div className="mypage-grid-layout">
@@ -615,36 +296,71 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
               <div
                 key={oshi.id}
                 style={{
-                  marginBottom: 16,
+                  marginBottom: 18,
                   backgroundColor: cardBg,
-                  borderRadius: 20,
+                  borderRadius: 22,
                   border: `1px solid var(--border-subtle)`,
+                  boxShadow: 'var(--shadow-card)',
                   overflow: 'hidden',
                   position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
                 }}
               >
-                {/* プロフィールメイン（正方形写真 + 推し名/ルビ + カテゴリ/グループ + 編集 + 推し歴） */}
-                <div style={{ padding: '18px 18px 14px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                    {/* 正方形写真 (1:1) */}
+                {/* 会員証トップバー */}
+                <div
+                  style={{
+                    padding: '12px 18px',
+                    background: `linear-gradient(90deg, ${oColor}18, transparent)`,
+                    borderBottom: `1px solid var(--border-subtle)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: oColor }}>
+                      FAN MEMBERSHIP
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openOshiSheet(oshi)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: oColor,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: 0,
+                    }}
+                  >
+                    <span>編集</span>
+                    <Pencil size={11} strokeWidth={2.4} />
+                  </button>
+                </div>
+
+                {/* 会員証メイン（写真 + 推し名 + 推し歴） */}
+                <div style={{ padding: '20px 20px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div
                       onClick={() => openOshiSheet(oshi)}
                       title="タップして画像・プロフィールを編集"
                       style={{
-                        width: 76,
-                        height: 76,
-                        aspectRatio: '1 / 1',
-                        borderRadius: 18,
-                        backgroundColor: `${oColor}18`,
+                        width: 72,
+                        height: 72,
+                        borderRadius: 20,
+                        backgroundColor: `${oColor}22`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         overflow: 'hidden',
                         flexShrink: 0,
                         cursor: 'pointer',
-                        border: `1px solid var(--border-subtle)`,
+                        border: `2px solid ${oColor}`,
+                        boxShadow: `0 4px 16px ${oColor}44`,
                       }}
                     >
                       {oshi.image ? (
@@ -655,99 +371,20 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover',
-                            objectPosition: oshi.imagePosition || 'center 20%',
                           }}
                         />
                       ) : (
-                        <span style={{ fontSize: 28, fontWeight: 800, color: oColor }}>
-                          {oshi.name.slice(0, 1)}
-                        </span>
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill={oColor} stroke={oColor} strokeWidth="2">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                        </svg>
                       )}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* 上段：カテゴリ & 所属グループ & 編集ボタン */}
                       <div
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 8,
-                          marginBottom: 4,
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              backgroundColor: oColor,
-                              flexShrink: 0,
-                            }}
-                          />
-                          {oshi.category && (
-                            <span
-                              style={{
-                                fontSize: 10.5,
-                                fontWeight: 700,
-                                padding: '2px 8px',
-                                borderRadius: 999,
-                                backgroundColor: `${oColor}18`,
-                                color: oColor,
-                                whiteSpace: 'nowrap',
-                                flexShrink: 0,
-                              }}
-                            >
-                              {oshi.category}
-                            </span>
-                          )}
-                          {oshi.group && (
-                            <span
-                              style={{
-                                fontSize: 10.5,
-                                fontWeight: 600,
-                                padding: '2px 8px',
-                                borderRadius: 999,
-                                backgroundColor: 'var(--bg-surface-subtle)',
-                                color: subtextColor,
-                                whiteSpace: 'nowrap',
-                                flexShrink: 0,
-                              }}
-                            >
-                              {oshi.group}
-                            </span>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openOshiSheet(oshi)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: oColor,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            padding: '2px 6px',
-                            borderRadius: 8,
-                            flexShrink: 0,
-                          }}
-                        >
-                          <span>編集</span>
-                          <Pencil size={11} strokeWidth={2.4} />
-                        </button>
-                      </div>
-
-                      {/* 推しの名前（ここ1箇所のみに堂々と表示） */}
-                      <div
-                        style={{
-                          fontSize: 20,
-                          fontWeight: 850,
+                          fontSize: 22,
+                          fontWeight: 700,
                           letterSpacing: '-0.02em',
                           color: textColor,
                           overflow: 'hidden',
@@ -756,21 +393,16 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                         }}
                       >
                         {oshi.name}
-                        {oshi.ruby && (
-                          <span style={{ fontSize: 12, fontWeight: 600, color: subtextColor, marginLeft: 6 }}>
-                            （{oshi.ruby}）
-                          </span>
-                        )}
                       </div>
 
                       <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                         <span
                           style={{
                             fontSize: 12,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             padding: '3px 10px',
                             borderRadius: 999,
-                            backgroundColor: `${oColor}18`,
+                            backgroundColor: `${oColor}1F`,
                             color: oColor,
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -780,67 +412,46 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                           <Heart size={11} fill="currentColor" />
                           <span>
                             {daysSince !== null
-                              ? `推して ${daysSince} 日目`
-                              : '応援中'}
+                              ? `推し始めて ${daysSince} 日目`
+                              : 'ずっと応援中'}
                           </span>
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* 記念日・ステータス Bento タイル */}
-                  {(bdayDate || debutDateObj || oshi.sinceDate) && (
+                  {/* 記念日バッジ（誕生日・デビュー日） */}
+                  {(bdayDate || debutDateObj) && (
                     <div
                       style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                        marginTop: 16,
+                        paddingTop: 14,
+                        borderTop: `1px dashed ${borderColor}`,
+                        display: 'flex',
+                        flexWrap: 'wrap',
                         gap: 8,
-                        marginTop: 2,
                       }}
                     >
-                      {oshi.sinceDate && (
-                        <div
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 12,
-                            backgroundColor: 'var(--bg-surface-subtle)',
-                            border: '1px solid var(--border-subtle)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 2,
-                          }}
-                        >
-                          <span style={{ fontSize: 10, fontWeight: 700, color: subtextColor }}>推し始めた日</span>
-                          <span style={{ fontSize: 12.5, fontWeight: 700, color: textColor }}>
-                            {oshi.sinceDate.replace(/-/g, '/')}
-                          </span>
-                        </div>
-                      )}
-
                       {bdayDate && (
                         <div
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
+                            backgroundColor: isDark ? 'rgba(255, 45, 85, 0.16)' : 'rgba(255, 45, 85, 0.1)',
                             borderRadius: 12,
-                            backgroundColor: 'var(--bg-surface-subtle)',
-                            border: '1px solid var(--border-subtle)',
+                            fontSize: 12,
+                            fontWeight: 800,
+                            color: '#FF2D55',
                             display: 'flex',
-                            flexDirection: 'column',
-                            gap: 2,
+                            alignItems: 'center',
+                            gap: 6,
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: subtextColor }}>誕生日</span>
-                            {bDays === 0 ? (
-                              <span style={{ fontSize: 9.5, fontWeight: 800, padding: '1px 5px', borderRadius: 4, backgroundColor: '#FF2D55', color: '#fff' }}>
-                                TODAY
-                              </span>
-                            ) : (
-                              <span style={{ fontSize: 10, fontWeight: 700, color: '#FF2D55' }}>あと{bDays}日</span>
-                            )}
-                          </div>
-                          <span style={{ fontSize: 12.5, fontWeight: 700, color: textColor }}>
-                            {bdayDate.getMonth() + 1}/{bdayDate.getDate()}
+                          <Gift size={13} strokeWidth={2.2} />
+                          <span>
+                            誕生日 {bdayDate.getMonth() + 1}/{bdayDate.getDate()}
+                          </span>
+                          <span style={{ opacity: 0.85, fontWeight: 700 }}>
+                            {bDays === 0 ? '（本日）' : `（あと${bDays}日）`}
                           </span>
                         </div>
                       )}
@@ -848,46 +459,28 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                       {debutDateObj && (
                         <div
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
+                            backgroundColor: isDark ? 'rgba(255, 149, 0, 0.16)' : 'rgba(255, 149, 0, 0.1)',
                             borderRadius: 12,
-                            backgroundColor: 'var(--bg-surface-subtle)',
-                            border: '1px solid var(--border-subtle)',
+                            fontSize: 12,
+                            fontWeight: 800,
+                            color: '#FF9500',
                             display: 'flex',
-                            flexDirection: 'column',
-                            gap: 2,
+                            alignItems: 'center',
+                            gap: 6,
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: subtextColor }}>デビュー・記念日</span>
-                            {dDays === 0 ? (
-                              <span style={{ fontSize: 9.5, fontWeight: 800, padding: '1px 5px', borderRadius: 4, backgroundColor: '#FF9500', color: '#fff' }}>
-                                {dYears}周年
-                              </span>
-                            ) : (
-                              <span style={{ fontSize: 10, fontWeight: 700, color: '#FF9500' }}>あと{dDays}日</span>
-                            )}
-                          </div>
-                          <span style={{ fontSize: 12.5, fontWeight: 700, color: textColor }}>
-                            {debutDateObj.getFullYear()}/{debutDateObj.getMonth() + 1}/{debutDateObj.getDate()}
+                          <Sparkles size={13} strokeWidth={2.2} />
+                          <span>
+                            デビュー {debutDateObj.getFullYear()}/{debutDateObj.getMonth() + 1}/{debutDateObj.getDate()}
+                          </span>
+                          <span style={{ opacity: 0.85, fontWeight: 700 }}>
+                            {dDays === 0
+                              ? `（${dYears}周年 本日）`
+                              : `（${dYears}周年まであと${dDays}日）`}
                           </span>
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {/* メモ */}
-                  {oshi.memo && oshi.memo.trim() && (
-                    <div
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: 10,
-                        backgroundColor: 'var(--bg-surface-subtle)',
-                        fontSize: 12,
-                        lineHeight: 1.5,
-                        color: subtextColor,
-                      }}
-                    >
-                      {oshi.memo}
                     </div>
                   )}
                 </div>
@@ -922,128 +515,8 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
           </button>
         </div>
 
-        {/* 右カラム：予算・推しカラー・外観・PWA・データ管理 */}
+        {/* 右カラム：推しカラー設定・外観モード・データ管理 */}
         <div>
-          {/* 1. 推し活の月間予算設定 */}
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: subtextColor,
-              marginBottom: 8,
-            }}
-          >
-            推し活の月間予算
-          </div>
-          <div
-            style={{
-              padding: 16,
-              backgroundColor: cardBg,
-              borderRadius: 16,
-              border: `1px solid ${borderColor}`,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Wallet size={18} color={themeColor} />
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: textColor }}>今月の予算目安</span>
-              </div>
-              <span style={{ fontSize: 16, fontWeight: 900, color: themeColor }}>
-                {settings?.monthlyBudget ? `¥${settings.monthlyBudget.toLocaleString()}` : '未設定'}
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-              {[10000, 30000, 50000, 100000].map((amt) => {
-                const isSelected = settings?.monthlyBudget === amt;
-                return (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => handleSaveBudget(amt)}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 8,
-                      border: `1px solid ${isSelected ? themeColor : borderColor}`,
-                      backgroundColor: isSelected ? `${themeColor}18` : 'transparent',
-                      color: isSelected ? themeColor : textColor,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ¥{(amt / 10000).toFixed(0)}万
-                  </button>
-                );
-              })}
-              {settings?.monthlyBudget && (
-                <button
-                  type="button"
-                  onClick={() => handleSaveBudget(undefined)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 8,
-                    border: `1px solid ${borderColor}`,
-                    backgroundColor: 'transparent',
-                    color: '#EF4444',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  解除
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="number"
-                placeholder="金額を入力 (例: 35000)"
-                value={budgetInput}
-                onChange={(e) => setBudgetInput(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '9px 12px',
-                  borderRadius: 10,
-                  border: `1px solid ${borderColor}`,
-                  backgroundColor: inputBg,
-                  color: textColor,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  outline: 'none',
-                }}
-              />
-              <button
-                type="button"
-                disabled={isSavingBudget}
-                onClick={() => {
-                  const val = parseInt(budgetInput, 10);
-                  if (!isNaN(val) && val > 0) {
-                    handleSaveBudget(val);
-                  }
-                }}
-                style={{
-                  padding: '0 16px',
-                  borderRadius: 10,
-                  border: 'none',
-                  backgroundColor: themeColor,
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                保存
-              </button>
-            </div>
-            <div style={{ marginTop: 8, fontSize: 11, color: subtextColor, lineHeight: 1.4 }}>
-              ※ 設定すると、ホーム画面と収支画面で今月の推し活予算との比較が反映されます。
-            </div>
-          </div>
-
-          <div style={{ height: 20 }} />
-
           {/* 2. 推しカラー（テーマカラー）設定 */}
           <div
             style={{
@@ -1081,6 +554,9 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                     borderRadius: '50%',
                     backgroundColor: preset.hex,
                     border: isSelected ? '2.5px solid #FFFFFF' : 'none',
+                    boxShadow: isSelected
+                      ? `0 2px 6px ${preset.hex}88`
+                      : 'none',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -1154,58 +630,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
 
           <div style={{ height: 20 }} />
 
-          {/* 4. PWA・ホーム画面追加 */}
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#8E8E93',
-              marginBottom: 8,
-            }}
-          >
-            PWA・アプリ化について
-          </div>
-          <div
-            style={{
-              padding: 16,
-              backgroundColor: cardBg,
-              borderRadius: 16,
-              border: `1px solid ${borderColor}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Smartphone size={20} color={themeColor} />
-              <div style={{ fontSize: 14, fontWeight: 700, color: textColor }}>
-                ホーム画面に追加してアプリとして使う
-              </div>
-            </div>
-            <div style={{ fontSize: 12, color: subtextColor, lineHeight: 1.5 }}>
-              本アプリはProgressive Web App (PWA) に対応しています。ホーム画面に追加すると、全画面のアプリ体験とオフラインでのデータ閲覧が利用可能になります。
-            </div>
-            <div
-              style={{
-                padding: '10px 12px',
-                borderRadius: 10,
-                backgroundColor: 'var(--bg-surface-subtle)',
-                fontSize: 11.5,
-                color: textColor,
-                lineHeight: 1.6,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-              }}
-            >
-              <div><strong>iOS (Safari):</strong> 下部の「共有」ボタン [↑] ➔ 「ホーム画面に追加」</div>
-              <div><strong>Android / PC (Chrome):</strong> 右上のメニュー [⋮] ➔ 「アプリをインストール」</div>
-            </div>
-          </div>
-
-          <div style={{ height: 20 }} />
-
-          {/* 5. データ管理（バックアップ保存・復元） */}
+          {/* 4. データ管理（バックアップ保存・復元） */}
           <div
             style={{
               fontSize: 13,
@@ -1317,95 +742,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
 
           <div style={{ height: 20 }} />
 
-          {/* 5. アプリ改善アンケート */}
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#8E8E93',
-              marginBottom: 8,
-            }}
-          >
-            フィードバック
-          </div>
-          <div
-            style={{
-              padding: '18px 20px',
-              backgroundColor: cardBg,
-              borderRadius: 16,
-              border: `1px solid ${borderColor}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-              <div
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 12,
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
-                  color: textColor,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <MessageSquare size={20} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: textColor,
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  アプリ改善アンケートにご協力ください
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: '#8E8E93',
-                    marginTop: 4,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  推しサポをより便利にするため、皆さまの感想や欲しい機能をお聞かせください。（所要時間: 約2〜3分）
-                </div>
-              </div>
-            </div>
-
-            <a
-              href="https://docs.google.com/forms/d/e/1FAIpQLScDDuFzycUKURbf2saIABpcYtGiMKxP9mnQkEdoRRZqPd0foA/viewform"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '11px 18px',
-                borderRadius: 12,
-                backgroundColor: themeColor,
-                color: '#FFFFFF',
-                fontSize: 13.5,
-                fontWeight: 700,
-                textDecoration: 'none',
-                boxSizing: 'border-box',
-              }}
-            >
-              <span>アンケートに回答する（Googleフォーム）</span>
-              <ExternalLink size={15} />
-            </a>
-          </div>
-
-          <div style={{ height: 20 }} />
-
-          {/* 6. データとプライバシー */}
+          {/* 5. データとプライバシー */}
           <div
             style={{
               fontSize: 13,
@@ -1453,50 +790,6 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
               }}
             />
 
-            <a
-              href="https://docs.google.com/forms/d/e/1FAIpQLScDDuFzycUKURbf2saIABpcYtGiMKxP9mnQkEdoRRZqPd0foA/viewform"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                textDecoration: 'none',
-                color: textColor,
-                fontSize: 13,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                boxSizing: 'border-box',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>ご意見・アンケートフォーム</span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: '1px 6px',
-                    borderRadius: 4,
-                    backgroundColor: `${themeColor}22`,
-                    color: themeColor,
-                  }}
-                >
-                  受付中
-                </span>
-              </span>
-              <span style={{ color: '#8E8E93', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <ExternalLink size={13} />
-              </span>
-            </a>
-
-            <div
-              style={{
-                height: 1,
-                backgroundColor: borderColor,
-              }}
-            />
-
             <button
               type="button"
               onClick={() => setIsPrivacyOpen(true)}
@@ -1517,6 +810,57 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
               <span>利用規約・プライバシーポリシー</span>
               <span style={{ color: '#8E8E93', fontSize: 13 }}>›</span>
             </button>
+          </div>
+
+          {/* 6. アプリ改善アンケート */}
+          <div style={{ height: 20 }} />
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#8E8E93',
+              marginBottom: 8,
+            }}
+          >
+            ご意見・ご要望
+          </div>
+          <div
+            style={{
+              backgroundColor: cardBg,
+              borderRadius: 16,
+              border: `1px solid ${borderColor}`,
+              padding: '16px',
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 700, color: textColor, marginBottom: 4 }}>
+              📝 アプリ改善アンケート
+            </div>
+            <div style={{ fontSize: 12, color: '#8E8E93', lineHeight: 1.5, marginBottom: 12 }}>
+              推しサポをより便利にするため、ご意見・ご感想をお聞かせください。（所要時間: 約2分）
+            </div>
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLScDDuFzycUKURbf2saIABpcYtGiMKxP9mnQkEdoRRZqPd0foA/viewform"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: 12,
+                backgroundColor: themeColor,
+                color: '#FFFFFF',
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: 'none',
+                boxSizing: 'border-box',
+              }}
+            >
+              <span>アンケートに回答する</span>
+              <span style={{ fontSize: 12 }}>↗</span>
+            </a>
           </div>
 
           {/* Google認証でログイン中の場合のみアカウント表示＆ログアウトボタンを表示（管理者設定は一切表示しない） */}
@@ -1723,17 +1067,15 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                   </span>
                 </div>
 
-                {/* 正方形プレビュー */}
+                {/* ミニカバープレビュー */}
                 <div
                   style={{
                     position: 'relative',
-                    width: 90,
-                    height: 90,
-                    margin: '0 auto',
-                    borderRadius: 16,
+                    width: '100%',
+                    height: 70,
+                    borderRadius: 10,
                     overflow: 'hidden',
                     border: `1px solid ${subtextColor}33`,
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
                   }}
                 >
                   <img
@@ -1870,6 +1212,9 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                         borderRadius: '50%',
                         backgroundColor: preset.hex,
                         border: selected ? '2.5px solid #FFFFFF' : 'none',
+                        boxShadow: selected
+                          ? `0 2px 8px ${preset.hex}99`
+                          : 'none',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
