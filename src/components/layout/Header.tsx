@@ -1,91 +1,148 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { Plus, Moon, Sun, ChevronDown } from 'lucide-react';
+import { Plus, CalendarPlus, Users, Palette } from 'lucide-react';
 
 interface HeaderProps {
   onAddOshiClick?: () => void;
+  onQuickAddEvent?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onAddOshiClick }) => {
+const HEADER_THEME_COLORS = [
+  { name: 'ローズ', hex: '#f43f5e' },
+  { name: 'ピンク', hex: '#ec4899' },
+  { name: 'レッド', hex: '#ef4444' },
+  { name: 'オレンジ', hex: '#f97316' },
+  { name: 'イエロー', hex: '#eab308' },
+  { name: 'エメラルド', hex: '#10b981' },
+  { name: 'スカイ', hex: '#0ea5e9' },
+  { name: 'ブルー', hex: '#3b82f6' },
+  { name: 'パープル', hex: '#a855f7' },
+  { name: 'ブラック', hex: '#1e293b' },
+];
+
+export const Header: React.FC<HeaderProps> = ({ onAddOshiClick, onQuickAddEvent }) => {
   const {
     oshis,
     activeOshiId,
     setActiveOshiId,
     activeOshi,
-    themeMode,
-    setThemeMode,
+    themeColor,
+    setThemeColor,
   } = useApp();
+
+  const currentColor = (activeOshi?.color || themeColor || '#f43f5e').toLowerCase();
 
   const today = new Date();
   const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-  const formattedToday = `${today.getMonth() + 1}月${today.getDate()}日 (${weekdays[today.getDay()]})`;
+  const formattedToday = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日(${weekdays[today.getDay()]})`;
 
   return (
-    <header className="sticky top-0 z-20 bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] px-4 sm:px-6 py-2.5 transition-colors">
-      <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-        {/* Left: Mobile Brand / Date */}
-        <div className="flex items-center gap-3">
-          <div className="md:hidden flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-xs shadow-xs">
-              推
-            </div>
-            <span className="font-bold text-sm tracking-tight text-neutral-950 dark:text-white">推しサポ</span>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 font-medium num-tabular">
-            <span>{formattedToday}</span>
-          </div>
+    <header className="app-header">
+      <div className="header-top">
+        <div className="brand-group">
+          <div className="brand-mark">推</div>
+          <h1 className="app-title">推しサポ</h1>
+          <span className="app-date">{formattedToday}</span>
         </div>
 
-        {/* Right: Target Filter & Theme */}
-        <div className="flex items-center gap-2">
-          {/* Target Selector Capsule */}
-          <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800/80 border border-[var(--border-subtle)] hover:border-[var(--border-muted)] transition-colors">
-            <span
-              className="w-2 h-2 rounded-full shrink-0"
+        <div className="flex-row">
+          {/* テーマカラー即時変更パレット */}
+          <div className="theme-palette" title="テーマカラーを変更">
+            <Palette className="icon-xs text-muted" style={{ marginLeft: '2px' }} />
+            {HEADER_THEME_COLORS.map((c) => (
+              <button
+                key={c.hex}
+                type="button"
+                className={`theme-dot ${currentColor === c.hex.toLowerCase() ? 'active' : ''}`}
+                style={{ backgroundColor: c.hex }}
+                onClick={() => setThemeColor(c.hex)}
+                title={`テーマカラー: ${c.name}`}
+              />
+            ))}
+            <label
+              className="text-small text-muted"
               style={{
-                backgroundColor: activeOshi?.color || '#ec4899',
+                display: 'inline-flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                marginLeft: '2px',
               }}
-            />
-            <select
-              value={activeOshiId}
-              onChange={(e) => setActiveOshiId(e.target.value)}
-              className="bg-transparent font-medium text-neutral-800 dark:text-neutral-200 focus:outline-none cursor-pointer text-xs pr-4 appearance-none tracking-tight"
+              title="自由な色を選択"
             >
-              <option value="all" className="dark:bg-[#161822]">全件表示 (すべて)</option>
-              {oshis.map((o) => (
-                <option key={o.id} value={o.id} className="dark:bg-[#161822]">
-                  {o.name} {o.group ? `(${o.group})` : ''}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3 h-3 text-neutral-400 pointer-events-none absolute right-2.5" />
+              <input
+                type="color"
+                value={currentColor}
+                onChange={(e) => setThemeColor(e.target.value)}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  border: 'none',
+                  padding: 0,
+                  background: 'none',
+                  cursor: 'pointer',
+                }}
+              />
+            </label>
           </div>
 
-          {oshis.length === 0 && onAddOshiClick && (
-            <button
-              onClick={onAddOshiClick}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-semibold shadow-xs transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>対象を登録</span>
+          {onAddOshiClick && (
+            <button type="button" className="btn-sm" onClick={onAddOshiClick}>
+              <Plus className="icon-xs" />
+              <span>推し追加</span>
             </button>
           )}
-
-          {/* Theme Toggle Button */}
-          <button
-            onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-100 dark:bg-neutral-800/80 border border-[var(--border-subtle)] text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition"
-            title={themeMode === 'dark' ? 'ライトモードに切替' : 'ダークモードに切替'}
-            aria-label="表示モード切替"
-          >
-            {themeMode === 'dark' ? (
-              <Sun className="w-3.5 h-3.5 text-amber-400" />
-            ) : (
-              <Moon className="w-3.5 h-3.5 text-neutral-600" />
-            )}
-          </button>
+          {onQuickAddEvent && (
+            <button type="button" className="btn-sm btn-primary" onClick={onQuickAddEvent}>
+              <CalendarPlus className="icon-xs" />
+              <span>予定を登録</span>
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Oshi Avatar Switcher Ribbon */}
+      <div className="oshi-ribbon">
+        <button
+          type="button"
+          className={`oshi-pill ${activeOshiId === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveOshiId('all')}
+        >
+          <span className="oshi-avatar-mini" style={{ backgroundColor: '#71717a' }}>
+            <Users className="icon-xs" />
+          </span>
+          <span>全員 ({oshis.length})</span>
+        </button>
+
+        {oshis.map((o) => {
+          const isActive = activeOshiId === o.id;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              className={`oshi-pill ${isActive ? 'active' : ''}`}
+              onClick={() => setActiveOshiId(o.id)}
+            >
+              {o.image ? (
+                <img src={o.image} alt={o.name} className="oshi-avatar-mini" />
+              ) : (
+                <span
+                  className="oshi-avatar-mini"
+                  style={{ backgroundColor: o.color || '#f43f5e' }}
+                >
+                  {o.name.slice(0, 1)}
+                </span>
+              )}
+              <span>{o.name}</span>
+            </button>
+          );
+        })}
+
+        {onAddOshiClick && oshis.length === 0 && (
+          <button type="button" className="oshi-pill" onClick={onAddOshiClick}>
+            <Plus className="icon-xs" />
+            <span>最初の推しを登録する</span>
+          </button>
+        )}
       </div>
     </header>
   );

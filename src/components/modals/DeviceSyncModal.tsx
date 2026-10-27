@@ -3,17 +3,6 @@ import { Peer, type DataConnection } from 'peerjs';
 import { Modal } from '../common/Modal';
 import { backupRepository } from '../../repository';
 import { useApp } from '../../context/AppContext';
-import {
-  Smartphone,
-  Laptop,
-  ArrowRight,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  Send,
-  Download,
-  ArrowLeft,
-} from 'lucide-react';
 
 interface DeviceSyncModalProps {
   isOpen: boolean;
@@ -37,7 +26,6 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
   const peerRef = useRef<Peer | null>(null);
   const connRef = useRef<DataConnection | null>(null);
 
-  // モーダルを開いたときの初期化
   useEffect(() => {
     if (!isOpen) {
       cleanupPeer();
@@ -66,16 +54,12 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     }
   };
 
-  // ==============================
-  // 送信側の処理（この端末から送る）
-  // ==============================
   const startSend = () => {
     cleanupPeer();
     setMode('send');
     setStep('connecting');
     setErrorMessage('');
 
-    // ランダムな6桁の数字を生成
     const code = String(Math.floor(100000 + Math.random() * 900000));
     setSyncCode(code);
 
@@ -84,7 +68,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     peerRef.current = peer;
 
     peer.on('open', () => {
-      setStep('idle'); // 待機中
+      setStep('idle');
     });
 
     peer.on('connection', (conn) => {
@@ -97,7 +81,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
           conn.send(backup);
           setTimeout(() => {
             setStep('done');
-            showToast('データを相手の端末に送信しました！', 'success');
+            showToast('データを相手の端末に送信しました', 'success');
           }, 800);
         } catch (err) {
           console.error(err);
@@ -110,7 +94,6 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     peer.on('error', (err) => {
       console.error(err);
       if (err.type === 'unavailable-id') {
-        // 万が一番号が重複した場合は再生成
         startSend();
       } else {
         setErrorMessage('接続の待機に失敗しました。もう一度お試しください。');
@@ -119,9 +102,6 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     });
   };
 
-  // ==============================
-  // 受信側の処理（この端末で受け取る）
-  // ==============================
   const startReceive = () => {
     cleanupPeer();
     setMode('receive');
@@ -141,7 +121,6 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     setStep('connecting');
     setErrorMessage('');
 
-    // 受信側はランダムなIDで初期化
     const peer = new Peer();
     peerRef.current = peer;
 
@@ -169,7 +148,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
             await backupRepository.importBackup(data);
             await refreshAllData();
             setStep('done');
-            showToast('データの同期が完了しました！', 'success');
+            showToast('データの同期が完了しました', 'success');
           } else {
             throw new Error('不正なデータ形式');
           }
@@ -191,7 +170,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
       clearTimeout(timeoutTimer);
       console.error(err);
       if (err.type === 'peer-unavailable') {
-        setErrorMessage('相手の端末が見つかりません。番号が正しいか、相手の画面が開いたままかご確認ください。');
+        setErrorMessage('相手の端末が見つかりません。番号が正しいかご確認ください。');
       } else {
         setErrorMessage('接続に失敗しました。もう一度お試しください。');
       }
@@ -207,167 +186,72 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
         onClose();
       }}
       title="デバイス間直接同期 (P2P)"
-      maxWidth="sm"
     >
-      <div className="py-2 space-y-4">
-        {/* MODE 1: 選択画面 */}
+      <div className="form-stack">
         {mode === 'select' && (
-          <div className="space-y-3">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center leading-relaxed">
-              WebRTCダイレクト暗号化通信により、2台のデバイス間で直接データを同期します。
+          <div className="form-stack">
+            <p className="text-muted">
+              2台のデバイス間で直接データを同期します。中継サーバーにデータは保存されません。
             </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={startSend}
-                className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-neutral-400 dark:hover:border-neutral-500 text-left transition group space-y-2 flex flex-col justify-between shadow-2xs"
-              >
-                <div className="w-9 h-9 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-neutral-800 dark:text-neutral-200 flex items-center justify-center">
-                  <Send className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-neutral-900 dark:text-white transition">
-                    データ送信
-                  </h4>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    認証コードを発行して待機
-                  </p>
-                </div>
+            <div className="form-row">
+              <button type="button" className="btn-primary" onClick={startSend}>
+                この端末からデータを送信する
               </button>
-
-              <button
-                type="button"
-                onClick={startReceive}
-                className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-neutral-400 dark:hover:border-neutral-500 text-left transition group space-y-2 flex flex-col justify-between shadow-2xs"
-              >
-                <div className="w-9 h-9 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-neutral-800 dark:text-neutral-200 flex items-center justify-center">
-                  <Download className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-neutral-900 dark:text-white transition">
-                    データ受信
-                  </h4>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    相手の認証コードを入力
-                  </p>
-                </div>
+              <button type="button" onClick={startReceive}>
+                別の端末からデータを受信する
               </button>
-            </div>
-
-            {/* Privacy & Direct Sync Notice */}
-            <div className="p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-[var(--border-subtle)] text-[10.5px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed text-center">
-              ※ 中継サーバーにデータ内容が保持・蓄積されることはありません。端末間の直接通信で安全に転送されます。
             </div>
           </div>
         )}
 
-        {/* MODE 2: 送信画面（6桁の番号を表示） */}
         {mode === 'send' && (
-          <div className="space-y-4 text-center">
+          <div className="form-stack">
             {step === 'done' ? (
-              <div className="py-6 space-y-2">
-                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-                <h4 className="font-bold text-base text-neutral-900 dark:text-white">送信完了</h4>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  同期先デバイスへのデータ転送が正常に完了しました。
-                </p>
-                <div className="pt-4">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-6 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-xs"
-                  >
-                    閉じる
-                  </button>
-                </div>
+              <div>
+                <p><strong>送信完了</strong>: データの転送が完了しました。</p>
+                <button type="button" className="btn-primary" onClick={onClose}>
+                  閉じる
+                </button>
               </div>
             ) : step === 'error' ? (
-              <div className="py-4 space-y-3">
-                <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
-                <p className="text-xs text-rose-600 font-semibold">{errorMessage}</p>
-                <button
-                  type="button"
-                  onClick={startSend}
-                  className="px-4 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-xs inline-flex items-center gap-1.5"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>再試行</span>
+              <div>
+                <p>{errorMessage}</p>
+                <button type="button" onClick={startSend}>
+                  再試行
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    受信側デバイスで「データ受信」を選択し、以下の6桁コードを入力してください
-                  </p>
-                </div>
-
-                {/* 6桁の番号を大きく表示 */}
-                <div className="py-3 px-6 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-dashed border-[var(--border-subtle)] inline-block">
-                  {syncCode ? (
-                    <div className="text-3xl font-extrabold tracking-widest text-neutral-900 dark:text-white font-mono">
-                      {syncCode.slice(0, 3)} - {syncCode.slice(3, 6)}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-neutral-400 py-1">コードを発行中...</div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-center gap-2 text-xs text-neutral-400">
-                  <div className="w-2 h-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
-                  <span>
-                    {step === 'transferring'
-                      ? 'データ転送中...'
-                      : '相手デバイスからの接続待機中...'}
-                  </span>
-                </div>
-
-                <div className="pt-2 border-t border-[var(--border-subtle)]">
-                  <button
-                    type="button"
-                    onClick={() => setMode('select')}
-                    className="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 flex items-center gap-1 mx-auto"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>戻る</span>
-                  </button>
-                </div>
+              <div>
+                <p className="text-muted">
+                  受信側の端末で以下の6桁コードを入力してください:
+                </p>
+                <p style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                  {syncCode ? `${syncCode.slice(0, 3)} - ${syncCode.slice(3, 6)}` : '発行中...'}
+                </p>
+                <p className="text-muted">
+                  {step === 'transferring' ? 'データ転送中...' : '相手デバイスからの接続待機中...'}
+                </p>
+                <button type="button" onClick={() => setMode('select')}>
+                  戻る
+                </button>
               </div>
             )}
           </div>
         )}
 
-        {/* MODE 3: 受信画面（6桁の番号を入力） */}
         {mode === 'receive' && (
-          <div className="space-y-4 text-center">
+          <div className="form-stack">
             {step === 'done' ? (
-              <div className="py-6 space-y-2">
-                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-                <h4 className="font-bold text-base text-neutral-900 dark:text-white">同期完了</h4>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  最新のデータセットが端末内に反映されました。
-                </p>
-                <div className="pt-4">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-6 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-xs"
-                  >
-                    閉じる
-                  </button>
-                </div>
+              <div>
+                <p><strong>同期完了</strong>: データが反映されました。</p>
+                <button type="button" className="btn-primary" onClick={onClose}>
+                  閉じる
+                </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    送信側デバイスに表示されている「6桁の認証コード」を入力してください
-                  </p>
-                </div>
-
-                {/* 入力欄 */}
-                <div className="max-w-[220px] mx-auto">
+              <div className="form-stack">
+                <div className="form-group">
+                  <label>送信側に表示されている6桁の認証コード</label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -377,48 +261,24 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
                     disabled={step === 'connecting' || step === 'transferring'}
-                    className="w-full text-center py-2.5 px-4 text-2xl font-bold font-mono tracking-widest rounded-xl border border-[var(--border-subtle)] focus:border-neutral-900 dark:focus:border-white focus:outline-none bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white disabled:opacity-50"
                   />
                 </div>
-
-                {errorMessage && (
-                  <p className="text-xs text-rose-500 font-medium">{errorMessage}</p>
-                )}
-
-                <div>
+                {errorMessage && <p>{errorMessage}</p>}
+                <div className="flex-row">
+                  <button type="button" onClick={() => setMode('select')}>
+                    戻る
+                  </button>
                   <button
                     type="button"
+                    className="btn-primary"
                     onClick={executeReceive}
                     disabled={inputCode.length !== 6 || step === 'connecting' || step === 'transferring'}
-                    className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 disabled:opacity-40 text-white dark:text-neutral-900 font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
                   >
-                    {step === 'connecting' ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>デバイスを検索中...</span>
-                      </>
-                    ) : step === 'transferring' ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>データを受信中...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>データを受信して同期</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="pt-2 border-t border-[var(--border-subtle)]">
-                  <button
-                    type="button"
-                    onClick={() => setMode('select')}
-                    className="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 flex items-center gap-1 mx-auto"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>戻る</span>
+                    {step === 'connecting'
+                      ? '検索中...'
+                      : step === 'transferring'
+                      ? '受信中...'
+                      : 'データを受信して同期'}
                   </button>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { getDB } from '../db/database';
-import type { BackupData, Oshi, OshiEvent, Todo, Goods, AppSettings } from '../types';
+import type { BackupData, Oshi, OshiEvent, Todo, Goods, ExpenseItem, AppSettings } from '../types';
+import { expenseRepository } from './expenseRepository';
 
 export const BACKUP_CURRENT_VERSION = 1;
 
@@ -9,11 +10,13 @@ export const backupRepository = {
    */
   async exportBackup(): Promise<BackupData> {
     const db = await getDB();
-    const [oshis, events, todos, goods, settings] = await Promise.all([
+    const [oshis, events, todos, goods, expenses, journals, settings] = await Promise.all([
       db.getAll('oshis'),
       db.getAll('events'),
       db.getAll('todos'),
       db.getAll('goods'),
+      expenseRepository.getAll(),
+      db.getAll('journals').catch(() => []),
       db.get('settings', 'default'),
     ]);
 
@@ -26,6 +29,8 @@ export const backupRepository = {
         events,
         todos,
         goods,
+        expenses,
+        journals,
         settings: settings || undefined,
       },
     };
@@ -88,6 +93,7 @@ export const backupRepository = {
     let events: OshiEvent[] = [];
     let todos: Todo[] = [];
     let goods: Goods[] = [];
+    let expenses: ExpenseItem[] = [];
     let settings: AppSettings | undefined = undefined;
 
     if (obj.data) {
@@ -95,6 +101,7 @@ export const backupRepository = {
       events = Array.isArray(obj.data.events) ? obj.data.events : [];
       todos = Array.isArray(obj.data.todos) ? obj.data.todos : [];
       goods = Array.isArray(obj.data.goods) ? obj.data.goods : [];
+      expenses = Array.isArray(obj.data.expenses) ? obj.data.expenses : [];
       settings = obj.data.settings;
     } else {
       // Fallback for root-level array format
@@ -102,6 +109,7 @@ export const backupRepository = {
       events = Array.isArray(obj.events) ? obj.events : [];
       todos = Array.isArray(obj.todos) ? obj.todos : [];
       goods = Array.isArray(obj.goods) ? obj.goods : [];
+      expenses = Array.isArray(obj.expenses) ? obj.expenses : [];
     }
 
     const db = await getDB();
@@ -151,6 +159,10 @@ export const backupRepository = {
 
       await tx.done;
 
+      if (expenses.length > 0) {
+        await expenseRepository.replaceAll(expenses);
+      }
+
       return {
         oshisCount: oshis.length,
         eventsCount: events.length,
@@ -168,15 +180,28 @@ export const backupRepository = {
    */
   async clearAllData(): Promise<void> {
     const db = await getDB();
-    const tx = db.transaction(['oshis', 'events', 'todos', 'goods', 'settings'], 'readwrite');
+    const tx = db.transaction(['oshis', 'events', 'todos', 'goods', 'expenses', 'settings'], 'readwrite');
     await Promise.all([
       tx.objectStore('oshis').clear(),
       tx.objectStore('events').clear(),
       tx.objectStore('todos').clear(),
       tx.objectStore('goods').clear(),
+      tx.objectStore('expenses').clear(),
       tx.objectStore('settings').clear(),
     ]);
     await tx.done;
+
+    // 清掃: localStorage の自動スナップショットや一時キャッシュも消去
+    try {
+      localStorage.removeItem('oshiss_auto_safety_snapshot');
+      localStorage.removeItem('oshiss_expenses_v1');
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('oshiss_backup_') || k.includes('safety_snapshot'))) {
+          localStorage.removeItem(k);
+        }
+      }
+    } catch {}
   },
 
   /**

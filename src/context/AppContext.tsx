@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { Oshi, OshiEvent, Todo, Goods, AppSettings, BackupData } from '../types';
+import type { Oshi, OshiEvent, Todo, Goods, ExpenseItem, JournalEntry, AppSettings, BackupData, ThemeModeOption } from '../types';
 import {
   oshiRepository,
   eventRepository,
   todoRepository,
   goodsRepository,
+  expenseRepository,
+  journalRepository,
   settingsRepository,
   backupRepository,
 } from '../repository';
@@ -20,21 +22,25 @@ interface AppContextType {
   events: OshiEvent[];
   todos: Todo[];
   goods: Goods[];
+  expenses: ExpenseItem[];
+  journals: JournalEntry[];
   settings: AppSettings | null;
   activeOshiId: string;
   activeOshi: Oshi | undefined;
   isLoading: boolean;
-  themeMode: 'light' | 'dark';
-  setThemeMode: (mode: 'light' | 'dark') => void;
+  themeMode: ThemeModeOption;
+  isDark: boolean;
+  setThemeMode: (mode: ThemeModeOption) => void;
+  themeColor: string;
+  setThemeColor: (color: string) => Promise<void>;
   toasts: ToastMessage[];
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   setActiveOshiId: (id: string) => Promise<void>;
   refreshAllData: () => Promise<void>;
-  // Data Recovery
+  clearAllData: () => Promise<void>;
   recoverableBackup: BackupData | null;
   restoreRecoverableBackup: () => Promise<void>;
-  // Action triggers
   fireConfetti: () => void;
 }
 
@@ -45,23 +51,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [events, setEvents] = useState<OshiEvent[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [goods, setGoods] = useState<Goods[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [activeOshiId, setActiveOshiIdState] = useState<string>('all');
-  const [themeMode, setThemeModeState] = useState<'light' | 'dark'>(() => {
+  const [themeMode, setThemeModeState] = useState<ThemeModeOption>(() => {
     const saved = localStorage.getItem('oshiss_theme_mode');
-    return saved === 'dark' ? 'dark' : 'light';
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
+    return 'system';
+  });
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+  const [themeColor, setThemeColorState] = useState<string>(() => {
+    return localStorage.getItem('oshiss_theme_color') || '#FF2D55';
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [recoverableBackup, setRecoverableBackup] = useState<BackupData | null>(null);
 
   useEffect(() => {
-    const isDark = themeMode === 'dark';
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setSystemPrefersDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemPrefersDark);
+
+  useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem('oshiss_theme_mode', themeMode);
-  }, [themeMode]);
+  }, [isDark, themeMode]);
 
-  const setThemeMode = useCallback((mode: 'light' | 'dark') => {
+  const setThemeMode = useCallback((mode: ThemeModeOption) => {
     setThemeModeState(mode);
   }, []);
 
@@ -70,31 +95,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, 3500);
   }, []);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const fireConfetti = useCallback(() => {
-    // アニメーション無効化
-  }, []);
+  const fireConfetti = useCallback(() => {}, []);
 
   const refreshAllData = useCallback(async () => {
     try {
-      let [fetchedOshis, fetchedEvents, fetchedTodos, fetchedGoods, fetchedSettings] = await Promise.all([
-        oshiRepository.getAll(),
-        eventRepository.getAll(),
-        todoRepository.getAll(),
-        goodsRepository.getAll(),
-        settingsRepository.getSettings(),
-      ]);
+      let [fetchedOshis, fetchedEvents, fetchedTodos, fetchedGoods, fetchedExpenses, fetchedJournals, fetchedSettings] =
+        await Promise.all([
+          oshiRepository.getAll(),
+          eventRepository.getAll(),
+          todoRepository.getAll(),
+          goodsRepository.getAll(),
+          expenseRepository.getAll(),
+          journalRepository.getAll().catch(() => []),
+          settingsRepository.getSettings(),
+        ]);
 
-      // 初期サンプルデータのみをピンポイントで安全に消去（ユーザーのデータを全消去しない）
       const sampleOshiIds = new Set(['oshi-1', 'oshi-2']);
       const sampleEventIds = new Set(['event-1', 'event-2', 'event-3', 'event-4']);
-      const sampleTodoIds = new Set(['todo-1', 'todo-2', 'todo-3', 'todo-4']);
+      const sampleTodoIds = new Set(['todo-1', 'todo-3', 'todo-2', 'todo-4']);
       const sampleGoodsIds = new Set(['goods-1', 'goods-2', 'goods-3', 'goods-4']);
 
       let dataChanged = false;
@@ -136,17 +161,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setEvents(fetchedEvents);
       setTodos(fetchedTodos);
       setGoods(fetchedGoods);
+      setExpenses(fetchedExpenses);
+      setJournals(fetchedJournals);
       setSettings(fetchedSettings);
       setActiveOshiIdState(fetchedSettings.activeOshiId || 'all');
 
-      // 非空データを検知したら緊急スナップショットとしてlocalStorageに自動保護
-      if (fetchedOshis.length > 0 || fetchedEvents.length > 0 || fetchedGoods.length > 0) {
-        backupRepository.exportBackup().then((backup) => {
-          localStorage.setItem('oshiss_auto_safety_snapshot', JSON.stringify(backup));
-        }).catch(() => {});
+      if (
+        fetchedOshis.length > 0 ||
+        fetchedEvents.length > 0 ||
+        fetchedGoods.length > 0 ||
+        fetchedExpenses.length > 0
+      ) {
+        backupRepository
+          .exportBackup()
+          .then((backup) => {
+            localStorage.setItem('oshiss_auto_safety_snapshot', JSON.stringify(backup));
+          })
+          .catch(() => {});
         setRecoverableBackup(null);
       } else {
-        // 現在データが0件の場合は救出可能な過去バックアップを自動探索
         const candidate = backupRepository.findRecoverableBackup();
         setRecoverableBackup(candidate);
       }
@@ -159,7 +192,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [showToast]);
 
   useEffect(() => {
-    // ブラウザの容量不足等による自動消去からデータを保護するリクエスト
     if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
       navigator.storage.persist().catch(() => {});
     }
@@ -170,9 +202,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     async (id: string) => {
       setActiveOshiIdState(id);
       await settingsRepository.saveSettings({ activeOshiId: id });
+      const target = oshis.find((o) => o.id === id);
+      if (target?.color) {
+        setThemeColorState(target.color);
+        localStorage.setItem('oshiss_theme_color', target.color);
+      }
     },
-    []
+    [oshis]
   );
+
+  const activeOshi = oshis.find((o) => o.id === activeOshiId);
+
+  const setThemeColor = useCallback(
+    async (color: string) => {
+      setThemeColorState(color);
+      localStorage.setItem('oshiss_theme_color', color);
+      document.documentElement.style.setProperty('--oshi-color', color);
+      if (activeOshi) {
+        const updated: Oshi = {
+          ...activeOshi,
+          color,
+          updatedAt: new Date().toISOString(),
+        };
+        await oshiRepository.save(updated);
+        setOshis((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      }
+    },
+    [activeOshi]
+  );
+
+  useEffect(() => {
+    const color = themeColor || '#FF2D55';
+    document.documentElement.style.setProperty('--oshi-color', color);
+    const hex = color.replace('#', '');
+    if (hex.length === 6) {
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      document.documentElement.style.setProperty('--oshi-color-rgb', `${r}, ${g}, ${b}`);
+    }
+  }, [themeColor]);
 
   const restoreRecoverableBackup = useCallback(async () => {
     if (!recoverableBackup) return;
@@ -193,7 +262,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [recoverableBackup, refreshAllData, showToast]);
 
-  const activeOshi = oshis.find((o) => o.id === activeOshiId);
+  const clearAllData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await backupRepository.clearAllData();
+      setRecoverableBackup(null);
+      setThemeColorState('#FF2D55');
+      setThemeModeState('system');
+      localStorage.removeItem('oshiss_theme_color');
+      localStorage.removeItem('oshiss_theme_mode');
+      document.documentElement.style.setProperty('--oshi-color', '#FF2D55');
+      await refreshAllData();
+      showToast('すべてのデータを初期化しました', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('データの初期化に失敗しました', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [refreshAllData, showToast]);
 
   return (
     <AppContext.Provider
@@ -202,17 +289,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         events,
         todos,
         goods,
+        expenses,
+        journals,
         settings,
         activeOshiId,
         activeOshi,
         isLoading,
         themeMode,
+        isDark,
         setThemeMode,
+        themeColor,
+        setThemeColor,
         toasts,
         showToast,
         removeToast,
         setActiveOshiId,
         refreshAllData,
+        clearAllData,
         recoverableBackup,
         restoreRecoverableBackup,
         fireConfetti,

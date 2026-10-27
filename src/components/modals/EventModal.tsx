@@ -12,6 +12,15 @@ interface EventModalProps {
   defaultDate?: string;
 }
 
+const EVENT_PRESET_CHIPS: { label: string; category: EventCategory; ticketStatus: TicketStatus }[] = [
+  { label: 'ライブ・ツアー公演', category: 'live', ticketStatus: 'applied' },
+  { label: 'ファンミーティング', category: 'event', ticketStatus: 'applied' },
+  { label: '誕生日・記念日', category: 'release', ticketStatus: 'none' },
+  { label: '配信・番組出演', category: 'broadcast', ticketStatus: 'none' },
+  { label: 'チケット当落発表日', category: 'ticket', ticketStatus: 'applied' },
+  { label: 'チケット入金・発券期限', category: 'ticket', ticketStatus: 'won' },
+];
+
 export const EventModal: React.FC<EventModalProps> = ({
   isOpen,
   onClose,
@@ -46,7 +55,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       setDate(defaultDate || todayStr);
       setTime('');
       setLocation('');
-      setOshiId(activeOshiId !== 'all' ? activeOshiId : (oshis[0]?.id || ''));
+      setOshiId(activeOshiId !== 'all' ? activeOshiId : oshis[0]?.id || '');
       setCategory('live');
       setTicketStatus('none');
       setMemo('');
@@ -79,11 +88,14 @@ export const EventModal: React.FC<EventModalProps> = ({
 
       await eventRepository.save(eventData);
       await refreshAllData();
-      showToast(targetEvent ? 'イベント情報を更新しました' : 'イベントを登録しました', 'success');
+      showToast(
+        targetEvent ? '予定を更新しました' : '新しい予定を登録しました',
+        'success'
+      );
       onClose();
     } catch (err) {
       console.error(err);
-      showToast('イベントの保存に失敗しました', 'error');
+      showToast('予定の保存に失敗しました', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,79 +105,98 @@ export const EventModal: React.FC<EventModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={targetEvent ? 'イベントの編集' : '新規イベントの登録'}
-      maxWidth="md"
+      title={targetEvent ? '予定の編集' : '予定を登録'}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Title */}
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-            イベント名 / 公演名 <span className="text-rose-500">*</span>
-          </label>
+      <form onSubmit={handleSubmit} className="form-stack">
+        {!targetEvent && (
+          <div className="form-group">
+            <label>テンプレートから入力</label>
+            <div className="chip-group">
+              {EVENT_PRESET_CHIPS.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  className="chip"
+                  onClick={() => {
+                    if (!title) setTitle(preset.label);
+                    setCategory(preset.category);
+                    setTicketStatus(preset.ticketStatus);
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="form-group">
+          <label>予定名・公演名 (必須)</label>
           <input
             type="text"
             required
-            placeholder="例: 全国ツアー2026 東京公演"
+            placeholder="例: 全国ツアー 東京公演"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
           />
         </div>
 
-        {/* Date & Time */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-              開催日 <span className="text-rose-500">*</span>
-            </label>
+        <div className="form-row">
+          <div className="form-group">
+            <label>日付 (必須)</label>
             <input
               type="date"
               required
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-              開演・開催時間
-            </label>
+          <div className="form-group">
+            <label>時間</label>
             <input
               type="text"
-              placeholder="例: 18:00 (開場 17:00)"
+              placeholder="例: 開演 18:00 (開場 16:30)"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
             />
           </div>
         </div>
 
-        {/* Location */}
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-            会場 / 開催場所 / 配信プラットフォーム
-          </label>
-          <input
-            type="text"
-            placeholder="例: 日本武道館 / オンライン配信"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
-          />
+        <div className="form-row">
+          <div className="form-group">
+            <label>カテゴリー</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as EventCategory)}
+            >
+              {(Object.keys(EVENT_CATEGORY_CONFIG) as EventCategory[]).map((cat) => (
+                <option key={cat} value={cat}>
+                  {EVENT_CATEGORY_CONFIG[cat].label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>チケット状況</label>
+            <select
+              value={ticketStatus}
+              onChange={(e) => setTicketStatus(e.target.value as TicketStatus)}
+            >
+              {(Object.keys(TICKET_STATUS_CONFIG) as TicketStatus[]).map((st) => (
+                <option key={st} value={st}>
+                  {TICKET_STATUS_CONFIG[st].label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Oshi & Category */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-              関連する推し
-            </label>
-            <select
-              value={oshiId}
-              onChange={(e) => setOshiId(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
-            >
+        <div className="form-row">
+          <div className="form-group">
+            <label>対象の推し</label>
+            <select value={oshiId} onChange={(e) => setOshiId(e.target.value)}>
               <option value="">指定なし</option>
               {oshis.map((o) => (
                 <option key={o.id} value={o.id}>
@@ -175,70 +206,32 @@ export const EventModal: React.FC<EventModalProps> = ({
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-              イベントカテゴリー
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as EventCategory)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
-            >
-              {(Object.keys(EVENT_CATEGORY_CONFIG) as EventCategory[]).map((cat) => (
-                <option key={cat} value={cat}>
-                  {EVENT_CATEGORY_CONFIG[cat].label}
-                </option>
-              ))}
-            </select>
+          <div className="form-group">
+            <label>会場 / 場所</label>
+            <input
+              type="text"
+              placeholder="例: 東京ドーム / YouTube"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
           </div>
         </div>
 
-        {/* Ticket Status */}
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-            チケット状況
-          </label>
-          <select
-            value={ticketStatus}
-            onChange={(e) => setTicketStatus(e.target.value as TicketStatus)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white transition"
-          >
-            {(Object.keys(TICKET_STATUS_CONFIG) as TicketStatus[]).map((st) => (
-              <option key={st} value={st}>
-                {TICKET_STATUS_CONFIG[st].label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Memo */}
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-            備考 / メモ
-          </label>
+        <div className="form-group">
+          <label>メモ・座席番号</label>
           <textarea
-            rows={3}
-            placeholder="座席番号、整理券、注意事項など"
+            rows={2}
+            placeholder="座席番号、整理番号、同行者、メモなど"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition resize-none"
           />
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-2 justify-end pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition"
-          >
+        <div className="flex-row" style={{ justifyContent: 'flex-end' }}>
+          <button type="button" onClick={onClose}>
             キャンセル
           </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-4 py-2 text-xs font-semibold text-white dark:text-neutral-900 bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 rounded-lg transition shadow-xs disabled:opacity-50"
-          >
+          <button type="submit" className="btn-primary" disabled={isSubmitting}>
             {isSubmitting ? '保存中...' : targetEvent ? '更新する' : '登録する'}
           </button>
         </div>

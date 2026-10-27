@@ -6,7 +6,6 @@ import { GoodsCategoryBadge, GoodsStatusBadge } from '../common/Badge';
 import { useApp } from '../../context/AppContext';
 import { goodsRepository } from '../../repository';
 import { formatCurrency, formatJapaneseDate } from '../../utils/helpers';
-import { Heart, Edit, Trash2, MapPin, Calendar, Image as ImageIcon } from 'lucide-react';
 
 interface GoodsDetailModalProps {
   isOpen: boolean;
@@ -45,134 +44,127 @@ export const GoodsDetailModal: React.FC<GoodsDetailModalProps> = ({
       const updated: Goods = {
         ...goods,
         isFavorite: !goods.isFavorite,
+        updatedAt: new Date().toISOString(),
       };
       await goodsRepository.save(updated);
       await refreshAllData();
-      showToast(updated.isFavorite ? 'お気に入りに追加しました' : 'お気に入りを解除しました', 'info');
+      showToast(
+        updated.isFavorite ? 'お気に入りに追加しました' : 'お気に入りを解除しました',
+        'info'
+      );
     } catch {
       showToast('更新処理に失敗しました', 'error');
     }
   };
 
+  const handleChangeQuantity = async (delta: number) => {
+    const nextQty = Math.max(1, (goods.quantity || 1) + delta);
+    if (nextQty === goods.quantity) return;
+    try {
+      const updated: Goods = {
+        ...goods,
+        quantity: nextQty,
+        updatedAt: new Date().toISOString(),
+      };
+      await goodsRepository.save(updated);
+      await refreshAllData();
+      showToast(`所持数を ${nextQty}個 に更新しました`, 'info');
+    } catch {
+      showToast('数量の更新に失敗しました', 'error');
+    }
+  };
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="グッズ詳細" maxWidth="md">
-        <div className="space-y-4">
-          {/* Image Display */}
-          <div className="relative w-full h-56 sm:h-64 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] overflow-hidden flex items-center justify-center border border-[var(--border-subtle)]">
-            {goods.image ? (
-              <img
-                src={goods.image}
-                alt={goods.name}
-                className="w-full h-full object-contain p-2"
-              />
-            ) : (
-              <div className="text-center text-neutral-400">
-                <ImageIcon className="w-12 h-12 mx-auto mb-2 stroke-1" />
-                <span className="text-xs">写真が登録されていません</span>
-              </div>
-            )}
+      <Modal isOpen={isOpen} onClose={onClose} title="グッズ詳細">
+        <div className="form-stack">
+          {goods.image && (
+            <div>
+              <img src={goods.image} alt={goods.name} width="160" />
+            </div>
+          )}
 
-            {/* Favorite button */}
-            <button
-              onClick={handleToggleFavorite}
-              className="absolute top-3 right-3 p-2 rounded-full bg-white/90 dark:bg-neutral-900/90 border border-black/5 dark:border-white/10 shadow-xs hover:scale-105 transition"
-              title="お気に入り"
-            >
-              <Heart
-                className={`w-4 h-4 ${goods.isFavorite ? 'text-rose-500 fill-rose-500' : 'text-neutral-400'}`}
-              />
-            </button>
-          </div>
-
-          {/* Title & Badges */}
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="flex-row" style={{ marginBottom: '6px' }}>
               <GoodsCategoryBadge category={goods.category} />
               <GoodsStatusBadge status={goods.openStatus} />
-              {oshi && (
-                <span
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                  style={{
-                    backgroundColor: `${oshi.color}15`,
-                    color: oshi.color,
-                  }}
+              {oshi && <span className="badge">推し: {oshi.name}</span>}
+              {goods.isFavorite && <span className="badge badge-warning">お気に入り</span>}
+            </div>
+            <h3 style={{ margin: '0 0 8px' }}>{goods.name}</h3>
+          </div>
+
+          <div className="card" style={{ marginBottom: 0 }}>
+            <div className="flex-between">
+              <div>
+                <strong>
+                  総額: {formatCurrency(goods.price * (goods.quantity || 1))}
+                </strong>{' '}
+                <span className="text-muted">
+                  ({formatCurrency(goods.price)} × {goods.quantity || 1}個)
+                </span>
+              </div>
+              <div className="flex-row">
+                <button
+                  type="button"
+                  className="btn-sm"
+                  onClick={() => handleChangeQuantity(-1)}
+                  disabled={goods.quantity <= 1}
                 >
-                  <Heart className="w-3 h-3 fill-current" />
-                  <span>{oshi.name}</span>
-                </span>
-              )}
-            </div>
-
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-white leading-snug">
-              {goods.name}
-            </h2>
-          </div>
-
-          {/* Pricing & Quantity Card */}
-          <div className="bg-black/[0.02] dark:bg-white/[0.03] rounded-xl p-3.5 border border-[var(--border-subtle)] flex items-center justify-between shadow-2xs">
-            <div>
-              <p className="text-xs text-neutral-400 font-medium">価格 × 数量</p>
-              <div className="flex items-baseline flex-wrap gap-2 mt-0.5 num-tabular">
-                <span className="text-xl font-bold text-neutral-950 dark:text-white">
-                  {formatCurrency(goods.price)}
-                </span>
-                {goods.quantity > 1 && (
-                  <span className="text-xs text-neutral-600 dark:text-neutral-300 font-medium bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-md border border-[var(--border-subtle)]">
-                    (× {goods.quantity}個 = {formatCurrency(goods.price * goods.quantity)})
-                  </span>
-                )}
+                  -1
+                </button>
+                <button
+                  type="button"
+                  className="btn-sm"
+                  onClick={() => handleChangeQuantity(1)}
+                >
+                  +1
+                </button>
               </div>
             </div>
+          </div>
+
+          <div>
             {goods.storageLocation && (
-              <div className="text-right">
-                <span className="text-[11px] text-neutral-400 block font-medium">保管場所</span>
-                <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center justify-end gap-1 mt-0.5">
-                  <MapPin className="w-3.5 h-3.5 text-neutral-400" />
-                  {goods.storageLocation}
-                </span>
-              </div>
+              <p>
+                <strong>保管場所:</strong> {goods.storageLocation}
+              </p>
             )}
-          </div>
-
-          {/* Purchase Date & Memo */}
-          <div className="space-y-2 text-xs bg-black/[0.01] dark:bg-white/[0.02] rounded-xl p-3.5 border border-[var(--border-subtle)]">
             {goods.purchaseDate && (
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
-                <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                <span className="num-tabular">購入日: {formatJapaneseDate(goods.purchaseDate)}</span>
-              </div>
+              <p>
+                <strong>購入日:</strong> {formatJapaneseDate(goods.purchaseDate)}
+              </p>
             )}
             {goods.memo && (
-              <div className="pt-2 border-t border-[var(--border-subtle)]">
-                <p className="text-xs font-semibold text-neutral-400 mb-1">備考 / メモ</p>
-                <p className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap leading-relaxed">
-                  {goods.memo}
-                </p>
-              </div>
+              <p>
+                <strong>メモ:</strong> {goods.memo}
+              </p>
             )}
           </div>
 
-          {/* Footer Action buttons */}
-          <div className="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
+          <div className="flex-between">
             <button
+              type="button"
+              className="btn-danger"
               onClick={() => setIsDeleteConfirmOpen(true)}
-              className="text-xs text-rose-500 hover:text-rose-600 p-2 rounded-lg hover:bg-rose-500/10 flex items-center gap-1.5 font-medium transition"
             >
-              <Trash2 className="w-4 h-4" />
-              <span>削除</span>
+              削除
             </button>
-
-            <button
-              onClick={() => {
-                onClose();
-                onEdit(goods);
-              }}
-              className="px-4 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-xs font-semibold text-white dark:text-neutral-900 flex items-center gap-1.5 transition shadow-xs"
-            >
-              <Edit className="w-4 h-4" />
-              <span>編集</span>
-            </button>
+            <div className="flex-row">
+              <button type="button" onClick={handleToggleFavorite}>
+                {goods.isFavorite ? 'お気に入り解除' : 'お気に入り登録'}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  onClose();
+                  onEdit(goods);
+                }}
+              >
+                編集する
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
@@ -184,7 +176,6 @@ export const GoodsDetailModal: React.FC<GoodsDetailModalProps> = ({
         title="グッズの削除"
         message={`「${goods.name}」を削除してもよろしいですか？`}
         confirmLabel="削除する"
-        variant="danger"
       />
     </>
   );

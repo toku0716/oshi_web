@@ -1,399 +1,496 @@
-import React, { useState, useMemo } from 'react';
-import { useApp } from '../context/AppContext';
-import type { Goods, GoodsCategory, GoodsOpenStatus } from '../types';
-import {
-  GOODS_CATEGORY_CONFIG,
-  GOODS_STATUS_CONFIG,
-  GoodsCategoryBadge,
-  GoodsStatusBadge,
-} from '../components/common/Badge';
-import { formatCurrency } from '../utils/helpers';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Package,
+  Heart,
   Plus,
   Search,
-  LayoutGrid,
-  List,
-  Heart,
+  Filter,
   MapPin,
-  X,
+  Clock,
+  Sparkles,
+  Camera,
+  CheckCircle,
+  Tag,
+  ChevronRight,
 } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { goodsRepository } from '../repository';
+import type { Goods, GoodsCategory, GoodsOpenStatus } from '../types';
+import { resizeAndConvertImageToBase64 } from '../utils/oshiUtils';
 
 interface GoodsViewProps {
-  onOpenGoodsModal: (targetGoods?: Goods) => void;
-  onSelectGoods: (goods: Goods) => void;
+  onOpenAddGoods: (isWish: boolean) => void;
+  onOpenEditGoods: (goods: Goods) => void;
 }
 
+const CATEGORY_LABELS: Record<GoodsCategory, string> = {
+  acrylic: 'アクスタ',
+  photo: '生写真・チェキ',
+  fan: 'うちわ',
+  penlight: 'ペンライト',
+  apparel: 'アパレル',
+  media: '円盤・書籍',
+  badge: '缶バッジ',
+  plush: 'ぬいぐるみ',
+  other: 'その他グッズ',
+};
+
+const OPEN_STATUS_LABELS: Record<GoodsOpenStatus, { label: string; color: string }> = {
+  unopened: { label: '未開封', color: '#10B981' },
+  opened: { label: '開封済み', color: '#3B82F6' },
+  display: { label: '飾っている', color: '#F59E0B' },
+  storage: { label: '保管中', color: '#6B7280' },
+};
+
 export const GoodsView: React.FC<GoodsViewProps> = ({
-  onOpenGoodsModal,
-  onSelectGoods,
+  onOpenAddGoods,
+  onOpenEditGoods,
 }) => {
-  const { oshis, goods, activeOshiId } = useApp();
+  const { goods, oshis, activeOshiId, activeOshi, themeColor, isDark, refreshAllData, showToast } =
+    useApp();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<GoodsCategory | 'all'>('all');
-  const [selectedStatus, setSelectedStatus] = useState<GoodsOpenStatus | 'all'>('all');
-  const [onlyFavorites, setOnlyFavorites] = useState(false);
-  const [sortBy, setSortBy] = useState<'recent' | 'price-desc' | 'price-asc' | 'date-desc'>('recent');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeSubtab, setActiveSubtab] = useState<'owned' | 'preorder' | 'wish'>('owned');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // Filter logic
-  const filteredGoods = useMemo(() => {
-    return goods.filter((item) => {
-      if (activeOshiId !== 'all' && item.oshiId !== activeOshiId) {
-        return false;
-      }
-      if (onlyFavorites && !item.isFavorite) {
-        return false;
-      }
-      if (selectedCategory !== 'all' && item.category !== selectedCategory) {
-        return false;
-      }
-      if (selectedStatus !== 'all' && item.openStatus !== selectedStatus) {
-        return false;
-      }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = item.name.toLowerCase().includes(q);
-        const matchesMemo = item.memo ? item.memo.toLowerCase().includes(q) : false;
-        const matchesLocation = item.storageLocation ? item.storageLocation.toLowerCase().includes(q) : false;
-        if (!matchesName && !matchesMemo && !matchesLocation) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [goods, activeOshiId, onlyFavorites, selectedCategory, selectedStatus, searchQuery]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [targetGoodsForImage, setTargetGoodsForImage] = useState<Goods | null>(null);
 
-  // Sort logic
-  const sortedGoods = useMemo(() => {
-    return [...filteredGoods].sort((a, b) => {
-      if (sortBy === 'price-desc') {
-        return (b.price * (b.quantity || 1)) - (a.price * (a.quantity || 1));
-      }
-      if (sortBy === 'price-asc') {
-        return (a.price * (a.quantity || 1)) - (b.price * (b.quantity || 1));
-      }
-      if (sortBy === 'date-desc') {
-        return (b.purchaseDate || '').localeCompare(a.purchaseDate || '');
-      }
-      return (b.purchaseDate || b.createdAt).localeCompare(a.purchaseDate || a.createdAt);
-    });
-  }, [filteredGoods, sortBy]);
-
-  // Summary of filtered results
-  const totalSpent = useMemo(() => {
-    return sortedGoods.reduce((sum, g) => sum + (g.price || 0) * (g.quantity || 1), 0);
-  }, [sortedGoods]);
-
-  const totalItemsCount = useMemo(() => {
-    return sortedGoods.reduce((sum, g) => sum + (g.quantity || 1), 0);
-  }, [sortedGoods]);
-
-  const hasActiveFilters = searchQuery || selectedCategory !== 'all' || selectedStatus !== 'all' || onlyFavorites;
-
-  const resetFilters = () => {
-    setSearchQuery('');
-    setSelectedCategory('all');
-    setSelectedStatus('all');
-    setOnlyFavorites(false);
+  const handleGoodsImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !targetGoodsForImage) return;
+    try {
+      const base64 = await resizeAndConvertImageToBase64(file, 800, 0.85);
+      await goodsRepository.save({
+        ...targetGoodsForImage,
+        image: base64,
+        updatedAt: new Date().toISOString(),
+      });
+      await refreshAllData();
+      showToast('画像を更新しました', 'success');
+    } catch {
+      showToast('画像の保存に失敗しました', 'error');
+    } finally {
+      setTargetGoodsForImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
+  const handleUpdateQuantity = async (e: React.MouseEvent, item: Goods, delta: number) => {
+    e.stopPropagation();
+    const nextQty = (item.quantity || 1) + delta;
+    if (nextQty <= 0) return;
+    await goodsRepository.save({
+      ...item,
+      quantity: nextQty,
+      updatedAt: new Date().toISOString(),
+    });
+    await refreshAllData();
+  };
+
+  // フィルタリング処理
+  const filteredGoods = useMemo(() => {
+    return goods.filter((g) => {
+      // 推しフィルター
+      if (activeOshiId !== 'all' && g.oshiId && g.oshiId !== activeOshiId) {
+        return false;
+      }
+
+      // サブタブフィルター
+      if (activeSubtab === 'owned') {
+        if (g.isWish || g.isPreorder) return false;
+      } else if (activeSubtab === 'preorder') {
+        if (!g.isPreorder) return false;
+      } else if (activeSubtab === 'wish') {
+        if (!g.isWish || g.isPreorder) return false;
+      }
+
+      // カテゴリフィルター
+      if (selectedCategory !== 'all' && g.category !== selectedCategory) {
+        return false;
+      }
+
+      // 検索ワード
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = g.name.toLowerCase().includes(q);
+        const matchesLocation = g.storageLocation?.toLowerCase().includes(q);
+        const matchesMemo = g.memo?.toLowerCase().includes(q);
+        if (!matchesName && !matchesLocation && !matchesMemo) return false;
+      }
+
+      return true;
+    });
+  }, [goods, activeOshiId, activeSubtab, selectedCategory, searchQuery]);
+
+  // 集計
+  const ownedCount = goods.filter((g) => !g.isWish && !g.isPreorder).reduce((sum, g) => sum + (g.quantity || 1), 0);
+  const preorderCount = goods.filter((g) => g.isPreorder).length;
+  const wishCount = goods.filter((g) => g.isWish && !g.isPreorder).length;
+
+  const totalOwnedPrice = goods
+    .filter((g) => !g.isWish && !g.isPreorder)
+    .reduce((sum, g) => sum + (g.price || 0) * (g.quantity || 1), 0);
+
   return (
-    <div className="space-y-4 pb-24 md:pb-12 max-w-5xl mx-auto">
-      {/* Header & Quick Summary */}
-      <div className="bento-card rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="page-padding">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleGoodsImageUpload}
+        style={{ display: 'none' }}
+      />
+
+      {/* 画面ヘッダー */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white flex items-center gap-2">
-            <span>グッズ管理</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-neutral-500 dark:text-neutral-400 num-tabular">
-              {goods.length}点
-            </span>
-          </h2>
-          <p className="text-xs text-neutral-400 mt-0.5">
-            コレクション一覧と購入金額まとめ
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+            コレクション
+          </h1>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+            グッズ・所持品・予約中アイテムの管理（重複購入防止・保管場所管理）
           </p>
         </div>
 
         <button
-          onClick={() => onOpenGoodsModal()}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 font-semibold text-xs shadow-xs active:scale-95 transition self-start sm:self-auto"
+          type="button"
+          onClick={() => onOpenAddGoods(activeSubtab === 'wish')}
+          className="btn-primary"
+          style={{ height: 36, padding: '0 14px', fontSize: 13 }}
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>グッズを登録</span>
+          <Plus size={16} />
+          <span>{activeSubtab === 'wish' ? '欲しいものを追加' : 'グッズを追加'}</span>
         </button>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bento-card rounded-xl p-3.5 sm:p-4 space-y-3">
-        {/* Search & View toggles */}
-        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="品名、保管場所、メモ等で検索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.03] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-[var(--border-muted)] transition"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 p-0.5"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+      {/* サブタブ切り替え */}
+      <div
+        style={{
+          display: 'flex',
+          backgroundColor: 'var(--bg-surface-subtle)',
+          padding: 4,
+          borderRadius: 10,
+          marginBottom: 14,
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveSubtab('owned')}
+          style={{
+            flex: 1,
+            padding: '8px 0',
+            borderRadius: 8,
+            fontSize: 12.5,
+            fontWeight: activeSubtab === 'owned' ? 700 : 500,
+            backgroundColor: activeSubtab === 'owned' ? 'var(--bg-surface)' : 'transparent',
+            color: activeSubtab === 'owned' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            textAlign: 'center',
+            transition: 'background-color 0.15s ease',
+          }}
+        >
+          所持グッズ ({ownedCount})
+        </button>
 
-          <div className="flex items-center justify-between sm:justify-end gap-2">
-            {/* Sort Dropdown */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 text-xs font-medium rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-800 dark:text-neutral-200 focus:outline-none cursor-pointer"
-            >
-              <option value="recent">登録が新しい順</option>
-              <option value="date-desc">購入日が新しい順</option>
-              <option value="price-desc">金額が高い順</option>
-              <option value="price-asc">金額が安い順</option>
-            </select>
+        <button
+          type="button"
+          onClick={() => setActiveSubtab('preorder')}
+          style={{
+            flex: 1,
+            padding: '8px 0',
+            borderRadius: 8,
+            fontSize: 12.5,
+            fontWeight: activeSubtab === 'preorder' ? 700 : 500,
+            backgroundColor: activeSubtab === 'preorder' ? 'var(--bg-surface)' : 'transparent',
+            color: activeSubtab === 'preorder' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            textAlign: 'center',
+            transition: 'background-color 0.15s ease',
+          }}
+        >
+          予約・注文中 ({preorderCount})
+        </button>
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center bg-black/[0.03] dark:bg-white/[0.05] rounded-xl p-1 border border-[var(--border-subtle)]">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-lg transition ${
-                  viewMode === 'grid' ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-2xs' : 'text-neutral-400 hover:text-neutral-600'
-                }`}
-                title="グリッド表示"
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-lg transition ${
-                  viewMode === 'list' ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-2xs' : 'text-neutral-400 hover:text-neutral-600'
-                }`}
-                title="リスト表示"
-              >
-                <List className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+        <button
+          type="button"
+          onClick={() => setActiveSubtab('wish')}
+          style={{
+            flex: 1,
+            padding: '8px 0',
+            borderRadius: 8,
+            fontSize: 12.5,
+            fontWeight: activeSubtab === 'wish' ? 700 : 500,
+            backgroundColor: activeSubtab === 'wish' ? 'var(--bg-surface)' : 'transparent',
+            color: activeSubtab === 'wish' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            textAlign: 'center',
+            transition: 'background-color 0.15s ease',
+          }}
+        >
+          欲しいもの ({wishCount})
+        </button>
+      </div>
+
+      {/* サマリーバー (所持時のみ) */}
+      {activeSubtab === 'owned' && (
+        <div
+          className="clean-card"
+          style={{
+            padding: '12px 16px',
+            marginBottom: 14,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>
+            所持コレクション総額
+          </span>
+          <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>
+            ¥{totalOwnedPrice.toLocaleString()}
+          </span>
+        </div>
+      )}
+
+      {/* 検索 & カテゴリフィルターバー */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        <div style={{ position: 'relative' }}>
+          <Search
+            size={16}
+            style={{ position: 'absolute', left: 12, top: 12, color: 'var(--text-secondary)' }}
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="グッズ名、保管場所で検索..."
+            style={{ width: '100%', paddingLeft: 36, height: 40 }}
+          />
         </div>
 
-        {/* Filter chips */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-subtle)]">
+        {/* カテゴリピル */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
           <button
-            onClick={() => setOnlyFavorites(!onlyFavorites)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 border ${
-              onlyFavorites
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
-                : 'bg-black/[0.02] dark:bg-white/[0.03] border-[var(--border-subtle)] text-neutral-600 dark:text-neutral-300 hover:bg-black/[0.05]'
-            }`}
+            type="button"
+            onClick={() => setSelectedCategory('all')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: 20,
+              fontSize: 12,
+              fontWeight: selectedCategory === 'all' ? 700 : 500,
+              backgroundColor: selectedCategory === 'all' ? 'var(--text-primary)' : 'var(--bg-surface)',
+              color: selectedCategory === 'all' ? 'var(--bg-canvas)' : 'var(--text-secondary)',
+              border: '1px solid var(--border-subtle)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
           >
-            <Heart className={`w-3 h-3 ${onlyFavorites ? 'fill-rose-500' : ''}`} />
-            <span>お気に入り</span>
+            すべて
           </button>
-
-          {/* Category Dropdown */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value as any)}
-            className="px-2.5 py-1 text-xs font-medium rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-700 dark:text-neutral-300 focus:outline-none"
-          >
-            <option value="all">すべてのカテゴリ</option>
-            {(Object.keys(GOODS_CATEGORY_CONFIG) as GoodsCategory[]).map((cat) => (
-              <option key={cat} value={cat}>
-                {GOODS_CATEGORY_CONFIG[cat].icon} {GOODS_CATEGORY_CONFIG[cat].label}
-              </option>
-            ))}
-          </select>
-
-          {/* Status Dropdown */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value as any)}
-            className="px-2.5 py-1 text-xs font-medium rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-neutral-700 dark:text-neutral-300 focus:outline-none"
-          >
-            <option value="all">すべての状態</option>
-            {(Object.keys(GOODS_STATUS_CONFIG) as GoodsOpenStatus[]).map((st) => (
-              <option key={st} value={st}>
-                {GOODS_STATUS_CONFIG[st].label}
-              </option>
-            ))}
-          </select>
-
-          {hasActiveFilters && (
-            <button
-              onClick={resetFilters}
-              className="text-xs text-rose-500 hover:text-rose-600 font-medium px-2 py-1 ml-auto flex items-center gap-1 transition"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>解除</span>
-            </button>
-          )}
+          {(Object.keys(CATEGORY_LABELS) as GoodsCategory[]).map((cat) => {
+            const isSel = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 20,
+                  fontSize: 12,
+                  fontWeight: isSel ? 700 : 500,
+                  backgroundColor: isSel ? 'var(--text-primary)' : 'var(--bg-surface)',
+                  color: isSel ? 'var(--bg-canvas)' : 'var(--text-secondary)',
+                  border: '1px solid var(--border-subtle)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {CATEGORY_LABELS[cat]}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Summary Stat Line */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-2 text-xs text-neutral-500 dark:text-neutral-400 num-tabular font-medium">
-        <span>表示中: <strong className="text-neutral-900 dark:text-white">{sortedGoods.length}</strong> 種類 ({totalItemsCount}点)</span>
-        <span>購入総額: <strong className="text-neutral-950 dark:text-white font-bold">{formatCurrency(totalSpent)}</strong></span>
-      </div>
-
-      {/* Goods Collection Output */}
-      {sortedGoods.length === 0 ? (
-        <div className="bento-card rounded-xl p-12 text-center">
-          <Package className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mx-auto mb-2 stroke-1" />
-          <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-1">
-            該当するグッズがありません
-          </h3>
-          <p className="text-xs text-neutral-400 mb-4">
-            {hasActiveFilters ? '検索・絞り込み条件に一致するグッズがありません。' : '登録されているグッズはありません。最初のグッズを登録してみましょう。'}
-          </p>
-          {hasActiveFilters ? (
-            <button
-              onClick={resetFilters}
-              className="px-3.5 py-1.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-neutral-700 dark:text-neutral-200 font-semibold text-xs transition"
-            >
-              条件をリセット
-            </button>
-          ) : (
-            <button
-              onClick={() => onOpenGoodsModal()}
-              className="px-4 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-xs transition inline-flex items-center gap-1.5 shadow-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>グッズを登録</span>
-            </button>
-          )}
+      {/* グッズ一覧グリッド */}
+      {filteredGoods.length === 0 ? (
+        <div className="clean-card" style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>
+          該当するグッズはありません
         </div>
-      ) : viewMode === 'grid' ? (
-        /* Grid View */
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {sortedGoods.map((item) => {
+      ) : (
+        <div className="goods-grid">
+          {filteredGoods.map((item) => {
             const oshi = oshis.find((o) => o.id === item.oshiId);
-
+            const statusInfo = OPEN_STATUS_LABELS[item.openStatus] || OPEN_STATUS_LABELS.storage;
             return (
               <div
                 key={item.id}
-                onClick={() => onSelectGoods(item)}
-                className="group bento-card rounded-xl overflow-hidden hover:shadow-md cursor-pointer flex flex-col transition-all"
+                className="goods-card"
+                onClick={() => onOpenEditGoods(item)}
               >
-                {/* Image Aspect ratio container */}
-                <div className="aspect-square bg-black/[0.02] dark:bg-white/[0.02] relative overflow-hidden flex items-center justify-center border-b border-[var(--border-subtle)]">
+                {/* 写真エリア */}
+                <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', backgroundColor: 'var(--bg-surface-subtle)', overflow: 'hidden' }}>
                   {item.image ? (
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
-                    <Package className="w-8 h-8 text-neutral-300 dark:text-neutral-600 stroke-1" />
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                      <Package size={32} strokeWidth={1.5} />
+                    </div>
                   )}
 
-                  {/* Favorite badge */}
-                  {item.isFavorite && (
-                    <span className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 border border-black/5 dark:border-white/10 shadow-xs text-rose-500">
-                      <Heart className="w-3 h-3 fill-current" />
+                  {/* カテゴリバッジ */}
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      left: 8,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      backgroundColor: 'rgba(0,0,0,0.65)',
+                      color: '#FFFFFF',
+                    }}
+                  >
+                    {CATEGORY_LABELS[item.category] || 'グッズ'}
+                  </span>
+
+                  {/* 開封・状態バッジ */}
+                  {!item.isWish && !item.isPreorder && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        backgroundColor: statusInfo.color,
+                        color: '#FFFFFF',
+                      }}
+                    >
+                      {statusInfo.label}
                     </span>
                   )}
 
-                  {/* Status chip */}
-                  <span className="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/90 dark:bg-neutral-900/90 border border-black/5 dark:border-white/10 text-neutral-700 dark:text-neutral-200">
-                    {GOODS_STATUS_CONFIG[item.openStatus]?.label || '所持'}
-                  </span>
+                  {/* 予約中バッジ（重複購入防止） */}
+                  {item.isPreorder && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        backgroundColor: '#8B5CF6',
+                        color: '#FFFFFF',
+                      }}
+                    >
+                      予約済み
+                    </span>
+                  )}
                 </div>
 
-                {/* Details */}
-                <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between">
-                  <div>
+                {/* カード本体 */}
+                <div className="goods-card-body">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     {oshi && (
-                      <p
-                        className="text-[10px] font-semibold truncate mb-0.5"
-                        style={{ color: oshi.color }}
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: oshi.color || themeColor,
+                        }}
                       >
                         {oshi.name}
-                      </p>
-                    )}
-                    <h3 className="text-xs font-semibold text-neutral-900 dark:text-white line-clamp-2 leading-snug">
-                      {item.name}
-                    </h3>
-                  </div>
-
-                  <div className="mt-2.5 pt-2 border-t border-[var(--border-subtle)] flex items-baseline justify-between num-tabular">
-                    <span className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white">
-                      {formatCurrency(item.price)}
-                    </span>
-                    {item.quantity > 1 && (
-                      <span className="text-[10px] text-neutral-400 font-medium">
-                        ×{item.quantity}
                       </span>
                     )}
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* List View */
-        <div className="bento-card rounded-xl divide-y divide-[var(--border-subtle)] overflow-hidden">
-          {sortedGoods.map((item) => {
-            const oshi = oshis.find((o) => o.id === item.oshiId);
 
-            return (
-              <div
-                key={item.id}
-                onClick={() => onSelectGoods(item)}
-                className="p-3 sm:p-3.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition cursor-pointer flex items-center justify-between gap-3 group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 h-12 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-[var(--border-subtle)] overflow-hidden shrink-0 flex items-center justify-center">
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="w-5 h-5 text-neutral-400 stroke-1" />
-                    )}
+                  <div className="goods-card-name" title={item.name}>
+                    {item.name}
                   </div>
 
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                      <GoodsCategoryBadge category={item.category} />
-                      <GoodsStatusBadge status={item.openStatus} />
-                      {oshi && (
-                        <span className="text-[11px] font-semibold truncate" style={{ color: oshi.color }}>
-                          {oshi.name}
-                        </span>
-                      )}
-                      {item.isFavorite && (
-                        <Heart className="w-3 h-3 text-rose-500 fill-current" />
-                      )}
+                  {/* 保管場所の表示（オタクの超実用的機能） */}
+                  {item.storageLocation && (
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        marginTop: 2,
+                      }}
+                    >
+                      <MapPin size={11} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.storageLocation}
+                      </span>
                     </div>
+                  )}
 
-                    <h3 className="text-xs font-semibold text-neutral-900 dark:text-white truncate">
-                      {item.name}
-                    </h3>
+                  {/* 価格 & 数量 */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border-subtle)' }}>
+                    <span className="goods-card-price">
+                      ¥{(item.price || 0).toLocaleString()}
+                    </span>
 
-                    {item.storageLocation && (
-                      <p className="text-[10px] text-neutral-400 flex items-center gap-0.5 mt-0.5">
-                        <MapPin className="w-3 h-3 text-neutral-400" />
-                        <span>{item.storageLocation}</span>
-                      </p>
+                    {!item.isWish && !item.isPreorder && (
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => handleUpdateQuantity(e, item, -1)}
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 4,
+                            backgroundColor: 'var(--bg-surface-subtle)',
+                            border: '1px solid var(--border-subtle)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: 12, fontWeight: 700, minWidth: 16, textAlign: 'center' }}>
+                          {item.quantity || 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleUpdateQuantity(e, item, 1)}
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 4,
+                            backgroundColor: 'var(--bg-surface-subtle)',
+                            border: '1px solid var(--border-subtle)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
-
-                <div className="text-right shrink-0 num-tabular">
-                  <p className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white">
-                    {formatCurrency(item.price)}
-                  </p>
-                  {item.quantity > 1 && (
-                    <p className="text-[10px] text-neutral-400">×{item.quantity}</p>
-                  )}
                 </div>
               </div>
             );

@@ -2,17 +2,15 @@ import React from 'react';
 
 const PRESET_COLORS = [
   { name: 'ローズピンク', hex: '#f43f5e' },
-  { name: 'チェリーピンク', hex: '#ec4899' },
+  { name: 'コーラルピンク', hex: '#ec4899' },
   { name: 'レッド', hex: '#ef4444' },
   { name: 'オレンジ', hex: '#f97316' },
   { name: 'イエロー', hex: '#eab308' },
-  { name: 'エメラルドグリーン', hex: '#10b981' },
-  { name: 'ミントグリーン', hex: '#14b8a6' },
+  { name: 'エメラルド', hex: '#10b981' },
   { name: 'スカイブルー', hex: '#0ea5e9' },
   { name: 'ロイヤルブルー', hex: '#3b82f6' },
   { name: 'パープル', hex: '#a855f7' },
-  { name: 'バイオレット', hex: '#8b5cf6' },
-  { name: 'ブラック/ダーク', hex: '#334155' },
+  { name: 'ブラック', hex: '#1e293b' },
 ];
 
 interface ColorPickerProps {
@@ -24,47 +22,49 @@ interface ColorPickerProps {
 export const ColorPicker: React.FC<ColorPickerProps> = ({
   value,
   onChange,
-  label = 'メンバーカラー',
+  label = 'メンバーカラー（画面テーマに連動）',
 }) => {
   return (
-    <div>
-      {label && <label className="block text-xs font-semibold text-gray-700 mb-2">{label}</label>}
-      <div className="flex flex-wrap gap-2 mb-3">
+    <div className="form-group">
+      <label>{label}</label>
+      <div className="chip-group" style={{ alignItems: 'center' }}>
         {PRESET_COLORS.map((c) => {
           const isSelected = value.toLowerCase() === c.hex.toLowerCase();
           return (
             <button
               key={c.hex}
               type="button"
+              className="chip"
               onClick={() => onChange(c.hex)}
-              title={c.name}
-              className={`w-7 h-7 rounded-full transition-transform flex items-center justify-center relative ${
-                isSelected ? 'scale-110 ring-2 ring-offset-2 ring-gray-900 shadow-sm' : 'hover:scale-105'
-              }`}
-              style={{ backgroundColor: c.hex }}
+              style={{
+                borderColor: isSelected ? c.hex : undefined,
+                backgroundColor: isSelected ? c.hex : '#ffffff',
+                color: isSelected ? '#ffffff' : '#18181b',
+              }}
             >
-              {isSelected && (
-                <span className="w-2 h-2 rounded-full bg-white shadow-xs" />
-              )}
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  backgroundColor: isSelected ? '#ffffff' : c.hex,
+                  marginRight: '5px',
+                }}
+              />
+              {c.name}
             </button>
           );
         })}
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white"
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="#f43f5e"
-          className="w-28 px-2.5 py-1 text-xs font-mono rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-pink-500 uppercase"
-        />
-        <span className="text-xs text-gray-400">推しを象徴するカラーを選択</span>
+        <label className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span>自由選択</span>
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            style={{ width: '22px', height: '22px', border: 'none', padding: 0, background: 'none' }}
+          />
+        </label>
       </div>
     </div>
   );
