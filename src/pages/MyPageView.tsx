@@ -310,44 +310,35 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                   position: 'relative',
                 }}
               >
-                {/* 会員証トップバー */}
-                <div
+                {/* 右上のシンプルな編集ボタン */}
+                <button
+                  type="button"
+                  onClick={() => openOshiSheet(oshi)}
+                  aria-label={`${oshi.name}の情報を編集`}
                   style={{
-                    padding: '12px 18px',
-                    background: `linear-gradient(90deg, ${oColor}18, transparent)`,
-                    borderBottom: `1px solid var(--border-subtle)`,
+                    position: 'absolute',
+                    top: 16,
+                    right: 16,
+                    background: 'var(--bg-surface-subtle)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-secondary)',
+                    borderRadius: 10,
+                    padding: '6px 10px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
+                    gap: 5,
+                    zIndex: 2,
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: oColor }}>
-                      FAN MEMBERSHIP
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openOshiSheet(oshi)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: oColor,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: 0,
-                    }}
-                  >
-                    <span>編集</span>
-                    <Pencil size={11} strokeWidth={2.4} />
-                  </button>
-                </div>
+                  <Pencil size={12} strokeWidth={2.2} />
+                  <span>編集</span>
+                </button>
 
-                {/* 会員証メイン（写真 + 推し名 + 推し歴） */}
+                {/* メイン情報（写真 + 推し名 + 推し歴） */}
                 <div style={{ padding: '20px 20px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div
@@ -385,7 +376,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                       )}
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: 64 }}>
                       <div
                         style={{
                           fontSize: 22,
