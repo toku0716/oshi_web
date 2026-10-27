@@ -26,7 +26,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onOpenEditTodo,
   onSelectedDateChange,
 }) => {
-  const { events, todos, activeOshi, themeColor, isDark, refreshAllData, fireConfetti } = useApp();
+  const { events, todos, activeOshi, themeColor, isDark, refreshAllData, showToast } = useApp();
 
   const today = getTodayMidnight();
   const [focusedMonth, setFocusedMonth] = useState<Date>(
@@ -156,7 +156,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   const targetDay = hasBirthdayThisMonth ? monthBirthday?.getDate() : monthDebut?.getDate();
                   if (targetDay) {
                     setSelectedDate(new Date(year, month, targetDay));
-                    fireConfetti();
                   }
                 }}
                 style={{
@@ -334,9 +333,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   aria-label={`${year}年${month + 1}月${day}日${hasDot ? '（予定あり）' : ''}${isBday ? '（推しの誕生日）' : ''}`}
                   onClick={() => {
                     setSelectedDate(date);
-                    if (isBday || isDeb) {
-                      fireConfetti();
-                    }
                   }}
                   style={{
                     aspectRatio: '1',
@@ -450,7 +446,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </div>
             <button
               type="button"
-              onClick={fireConfetti}
+              onClick={() => showToast(`🎉 ${activeOshi.name}の誕生日をお祝いしました！`, 'success')}
               style={{
                 backgroundColor: themeColor,
                 color: '#FFFFFF',
@@ -504,7 +500,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </div>
             <button
               type="button"
-              onClick={fireConfetti}
+              onClick={() => showToast(`✨ ${activeOshi.name}のデビュー記念日をお祝いしました！`, 'success')}
               style={{
                 backgroundColor: themeColor,
                 color: '#FFFFFF',

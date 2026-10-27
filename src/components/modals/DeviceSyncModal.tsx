@@ -36,6 +36,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     }
   }, []);
 
+  const startSendRef = useRef<() => void>(() => {});
+
   const startSend = useCallback(() => {
     cleanupPeer();
     setMode('send');
@@ -76,13 +78,17 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     peer.on('error', (err) => {
       console.error(err);
       if (err.type === 'unavailable-id') {
-        setTimeout(() => startSend(), 200);
+        setTimeout(() => startSendRef.current(), 200);
       } else {
         setErrorMessage('接続の待機に失敗しました。もう一度お試しください。');
         setStep('error');
       }
     });
   }, [cleanupPeer, showToast]);
+
+  useEffect(() => {
+    startSendRef.current = startSend;
+  }, [startSend]);
 
   const startReceive = useCallback(() => {
     cleanupPeer();
@@ -92,23 +98,25 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     setErrorMessage('');
   }, [cleanupPeer]);
 
+  const handleClose = () => {
+    cleanupPeer();
+    setMode('select');
+    setStep('idle');
+    setSyncCode('');
+    setInputCode('');
+    setErrorMessage('');
+    onClose();
+  };
+
   useEffect(() => {
-    if (!isOpen) {
-      cleanupPeer();
-      setMode('select');
-      setStep('idle');
-      setSyncCode('');
-      setInputCode('');
-      setErrorMessage('');
-      return;
-    }
+    if (!isOpen) return;
 
     if (defaultMode === 'send') {
       startSend();
     } else if (defaultMode === 'receive') {
       startReceive();
     }
-  }, [isOpen, defaultMode, cleanupPeer, startSend, startReceive]);
+  }, [isOpen, defaultMode, startSend, startReceive]);
 
   const executeReceive = () => {
     const trimmed = inputCode.trim().replace(/\D/g, '');
@@ -182,10 +190,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => {
-        cleanupPeer();
-        onClose();
-      }}
+      onClose={handleClose}
       title="デバイス間直接同期 (P2P)"
     >
       <div className="form-stack">

@@ -55,7 +55,6 @@ interface AppContextType {
   clearAllData: () => Promise<void>;
   recoverableBackup: BackupData | null;
   restoreRecoverableBackup: () => Promise<void>;
-  fireConfetti: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -131,8 +130,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
-
-  const fireConfetti = useCallback(() => {}, []);
 
   const refreshAllData = useCallback(async () => {
     try {
@@ -338,7 +335,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         clearAllData,
         recoverableBackup,
         restoreRecoverableBackup,
-        fireConfetti,
       }}
     >
       {children}

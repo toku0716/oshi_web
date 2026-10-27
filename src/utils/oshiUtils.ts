@@ -58,17 +58,6 @@ export function isTodayDate(dateStr: string): boolean {
   return getDaysUntilDate(dateStr) === 0;
 }
 
-export function getRelativeDateLabel(dateStr: string): string {
-  const d = parseLocalDate(dateStr);
-  if (!d) return dateStr;
-  const days = getDaysUntilDate(dateStr);
-  const w = getWeekdayJa(d);
-  if (days === 0) return `今日 (${w})`;
-  if (days === 1) return `明日 (${w})`;
-  if (days === 2) return `明後日 (${w})`;
-  return `${d.getMonth() + 1}月${d.getDate()}日 (${w})`;
-}
-
 export function timeToMinutes(time?: string): number {
   if (!time || !time.trim()) return 9999;
   const parts = time.split(':');
@@ -145,34 +134,6 @@ export function getDebutYears(oshi: Oshi): number | null {
 
 export function isDebutAnniversaryToday(oshi: Oshi): boolean {
   return getDaysUntilDebut(oshi) === 0;
-}
-
-export function isMilestoneToday(oshi: Oshi): boolean {
-  const d = getOshiDaysSince(oshi);
-  if (d === null) return false;
-  if ([100, 200, 300, 365, 500, 777, 1000].includes(d)) return true;
-  if (d > 0 && d % 365 === 0) return true;
-  return false;
-}
-
-export function getOshiHighlightText(oshi: Oshi): string {
-  const bDay = getDaysUntilBirthday(oshi);
-  if (bDay !== null && bDay > 0 && bDay <= 30) {
-    return `誕生日まで あと${bDay}日`;
-  }
-  const dDay = getDaysUntilDebut(oshi);
-  if (dDay !== null && dDay > 0 && dDay <= 30) {
-    return `${getDebutYears(oshi)}周年まで あと${dDay}日`;
-  }
-  const since = getOshiDaysSince(oshi);
-  if (since !== null) {
-    return `推し始めて ${since} 日目`;
-  }
-  return 'ずっと応援中';
-}
-
-export function formatWithCommas(num: number): string {
-  return num.toLocaleString('ja-JP');
 }
 
 export interface EventCountdownInfo {

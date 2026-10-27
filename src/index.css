@@ -354,18 +354,6 @@ input:focus, select:focus, textarea:focus {
   gap: 22px;
 }
 
-.goods-items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 14px;
-}
-
-.expense-grid-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
 .mypage-grid-layout {
   display: flex;
   flex-direction: column;
@@ -509,18 +497,6 @@ input:focus, select:focus, textarea:focus {
     margin: 0 auto;
   }
 
-  .goods-items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
-  }
-
-  .expense-grid-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    align-items: start;
-  }
-
   .mypage-grid-layout {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
@@ -591,27 +567,6 @@ input:focus, select:focus, textarea:focus {
     grid-template-columns: 1.2fr 0.8fr;
     gap: 36px;
   }
-
-  .goods-items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 18px;
-  }
-}
-
-/* =========================================================
-   Luxury Card & Container System
-   ========================================================= */
-
-.luxury-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.luxury-card:hover {
-  border-color: var(--border-medium);
 }
 
 /* =========================================================
@@ -861,69 +816,7 @@ input:focus, select:focus, textarea:focus {
   margin-left: auto;
 }
 
-/* Artist Hero (Cinematic Portrait) */
-.artist-hero {
-  position: relative;
-  border-radius: 24px;
-  overflow: hidden;
-  min-height: 240px;
-  background-color: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 24px 28px;
-  color: #FFFFFF;
-  box-shadow: var(--shadow-card);
-}
-
-@media (min-width: 768px) {
-  .artist-hero {
-    min-height: 280px;
-    padding: 32px 36px;
-  }
-}
-
-.artist-hero-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 20%;
-  filter: brightness(0.85);
-  transition: object-position 0.15s ease-out;
-}
-
-/* Position adjustment button on hero */
-.artist-hero-adjust-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 5;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: #FFFFFF;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 9999px;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
-}
-
-.artist-hero-adjust-btn:hover {
-  background: rgba(0, 0, 0, 0.7);
-  border-color: rgba(255, 255, 255, 0.45);
-  transform: translateY(-1px);
-}
-
+/* Position Adjustment Panel for Bento Hero */
 .artist-hero-adjust-panel {
   position: absolute;
   top: 14px;
@@ -1070,44 +963,6 @@ input:focus, select:focus, textarea:focus {
 
 .artist-hero-adjust-save:hover {
   opacity: 0.9;
-}
-
-.artist-hero-gradient {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.35) 50%, rgba(9, 10, 13, 0.92) 100%);
-}
-
-.artist-hero-content {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.artist-hero-name {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-@media (min-width: 768px) {
-  .artist-hero-name {
-    font-size: 34px;
-  }
-}
-
-.artist-hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 500;
 }
 
 /* Oshi Selector Pills */
@@ -1530,36 +1385,6 @@ input:focus, select:focus, textarea:focus {
   gap: 12px;
 }
 
-.chip-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background-color: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.12s ease;
-}
-
-.chip:hover {
-  border-color: var(--border-medium);
-  color: var(--text-primary);
-}
-
-.chip.active {
-  background-color: rgba(var(--oshi-color-rgb), 0.15);
-  border-color: var(--oshi-color);
-  color: var(--oshi-color);
-  font-weight: 700;
-}
-
 .btn-primary {
   padding: 9px 18px;
   border-radius: 12px;
@@ -1580,38 +1405,6 @@ input:focus, select:focus, textarea:focus {
   background-color: var(--bg-surface-subtle);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  background-color: var(--bg-surface-subtle);
-  color: var(--text-secondary);
-}
-
-.badge-primary {
-  background-color: rgba(var(--oshi-color-rgb), 0.12);
-  color: var(--oshi-color);
-}
-
-.badge-warning {
-  background-color: rgba(245, 158, 11, 0.12);
-  color: #F59E0B;
-}
-
-.badge-danger {
-  background-color: rgba(239, 68, 68, 0.12);
-  color: #EF4444;
-}
-
-.badge-success {
-  background-color: rgba(16, 185, 129, 0.12);
-  color: #10B981;
 }
 
 @keyframes fadeIn {

@@ -16,18 +16,6 @@ export interface Oshi {
   updatedAt: string;
 }
 
-export const OSHI_CATEGORIES = [
-  'アイドル',
-  'アニメ・マンガ',
-  'VTuber',
-  '声優',
-  'アーティスト',
-  '俳優・舞台',
-  'ゲーム・キャラ',
-  'YouTuber・配信者',
-  'スポーツ',
-] as const;
-
 export type EventCategory = 'live' | 'event' | 'broadcast' | 'release' | 'ticket' | 'other';
 
 export type TicketStatus = 'none' | 'applied' | 'won' | 'lost' | 'purchased';
