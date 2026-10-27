@@ -405,6 +405,249 @@ input:focus, select:focus, textarea:focus {
    Weverse / Apple Music Component Styles
    ========================================================= */
 
+/* =========================================================
+   Oshi Profile Hero (Square Artwork Layout)
+   ========================================================= */
+
+.oshi-bento-hero {
+  position: relative;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.oshi-bento-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+@media (min-width: 600px) {
+  .oshi-bento-hero {
+    padding: 24px 28px;
+  }
+
+  .oshi-bento-content {
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+  }
+}
+
+/* Square Photo Card (正方形 1:1) */
+.oshi-bento-photo-wrapper {
+  position: relative;
+  width: min(200px, 58vw);
+  height: min(200px, 58vw);
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+}
+
+@media (min-width: 600px) {
+  .oshi-bento-photo-wrapper {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+.oshi-bento-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  aspect-ratio: 1 / 1;
+  display: block;
+  transition: object-position 0.15s ease-out;
+}
+
+.oshi-bento-photo-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.6) 100%);
+  pointer-events: none;
+}
+
+.oshi-bento-photo-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 48px;
+  font-weight: 800;
+}
+
+/* Floating Status Pill on Square Photo */
+.oshi-bento-photo-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Position adjustment trigger on Square Photo */
+.oshi-bento-adjust-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.oshi-bento-adjust-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Info and Bento Cells column */
+.oshi-bento-info-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
+.oshi-bento-meta-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.oshi-bento-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.oshi-bento-tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.oshi-bento-name {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .oshi-bento-name {
+    font-size: 28px;
+  }
+}
+
+.oshi-bento-ruby {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.oshi-bento-memo {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Bento Stats Grid */
+.oshi-bento-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.oshi-bento-stat-card {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.oshi-bento-stat-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.oshi-bento-stat-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.oshi-bento-stat-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 5px;
+  color: #FFFFFF;
+  margin-left: auto;
+}
+
 /* Artist Hero (Cinematic Portrait) */
 .artist-hero {
   position: relative;

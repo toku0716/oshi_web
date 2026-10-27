@@ -226,167 +226,231 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           )}
 
-          {/* シネマティック・アーティストカバー */}
-          <div className="artist-hero">
-            {activeOshi.image ? (
-              <>
-                <img
-                  src={activeOshi.image}
-                  alt={activeOshi.name}
-                  className="artist-hero-image"
-                  style={{
-                    objectPosition: isAdjustingPosition
-                      ? `center ${adjustPositionY}%`
-                      : (activeOshi.imagePosition || 'center 20%'),
-                  }}
-                />
-                <div className="artist-hero-gradient" />
+          {/* 正方形推し画像 ＆ プロフィール */}
+          <div className="oshi-bento-hero">
+            <div className="oshi-bento-content">
+              {/* 正方形画像カード (1:1 Square) */}
+              <div className="oshi-bento-photo-wrapper">
+                {activeOshi.image ? (
+                  <>
+                    <img
+                      src={activeOshi.image}
+                      alt={activeOshi.name}
+                      className="oshi-bento-photo"
+                      style={{
+                        objectPosition: isAdjustingPosition
+                          ? `center ${adjustPositionY}%`
+                          : (activeOshi.imagePosition || 'center 20%'),
+                      }}
+                    />
+                    <div className="oshi-bento-photo-gradient" />
 
-                {/* 位置調整ボタン */}
-                {!isAdjustingPosition && (
-                  <button
-                    type="button"
-                    className="artist-hero-adjust-btn"
-                    onClick={() => {
-                      setAdjustPositionY(parseImagePositionY(activeOshi.imagePosition));
-                      setIsAdjustingPosition(true);
-                    }}
-                    aria-label="画像の位置を調整"
-                  >
-                    <Sliders size={13} />
-                    <span>位置調整</span>
-                  </button>
-                )}
+                    {/* 正方形画像内の推し歴バッジ */}
+                    <div className="oshi-bento-photo-badge">
+                      <Heart size={11} fill="currentColor" />
+                      <span>
+                        {getOshiDaysSince(activeOshi) !== null
+                          ? `${getOshiDaysSince(activeOshi)}日目`
+                          : '応援中'}
+                      </span>
+                    </div>
 
-                {/* 位置調整パネル */}
-                {isAdjustingPosition && (
-                  <div className="artist-hero-adjust-panel">
-                    <div className="artist-hero-adjust-header">
-                      <span className="artist-hero-adjust-title">推しの表示位置を調整</span>
-                      <span className="artist-hero-adjust-value">{adjustPositionY}%</span>
-                    </div>
-                    <div className="artist-hero-adjust-slider-wrap">
-                      <span className="artist-hero-adjust-hint">上</span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={adjustPositionY}
-                        onChange={(e) => setAdjustPositionY(Number(e.target.value))}
-                        className="artist-hero-adjust-slider"
-                      />
-                      <span className="artist-hero-adjust-hint">下</span>
-                    </div>
-                    <div className="artist-hero-adjust-presets">
-                      {[
-                        { label: '顔優先 (15%)', val: 15 },
-                        { label: '標準 (25%)', val: 25 },
-                        { label: '中央 (50%)', val: 50 },
-                        { label: '下部 (75%)', val: 75 },
-                      ].map((preset) => (
-                        <button
-                          key={preset.val}
-                          type="button"
-                          className={`artist-hero-preset-btn ${adjustPositionY === preset.val ? 'active' : ''}`}
-                          onClick={() => setAdjustPositionY(preset.val)}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="artist-hero-adjust-actions">
+                    {/* 位置調整ボタン */}
+                    {!isAdjustingPosition && (
                       <button
                         type="button"
-                        className="artist-hero-adjust-cancel"
+                        className="oshi-bento-adjust-btn"
                         onClick={() => {
-                          setIsAdjustingPosition(false);
                           setAdjustPositionY(parseImagePositionY(activeOshi.imagePosition));
+                          setIsAdjustingPosition(true);
                         }}
+                        aria-label="画像の位置を調整"
+                        title="画像の位置を調整"
                       >
-                        キャンセル
+                        <Sliders size={13} />
                       </button>
-                      <button
-                        type="button"
-                        className="artist-hero-adjust-save"
-                        style={{ backgroundColor: oColor }}
-                        onClick={handleSavePosition}
-                        disabled={isSavingPosition}
-                      >
-                        <Check size={14} />
-                        <span>{isSavingPosition ? '保存中...' : '位置を保存'}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: `linear-gradient(135deg, ${oColor}77 0%, #090A0D 100%)`,
-                }}
-              />
-            )}
-
-            {/* 下部：推し名 ＆ 静謐なメタ情報 */}
-            <div className="artist-hero-content">
-              <h1 className="artist-hero-name">{activeOshi.name}</h1>
-
-              <div className="artist-hero-meta">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Heart size={13} fill="currentColor" style={{ opacity: 0.9 }} />
-                  <span>
-                    {getOshiDaysSince(activeOshi) !== null
-                      ? `推して ${getOshiDaysSince(activeOshi)}日目`
-                      : '応援中'}
-                  </span>
-                </div>
-
-                {activeOshi.birthday && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Gift size={13} style={{ opacity: 0.85 }} />
-                    <span>誕生日 {activeOshi.birthday.replace(/-/g, '/')}</span>
-                    {isBirthdayToday(activeOshi) && (
-                      <span
-                        style={{
-                          backgroundColor: '#FF2D55',
-                          color: '#FFFFFF',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: '1px 6px',
-                          borderRadius: 4,
-                        }}
-                      >
-                        TODAY
-                      </span>
                     )}
-                  </div>
-                )}
-
-                {activeOshi.debutDate && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Sparkles size={13} style={{ opacity: 0.85 }} />
-                    <span>デビュー {activeOshi.debutDate.replace(/-/g, '/')}</span>
-                    {isDebutAnniversaryToday(activeOshi) && (
-                      <span
-                        style={{
-                          backgroundColor: '#FF9500',
-                          color: '#FFFFFF',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: '1px 6px',
-                          borderRadius: 4,
-                        }}
-                      >
-                        {getDebutYears(activeOshi)}周年
-                      </span>
-                    )}
+                  </>
+                ) : (
+                  <div
+                    className="oshi-bento-photo-fallback"
+                    style={{
+                      background: `linear-gradient(135deg, ${oColor} 0%, #11141B 100%)`,
+                    }}
+                  >
+                    <span>{activeOshi.name.slice(0, 1)}</span>
                   </div>
                 )}
               </div>
+
+              {/* 右側：プロフィール＆ステータスセル */}
+              <div className="oshi-bento-info-column">
+                {/* メタタグ (カテゴリー / グループ) */}
+                <div className="oshi-bento-meta-tags">
+                  {activeOshi.category && (
+                    <div className="oshi-bento-tag">
+                      <span
+                        className="oshi-bento-tag-dot"
+                        style={{ backgroundColor: oColor }}
+                      />
+                      <span>{activeOshi.category}</span>
+                    </div>
+                  )}
+                  {activeOshi.group && (
+                    <div className="oshi-bento-tag">
+                      <span>{activeOshi.group}</span>
+                    </div>
+                  )}
+                  <div
+                    className="oshi-bento-tag"
+                    style={{ color: oColor, borderColor: `${oColor}33`, backgroundColor: `${oColor}12` }}
+                  >
+                    <Heart size={11} fill="currentColor" />
+                    <span>推しメン</span>
+                  </div>
+                </div>
+
+                {/* 推し名 */}
+                <div>
+                  <h1 className="oshi-bento-name">
+                    {activeOshi.name}
+                    {activeOshi.ruby && (
+                      <span className="oshi-bento-ruby">（{activeOshi.ruby}）</span>
+                    )}
+                  </h1>
+                  {activeOshi.memo && (
+                    <p className="oshi-bento-memo" style={{ marginTop: 4 }}>
+                      {activeOshi.memo}
+                    </p>
+                  )}
+                </div>
+
+                {/* ステータス・グリッド */}
+                <div className="oshi-bento-stats-grid">
+                  {/* セル1: 推し歴 */}
+                  <div className="oshi-bento-stat-card">
+                    <div className="oshi-bento-stat-header">
+                      <Heart size={12} style={{ color: oColor }} />
+                      <span>推し歴</span>
+                    </div>
+                    <div className="oshi-bento-stat-value">
+                      {getOshiDaysSince(activeOshi) !== null ? (
+                        <>
+                          <span>{getOshiDaysSince(activeOshi)}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>日</span>
+                        </>
+                      ) : (
+                        <span>応援中</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* セル2: 誕生日 */}
+                  {activeOshi.birthday && (
+                    <div className="oshi-bento-stat-card">
+                      <div className="oshi-bento-stat-header">
+                        <Gift size={12} style={{ color: '#FF2D55' }} />
+                        <span>誕生日</span>
+                        {isBirthdayToday(activeOshi) && (
+                          <span
+                            className="oshi-bento-stat-badge"
+                            style={{ backgroundColor: '#FF2D55' }}
+                          >
+                            TODAY
+                          </span>
+                        )}
+                      </div>
+                      <div className="oshi-bento-stat-value">
+                        <span>{activeOshi.birthday.replace(/-/g, '/')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* セル3: デビュー・記念日 */}
+                  {activeOshi.debutDate && (
+                    <div className="oshi-bento-stat-card">
+                      <div className="oshi-bento-stat-header">
+                        <Sparkles size={12} style={{ color: '#FF9500' }} />
+                        <span>デビュー</span>
+                        {isDebutAnniversaryToday(activeOshi) && (
+                          <span
+                            className="oshi-bento-stat-badge"
+                            style={{ backgroundColor: '#FF9500' }}
+                          >
+                            {getDebutYears(activeOshi)}周年
+                          </span>
+                        )}
+                      </div>
+                      <div className="oshi-bento-stat-value">
+                        <span>{activeOshi.debutDate.replace(/-/g, '/')}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* 位置調整パネル (開いている時) */}
+            {isAdjustingPosition && (
+              <div className="artist-hero-adjust-panel" style={{ position: 'relative', top: 'auto', right: 'auto', width: '100%', marginTop: 8 }}>
+                <div className="artist-hero-adjust-header">
+                  <span className="artist-hero-adjust-title">推しの表示位置（正方形フォーカス）を調整</span>
+                  <span className="artist-hero-adjust-value">{adjustPositionY}%</span>
+                </div>
+                <div className="artist-hero-adjust-slider-wrap">
+                  <span className="artist-hero-adjust-hint">上</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={adjustPositionY}
+                    onChange={(e) => setAdjustPositionY(Number(e.target.value))}
+                    className="artist-hero-adjust-slider"
+                  />
+                  <span className="artist-hero-adjust-hint">下</span>
+                </div>
+                <div className="artist-hero-adjust-presets">
+                  {[
+                    { label: '顔優先 (15%)', val: 15 },
+                    { label: '標準 (25%)', val: 25 },
+                    { label: '中央 (50%)', val: 50 },
+                    { label: '下部 (75%)', val: 75 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      className={`artist-hero-preset-btn ${adjustPositionY === preset.val ? 'active' : ''}`}
+                      onClick={() => setAdjustPositionY(preset.val)}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="artist-hero-adjust-actions">
+                  <button
+                    type="button"
+                    className="artist-hero-adjust-cancel"
+                    onClick={() => {
+                      setIsAdjustingPosition(false);
+                      setAdjustPositionY(parseImagePositionY(activeOshi.imagePosition));
+                    }}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="button"
+                    className="artist-hero-adjust-save"
+                    style={{ backgroundColor: oColor }}
+                    onClick={handleSavePosition}
+                    disabled={isSavingPosition}
+                  >
+                    <Check size={14} />
+                    <span>{isSavingPosition ? '保存中...' : '位置を保存'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
