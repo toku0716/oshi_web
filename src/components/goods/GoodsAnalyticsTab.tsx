@@ -147,7 +147,7 @@ export const GoodsAnalyticsTab: React.FC<GoodsAnalyticsTabProps> = ({
           分析データがまだありません
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-          グッズを登録すると、総投資額やカテゴリ別の内訳が自動で集計・可視化されます
+          グッズを登録すると、使った合計金額やカテゴリ別の内訳が自動でまとまります
         </p>
       </div>
     );
@@ -175,13 +175,13 @@ export const GoodsAnalyticsTab: React.FC<GoodsAnalyticsTabProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700 }}>
             <TrendingUp size={14} color={themeColor} />
-            <span>総投資金額</span>
+            <span>使った合計金額</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>
             ¥{totalPrice.toLocaleString()}
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-            所持グッズの累計価格
+            あつめたグッズの合計
           </div>
         </div>
 
@@ -197,13 +197,13 @@ export const GoodsAnalyticsTab: React.FC<GoodsAnalyticsTabProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700 }}>
             <ShoppingBag size={14} color={themeColor} />
-            <span>総所持数</span>
+            <span>持っている数</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>
             {totalCount} <span style={{ fontSize: 12, fontWeight: 700 }}>点</span>
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-            全 {ownedItems.length} 種
+            全 {ownedItems.length} 種類
           </div>
         </div>
 
@@ -219,13 +219,13 @@ export const GoodsAnalyticsTab: React.FC<GoodsAnalyticsTabProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700 }}>
             <Tag size={14} color={themeColor} />
-            <span>平均単価</span>
+            <span>1つあたりの平均</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>
             ¥{avgPrice.toLocaleString()}
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-            1点あたりの目安
+            平均の価格
           </div>
         </div>
 
@@ -265,7 +265,7 @@ export const GoodsAnalyticsTab: React.FC<GoodsAnalyticsTabProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <PieChart size={17} color={themeColor} />
           <h3 style={{ fontSize: 14, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-            カテゴリ別内訳 & 投資比率
+            カテゴリ別の内訳
           </h3>
         </div>
 
@@ -324,7 +324,7 @@ export const GoodsAnalyticsTab: React.FC<GoodsAnalyticsTabProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
           <Layers size={17} color={themeColor} />
           <h3 style={{ fontSize: 14, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-            開封・保存状況
+            開封・保管の状態
           </h3>
         </div>
 
@@ -387,7 +387,7 @@ export const GoodsAnalyticsTab: React.FC<GoodsAnalyticsTabProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <Award size={17} color={themeColor} />
             <h3 style={{ fontSize: 14, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-              推し別コレクション投資
+              推しごとの割合
             </h3>
           </div>
 

@@ -34,6 +34,7 @@ export interface OshiEvent {
   paymentDeadline?: string; // 入金・発券締切 YYYY-MM-DD
   seatInfo?: string; // 座席情報 (例: アリーナA3ブロック 12番)
   memo?: string;
+  isFinished?: boolean; // イベントが終了したかどうか
   createdAt: string;
   updatedAt: string;
 }
@@ -145,19 +146,10 @@ export interface GoogleAuthSession {
   expiresAt?: number;
 }
 
-export interface JournalEntry {
-  id: string;
-  title: string;
-  date: string; // YYYY-MM-DD
-  oshiId?: string;
-  eventId?: string;
-  content: string; // 参戦レポ・感想・セトリ・思い出
-  rating?: number; // 1-5
-  images?: string[]; // Base64 data URLs
-  tags?: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+import {
+  DEFAULT_TERMS_CONTENT,
+  DEFAULT_PRIVACY_CONTENT,
+} from '../data/defaultPolicyText';
 
 export interface AppSettings {
   id: 'default';
@@ -169,9 +161,13 @@ export interface AppSettings {
   acceptedPolicyAt?: string;
   activePolicyVersion?: string;
   activePolicyDateLabel?: string;
+  customTermsContent?: string;
+  customPrivacyContent?: string;
   accessControlEnabled?: boolean;
   googleClientId?: string;
   allowedGoogleEmails?: string[];
+  adminAccessControlEnabled?: boolean;
+  allowedAdminGoogleEmails?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -179,6 +175,10 @@ export interface AppSettings {
 export function getEffectivePolicyInfo(settings?: AppSettings | null): {
   version: string;
   dateLabel: string;
+  termsContent: string;
+  privacyContent: string;
+  isTermsCustomized: boolean;
+  isPrivacyCustomized: boolean;
 } {
   const cachedVersion =
     typeof window !== 'undefined'
@@ -188,6 +188,21 @@ export function getEffectivePolicyInfo(settings?: AppSettings | null): {
     typeof window !== 'undefined'
       ? localStorage.getItem('oshiss_active_policy_date_label')
       : null;
+  const cachedTerms =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('oshiss_custom_terms_content')
+      : null;
+  const cachedPrivacy =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('oshiss_custom_privacy_content')
+      : null;
+
+  const termsContent =
+    (settings?.customTermsContent || cachedTerms || '').trim() ||
+    DEFAULT_TERMS_CONTENT;
+  const privacyContent =
+    (settings?.customPrivacyContent || cachedPrivacy || '').trim() ||
+    DEFAULT_PRIVACY_CONTENT;
 
   return {
     version:
@@ -196,6 +211,14 @@ export function getEffectivePolicyInfo(settings?: AppSettings | null): {
       settings?.activePolicyDateLabel ||
       cachedLabel ||
       CURRENT_POLICY_DATE_LABEL,
+    termsContent,
+    privacyContent,
+    isTermsCustomized:
+      !!((settings?.customTermsContent || cachedTerms || '').trim() &&
+      (settings?.customTermsContent || cachedTerms || '').trim() !== DEFAULT_TERMS_CONTENT),
+    isPrivacyCustomized:
+      !!((settings?.customPrivacyContent || cachedPrivacy || '').trim() &&
+      (settings?.customPrivacyContent || cachedPrivacy || '').trim() !== DEFAULT_PRIVACY_CONTENT),
   };
 }
 
@@ -209,7 +232,6 @@ export interface BackupData {
     todos: Todo[];
     goods: Goods[];
     expenses?: ExpenseItem[];
-    journals?: JournalEntry[];
     settings?: AppSettings;
   };
 }

@@ -105,7 +105,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_GOOGLE_CLIENT_ID: 112431414494-8vj2boelps95u2lu0fo6h39i0gqob2t4.apps.googleusercontent.com
+          VITE_GOOGLE_CLIENT_ID: 935719387597-d3td69e6b9mran4grtisaohn81ovnbcv.apps.googleusercontent.com
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

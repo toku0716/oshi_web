@@ -1,4 +1,4 @@
-import { getDB } from '../db/database';
+import { getDB, getActiveUserEmail, toSafeUserKey } from '../db/database';
 import type { BackupData, Oshi, OshiEvent, Todo, Goods, ExpenseItem, AppSettings } from '../types';
 import { expenseRepository } from './expenseRepository';
 
@@ -10,13 +10,12 @@ export const backupRepository = {
    */
   async exportBackup(): Promise<BackupData> {
     const db = await getDB();
-    const [oshis, events, todos, goods, expenses, journals, settings] = await Promise.all([
+    const [oshis, events, todos, goods, expenses, settings] = await Promise.all([
       db.getAll('oshis'),
       db.getAll('events'),
       db.getAll('todos'),
       db.getAll('goods'),
       expenseRepository.getAll(),
-      db.getAll('journals').catch(() => []),
       db.get('settings', 'default'),
     ]);
 
@@ -30,7 +29,6 @@ export const backupRepository = {
         todos,
         goods,
         expenses,
-        journals,
         settings: settings || undefined,
       },
     };
@@ -191,21 +189,18 @@ export const backupRepository = {
     ]);
     await tx.done;
 
-    // 清掃: localStorage の自動スナップショットや一時キャッシュも消去
+    // 清掃: ログイン中のユーザー専用スナップショットや一時キャッシュを消去
     try {
+      const email = getActiveUserEmail();
+      const userKey = email ? toSafeUserKey(email) : 'guest';
+      localStorage.removeItem(`oshiss_auto_safety_snapshot_${userKey}`);
       localStorage.removeItem('oshiss_auto_safety_snapshot');
       localStorage.removeItem('oshiss_expenses_v1');
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith('oshiss_backup_') || k.includes('safety_snapshot'))) {
-          localStorage.removeItem(k);
-        }
-      }
     } catch {}
   },
 
   /**
-   * Scan localStorage for any previous non-empty backup data to allow user recovery
+   * 現在のアカウント専用のバックアップデータを探索（他アカウントのデータ復活・混入を防止）
    */
   findRecoverableBackup(): BackupData | null {
     const candidates: BackupData[] = [];
@@ -239,17 +234,11 @@ export const backupRepository = {
       } catch {}
     };
 
-    checkAndAdd(localStorage.getItem('oshiss_auto_safety_snapshot'));
+    const email = getActiveUserEmail();
+    const userKey = email ? toSafeUserKey(email) : 'guest';
 
-    // 全てのlocalStorageキーを探索して過去のデータを救出
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith('oshiss_') || k.includes('backup') || k.includes('google'))) {
-          checkAndAdd(localStorage.getItem(k));
-        }
-      }
-    } catch {}
+    // ログイン中のユーザー専用スナップショットのみを対象にする
+    checkAndAdd(localStorage.getItem(`oshiss_auto_safety_snapshot_${userKey}`));
 
     if (candidates.length === 0) return null;
 

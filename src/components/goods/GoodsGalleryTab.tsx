@@ -319,7 +319,7 @@ export const GoodsGalleryTab: React.FC<GoodsGalleryTabProps> = ({
             <Package size={24} />
           </div>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
-            該当する所持グッズがありません
+            該当するグッズがありません
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
             {searchQuery || selectedCategory !== 'all' || onlyFavorite
@@ -330,14 +330,20 @@ export const GoodsGalleryTab: React.FC<GoodsGalleryTabProps> = ({
             <button
               type="button"
               onClick={onOpenAddGoods}
-              className="btn-primary"
               style={{
                 marginTop: 14,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '8px 16px',
+                padding: '8px 20px',
                 fontSize: 13,
+                fontWeight: 800,
+                backgroundColor: themeColor,
+                color: '#FFFFFF',
+                borderRadius: 9999,
+                border: 'none',
+                boxShadow: `0 4px 12px ${themeColor}44`,
+                cursor: 'pointer',
               }}
             >
               <Plus size={15} />
@@ -345,50 +351,80 @@ export const GoodsGalleryTab: React.FC<GoodsGalleryTabProps> = ({
             </button>
           )}
         </div>
-      ) : viewMode === 'grid' ? (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-            gap: 12,
-          }}
-        >
-          {filteredGoods.map((item) => {
-            const oshi = oshis.find((o) => o.id === item.oshiId);
-            return (
-              <GoodsCard
-                key={item.id}
-                item={item}
-                oshiName={oshi?.name}
-                oshiColor={oshi?.color}
-                isSelected={selectedItem?.id === item.id}
-                viewMode="grid"
-                onClick={() => onSelectItem(item)}
-                onToggleFavorite={onToggleFavorite}
-                onUpdateQuantity={onUpdateQuantity}
-              />
-            );
-          })}
-        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {filteredGoods.map((item) => {
-            const oshi = oshis.find((o) => o.id === item.oshiId);
-            return (
-              <GoodsCard
-                key={item.id}
-                item={item}
-                oshiName={oshi?.name}
-                oshiColor={oshi?.color}
-                isSelected={selectedItem?.id === item.id}
-                viewMode="list"
-                onClick={() => onSelectItem(item)}
-                onToggleFavorite={onToggleFavorite}
-                onUpdateQuantity={onUpdateQuantity}
-              />
-            );
-          })}
-        </div>
+        <>
+          {viewMode === 'grid' ? (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: 12,
+              }}
+            >
+              {filteredGoods.map((item) => {
+                const oshi = oshis.find((o) => o.id === item.oshiId);
+                return (
+                  <GoodsCard
+                    key={item.id}
+                    item={item}
+                    oshiName={oshi?.name}
+                    oshiColor={oshi?.color}
+                    isSelected={selectedItem?.id === item.id}
+                    viewMode="grid"
+                    onClick={() => onSelectItem(item)}
+                    onToggleFavorite={onToggleFavorite}
+                    onUpdateQuantity={onUpdateQuantity}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {filteredGoods.map((item) => {
+                const oshi = oshis.find((o) => o.id === item.oshiId);
+                return (
+                  <GoodsCard
+                    key={item.id}
+                    item={item}
+                    oshiName={oshi?.name}
+                    oshiColor={oshi?.color}
+                    isSelected={selectedItem?.id === item.id}
+                    viewMode="list"
+                    onClick={() => onSelectItem(item)}
+                    onToggleFavorite={onToggleFavorite}
+                    onUpdateQuantity={onUpdateQuantity}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* リスト末尾の追加ボタン */}
+          <div style={{ marginTop: 14 }}>
+            <button
+              type="button"
+              onClick={onOpenAddGoods}
+              style={{
+                width: '100%',
+                padding: '11px',
+                borderRadius: 14,
+                border: '1.5px dashed var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface-subtle)',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
+              <Plus size={15} strokeWidth={2.4} />
+              <span>新しいグッズを追加する</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

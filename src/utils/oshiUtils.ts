@@ -80,6 +80,20 @@ export function sortEventsByDateAndTime(list: OshiEvent[]): OshiEvent[] {
   });
 }
 
+export function isEventEnded(event: OshiEvent): boolean {
+  if (event.isFinished) return true;
+  const days = getDaysUntilDate(event.date);
+  if (days < 0) return true; // 過去日
+  if (days === 0 && event.time) {
+    // 本日の場合、指定時刻を過ぎていれば終了とみなす
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const eventMins = timeToMinutes(event.time);
+    return currentMins >= eventMins;
+  }
+  return false;
+}
+
 // Oshi helpers (ported from oshi_models.dart)
 export function getOshiSinceDateStr(oshi: Oshi): string | undefined {
   return oshi.sinceDate || oshi.debutDate;
@@ -140,6 +154,132 @@ export interface EventCountdownInfo {
   heroBadge: string;
   hoursLabel: string;
   shortCountdown: string;
+}
+
+export interface EventLiveCountdown {
+  isEnded: boolean;
+  isStarted: boolean;
+  isAllDay: boolean;
+  hasTime: boolean;
+  formatted: string;
+  label: string;
+  shortBadge: string;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  totalSeconds: number;
+}
+
+/**
+ * 毎秒リアルタイムに動くカウントダウン情報を計算する
+ */
+export function getEventLiveCountdown(
+  event: OshiEvent,
+  now: Date = new Date()
+): EventLiveCountdown {
+  const d = parseLocalDate(event.date);
+  if (!d) {
+    return {
+      isEnded: false,
+      isStarted: false,
+      isAllDay: true,
+      hasTime: false,
+      formatted: '',
+      label: '日時未定',
+      shortBadge: '',
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      totalSeconds: 0,
+    };
+  }
+
+  const rawTime = event.time?.trim();
+  if (!rawTime || !rawTime.includes(':')) {
+    const today = isTodayDate(event.date);
+    return {
+      isEnded: isEventEnded(event),
+      isStarted: today,
+      isAllDay: true,
+      hasTime: false,
+      formatted: today ? '本日開催' : '',
+      label: today ? '本日開催（終日）' : '終日開催',
+      shortBadge: today ? '本日' : '',
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      totalSeconds: 0,
+    };
+  }
+
+  const [hStr, mStr] = rawTime.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (isNaN(h) || isNaN(m)) {
+    return {
+      isEnded: isEventEnded(event),
+      isStarted: false,
+      isAllDay: true,
+      hasTime: false,
+      formatted: '',
+      label: '時間未設定',
+      shortBadge: '',
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      totalSeconds: 0,
+    };
+  }
+
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, 0, 0);
+  const diffMs = target.getTime() - now.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+
+  if (diffSec <= 0) {
+    return {
+      isEnded: isEventEnded(event),
+      isStarted: true,
+      isAllDay: false,
+      hasTime: true,
+      formatted: '開始済',
+      label: '開始済（進行中）',
+      shortBadge: '開催中',
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      totalSeconds: 0,
+    };
+  }
+
+  const hours = Math.floor(diffSec / 3600);
+  const remSec = diffSec % 3600;
+  const minutes = Math.floor(remSec / 60);
+  const seconds = remSec % 60;
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  let formatted = '';
+  if (hours > 0) {
+    formatted = `${hours}時間${pad(minutes)}分${pad(seconds)}秒`;
+  } else if (minutes > 0) {
+    formatted = `${minutes}分${pad(seconds)}秒`;
+  } else {
+    formatted = `${seconds}秒`;
+  }
+
+  return {
+    isEnded: false,
+    isStarted: false,
+    isAllDay: false,
+    hasTime: true,
+    formatted,
+    label: `開始まで あと ${formatted}`,
+    shortBadge: `あと ${formatted}`,
+    hours,
+    minutes,
+    seconds,
+    totalSeconds: diffSec,
+  };
 }
 
 export function getEventCountdownInfo(

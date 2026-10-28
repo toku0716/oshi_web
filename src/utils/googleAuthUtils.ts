@@ -3,6 +3,19 @@ import type { AppSettings, GoogleAuthSession } from '../types';
 const AUTH_SESSION_STORAGE_KEY = 'oshiss_google_auth_session';
 const ACCESS_CONFIG_CACHE_KEY = 'oshiss_access_control_cache';
 
+export const ADMIN_AUTH_SESSION_STORAGE_KEY = 'oshiss_admin_google_auth_session';
+export const ADMIN_ACCESS_CONFIG_CACHE_KEY = 'oshiss_admin_access_control_cache';
+
+const LEGACY_CLIENT_ID = '112431414494-8vj2boelps95u2lu0fo6h39i0gqob2t4.apps.googleusercontent.com';
+
+export interface EffectiveAdminAccessConfig {
+  enabled: boolean;
+  googleClientId: string;
+  allowedEmails: string[];
+  envEmails: string[];
+  customEmails: string[];
+}
+
 export interface EffectiveAccessConfig {
   enabled: boolean;
   googleClientId: string;
@@ -12,10 +25,16 @@ export interface EffectiveAccessConfig {
 }
 
 /**
- * メールアドレスを正規化（小文字・前後空白除去）
+ * メールアドレスを正規化（小文字・全角半角変換・前後全角半角空白除去）
  */
 export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+  if (!email) return '';
+  return email
+    .trim()
+    .replace(/\u3000/g, ' ')
+    .trim()
+    .replace(/[\uff01-\uff5e]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+    .toLowerCase();
 }
 
 /**
@@ -40,7 +59,7 @@ export function getEffectiveAccessConfig(
     ? envAllowedRaw
         .split(/[,;\s]+/)
         .map(normalizeEmail)
-        .filter((e) => e.includes('@') || e.startsWith('.') || e.startsWith('*.'))
+        .filter((e) => e.includes('@') || e.includes('.'))
     : [];
 
   let cached: {
@@ -61,13 +80,13 @@ export function getEffectiveAccessConfig(
     settings?.allowedGoogleEmails ?? cached.allowedGoogleEmails ?? [];
   const customEmails = customEmailsRaw
     .map(normalizeEmail)
-    .filter((e) => e.includes('@') || e.startsWith('.') || e.startsWith('*.'));
+    .filter((e) => e.includes('@') || e.includes('.'));
 
   const allowedEmails = Array.from(new Set([...envEmails, ...customEmails]));
 
-  const googleClientId =
-    (settings?.googleClientId ?? cached.googleClientId ?? '').trim() ||
-    envClientId;
+  const rawClientId = (settings?.googleClientId ?? cached.googleClientId ?? '').trim();
+  const validCustomId = rawClientId && rawClientId !== LEGACY_CLIENT_ID ? rawClientId : '';
+  const googleClientId = envClientId || validCustomId;
 
   const explicitSetting =
     settings?.accessControlEnabled ?? cached.accessControlEnabled;
@@ -79,7 +98,11 @@ export function getEffectiveAccessConfig(
     envEmails.length > 0;
 
   const enabled =
-    explicitSetting !== undefined ? explicitSetting : defaultEnabled;
+    envEnabledRaw === 'true' || envEnabledRaw === '1'
+      ? true
+      : explicitSetting !== undefined
+        ? explicitSetting
+        : defaultEnabled;
 
   return {
     enabled,
@@ -111,6 +134,100 @@ export function cacheAccessConfig(config: {
 }
 
 /**
+ * 管理者（Admin）コンソール用のアクセス制限設定を取得する
+ * 推しサポ一般ユーザー用（allowedGoogleEmails）とは完全に分離して管理されます
+ */
+export function getEffectiveAdminAccessConfig(
+  settings?: AppSettings | null
+): EffectiveAdminAccessConfig {
+  const envClientId = (
+    (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || ''
+  ).trim();
+  const envAllowedRaw = (
+    (import.meta.env.VITE_ADMIN_ALLOWED_GOOGLE_EMAILS as string | undefined) || ''
+  ).trim();
+  const envEnabledRaw = (
+    (import.meta.env.VITE_ADMIN_ACCESS_CONTROL_ENABLED as string | undefined) || ''
+  )
+    .trim()
+    .toLowerCase();
+
+  const envEmails = envAllowedRaw
+    ? envAllowedRaw
+        .split(/[,;\s]+/)
+        .map(normalizeEmail)
+        .filter((e) => e.includes('@') || e.includes('.'))
+    : [];
+
+  let cached: {
+    adminAccessControlEnabled?: boolean;
+    googleClientId?: string;
+    allowedAdminGoogleEmails?: string[];
+  } = {};
+  try {
+    const raw = localStorage.getItem(ADMIN_ACCESS_CONFIG_CACHE_KEY);
+    if (raw) {
+      cached = JSON.parse(raw);
+    }
+  } catch {
+    // ignore
+  }
+
+  const customEmailsRaw =
+    settings?.allowedAdminGoogleEmails ?? cached.allowedAdminGoogleEmails ?? [];
+  const customEmails = customEmailsRaw
+    .map(normalizeEmail)
+    .filter((e) => e.includes('@') || e.includes('.'));
+
+  const allowedEmails = Array.from(new Set([...envEmails, ...customEmails]));
+
+  const rawClientId = (settings?.googleClientId ?? cached.googleClientId ?? '').trim();
+  const validCustomId = rawClientId && rawClientId !== LEGACY_CLIENT_ID ? rawClientId : '';
+  const googleClientId = envClientId || validCustomId;
+
+  const explicitSetting =
+    settings?.adminAccessControlEnabled ?? cached.adminAccessControlEnabled;
+
+  // 管理者アクセス制限はデフォルトON（設定がある場合、または環境変数・カスタム登録がある場合）
+  const defaultEnabled =
+    envEnabledRaw === 'true' ||
+    envEnabledRaw === '1' ||
+    explicitSetting === true ||
+    explicitSetting === undefined;
+
+  const enabled =
+    explicitSetting !== undefined ? explicitSetting : defaultEnabled;
+
+  return {
+    enabled,
+    googleClientId,
+    allowedEmails,
+    envEmails,
+    customEmails,
+  };
+}
+
+/**
+ * 管理者アクセス制限設定をlocalStorageにキャッシュ保存する
+ */
+export function cacheAdminAccessConfig(config: {
+  adminAccessControlEnabled?: boolean;
+  googleClientId?: string;
+  allowedAdminGoogleEmails?: string[];
+}): void {
+  try {
+    const prevRaw = localStorage.getItem(ADMIN_ACCESS_CONFIG_CACHE_KEY);
+    const prev = prevRaw ? JSON.parse(prevRaw) : {};
+    localStorage.setItem(
+      ADMIN_ACCESS_CONFIG_CACHE_KEY,
+      JSON.stringify({ ...prev, ...config })
+    );
+  } catch {
+    // ignore
+  }
+}
+
+/**
  * 指定されたメールアドレスが許可リストに含まれているか判定する
  * - 完全一致 (例: user@example.ac.jp, user@gmail.com)
  * - ドメイン・末尾一致 (例: @example.ac.jp, .ac.jp, *.ac.jp)
@@ -122,21 +239,39 @@ export function isGoogleEmailAllowed(
   const normalized = normalizeEmail(email);
   if (!normalized || !normalized.includes('@')) return false;
 
+  const emailDomain = normalized.split('@')[1] || '';
+
   return allowedEmails.some((ruleRaw) => {
     const rule = normalizeEmail(ruleRaw);
     if (!rule) return false;
     // "@xxx.ac.jp" のようなドメイン指定
     if (rule.startsWith('@')) {
-      return normalized.endsWith(rule);
+      return (
+        normalized.endsWith(rule) ||
+        emailDomain === rule.slice(1) ||
+        emailDomain.endsWith(`.${rule.slice(1)}`)
+      );
     }
     // "*.ac.jp" のようなワイルドカード指定
     if (rule.startsWith('*.')) {
       const suffix = rule.slice(1); // ".ac.jp"
-      return normalized.endsWith(suffix) || normalized.endsWith(`@${rule.slice(2)}`);
+      return (
+        normalized.endsWith(suffix) ||
+        normalized.endsWith(`@${rule.slice(2)}`) ||
+        emailDomain.endsWith(suffix)
+      );
     }
     // ".ac.jp" のような末尾指定
     if (rule.startsWith('.')) {
-      return normalized.endsWith(rule);
+      return normalized.endsWith(rule) || emailDomain.endsWith(rule);
+    }
+    // "example.ac.jp" のようなアットマーク無しのドメイン指定
+    if (!rule.includes('@')) {
+      return (
+        emailDomain === rule ||
+        emailDomain.endsWith(`.${rule}`) ||
+        normalized.endsWith(`@${rule}`)
+      );
     }
     // 通常のメールアドレス完全一致 (user@xxxx.ac.jp など)
     return normalized === rule;
@@ -246,6 +381,66 @@ export function saveGoogleSession(session: GoogleAuthSession): void {
 export function clearGoogleSession(): void {
   try {
     localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+    const win = window as unknown as {
+      google?: { accounts?: { id?: { disableAutoSelect?: () => void } } };
+    };
+    win.google?.accounts?.id?.disableAutoSelect?.();
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * 保存済みの管理者（Admin）Googleログインセッションを取得する
+ * 一般ユーザーセッションとは別のキーで独立保持されます
+ */
+export function getSavedAdminGoogleSession(): GoogleAuthSession | null {
+  try {
+    const raw = localStorage.getItem(ADMIN_AUTH_SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const session: GoogleAuthSession = JSON.parse(raw);
+    if (!session || !session.email) return null;
+
+    if (session.expiresAt && Date.now() > session.expiresAt) {
+      localStorage.removeItem(ADMIN_AUTH_SESSION_STORAGE_KEY);
+      return null;
+    }
+
+    return {
+      ...session,
+      email: normalizeEmail(session.email),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 管理者（Admin）Googleログインセッションを保存する
+ */
+export function saveAdminGoogleSession(session: GoogleAuthSession): void {
+  try {
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    const toSave: GoogleAuthSession = {
+      ...session,
+      email: normalizeEmail(session.email),
+      expiresAt: session.expiresAt ?? Date.now() + thirtyDaysMs,
+    };
+    localStorage.setItem(
+      ADMIN_AUTH_SESSION_STORAGE_KEY,
+      JSON.stringify(toSave)
+    );
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * 管理者（Admin）Googleログインセッションをクリア（ログアウト）する
+ */
+export function clearAdminGoogleSession(): void {
+  try {
+    localStorage.removeItem(ADMIN_AUTH_SESSION_STORAGE_KEY);
     const win = window as unknown as {
       google?: { accounts?: { id?: { disableAutoSelect?: () => void } } };
     };

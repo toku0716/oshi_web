@@ -1,26 +1,31 @@
 import React, { useState, useRef } from 'react';
-import { Pencil, Heart, Gift, Sparkles } from 'lucide-react';
+import {
+  Heart,
+  Palette,
+  UserCheck,
+  LogOut,
+  Plus,
+  Pencil,
+  Trash2,
+  Check,
+  Camera,
+  Sun,
+  Moon,
+  Laptop,
+  X,
+  Calendar,
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { useDialog } from '../hooks/useDialog';
-import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
-import { ResetDataModal } from '../components/modals/ResetDataModal';
-import { backupRepository, oshiRepository } from '../repository';
+import { oshiRepository } from '../repository';
 import type { Oshi, ThemeModeOption } from '../types';
 import {
+  clearAdminGoogleSession,
   clearGoogleSession,
-  getEffectiveAccessConfig,
   getSavedGoogleSession,
 } from '../utils/googleAuthUtils';
 import {
-  formatIsoDate,
-  getDaysUntilBirthday,
-  getDaysUntilDebut,
-  getDebutYears,
-  getOshiDaysSince,
-  getOshiSinceDateStr,
-  getTodayMidnight,
-  parseLocalDate,
   PRESET_OSHI_COLORS,
+  getOshiDaysSince,
   resizeAndConvertImageToBase64,
 } from '../utils/oshiUtils';
 
@@ -31,332 +36,297 @@ interface MyPageViewProps {
 export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
   const {
     oshis,
-    settings,
+    activeOshiId,
+    setActiveOshiId,
     themeColor,
     setThemeColor,
     themeMode,
     setThemeMode,
-    isDark,
     refreshAllData,
-    clearAllData,
     showToast,
   } = useApp();
 
-  const [isOshiSheetOpen, setIsOshiSheetOpen] = useState<boolean>(false);
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
-  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+  const [googleSession, setGoogleSession] = useState(getSavedGoogleSession);
+
+  // 推し登録・編集モーダルステート
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOshi, setEditingOshi] = useState<Oshi | null>(null);
-  const [oshiName, setOshiName] = useState<string>('');
-  const [oshiColor, setOshiColor] = useState<string>(themeColor);
-  const [oshiImage, setOshiImage] = useState<string>('');
-  const [oshiImagePosition, setOshiImagePosition] = useState<number>(20);
-  const [sinceDate, setSinceDate] = useState<string>('');
-  const [birthday, setBirthday] = useState<string>('');
-  const [debutDate, setDebutDate] = useState<string>('');
-  const [confirmDeleteOshi, setConfirmDeleteOshi] = useState<boolean>(false);
+  const [oshiName, setOshiName] = useState('');
+  const [oshiColor, setOshiColor] = useState('#FF2D55');
+  const [sinceDate, setSinceDate] = useState('');
+  const [oshiImage, setOshiImage] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const oshiSheetRef = useDialog<HTMLFormElement>(isOshiSheetOpen, () =>
-    setIsOshiSheetOpen(false)
-  );
-
-  const sinceInputRef = useRef<HTMLInputElement>(null);
-  const birthdayInputRef = useRef<HTMLInputElement>(null);
-  const debutInputRef = useRef<HTMLInputElement>(null);
-  const oshiImageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const openOshiSheet = (existing?: Oshi) => {
-    setConfirmDeleteOshi(false);
-    if (existing) {
-      setEditingOshi(existing);
-      setOshiName(existing.name);
-      setOshiColor(existing.color || themeColor);
-      setOshiImage(existing.image || '');
-      const match = existing.imagePosition?.match(/(\d+)%/);
-      setOshiImagePosition(match ? parseInt(match[1], 10) : 20);
-      setSinceDate(getOshiSinceDateStr(existing) || '');
-      setBirthday(existing.birthday || '');
-      setDebutDate(existing.debutDate || '');
-    } else {
-      setEditingOshi(null);
-      setOshiName('');
-      setOshiColor(themeColor);
-      setOshiImage('');
-      setOshiImagePosition(20);
-      setSinceDate(formatIsoDate(getTodayMidnight()));
-      setBirthday('');
-      setDebutDate('');
-    }
-    setIsOshiSheetOpen(true);
+  // ログアウト処理
+  const handleLogoutGoogle = () => {
+    clearGoogleSession();
+    clearAdminGoogleSession();
+    setGoogleSession(null);
+    showToast('ログアウトしました');
+    onLogout?.();
   };
 
-  const handleOshiImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 新規登録モーダルを開く
+  const handleOpenAddModal = () => {
+    setEditingOshi(null);
+    setOshiName('');
+    setOshiColor(themeColor || '#FF2D55');
+    setSinceDate('');
+    setOshiImage('');
+    setConfirmDeleteId(null);
+    setIsModalOpen(true);
+  };
+
+  // 編集モーダルを開く
+  const handleOpenEditModal = (oshi: Oshi) => {
+    setEditingOshi(oshi);
+    setOshiName(oshi.name);
+    setOshiColor(oshi.color || themeColor || '#FF2D55');
+    setSinceDate(oshi.sinceDate || '');
+    setOshiImage(oshi.image || '');
+    setConfirmDeleteId(null);
+    setIsModalOpen(true);
+  };
+
+  // 画像アップロード処理
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const base64 = await resizeAndConvertImageToBase64(file, 700, 0.85);
+      const base64 = await resizeAndConvertImageToBase64(file, 600, 0.85);
       setOshiImage(base64);
     } catch {
       showToast('画像の読み込みに失敗しました', 'error');
-    } finally {
-      if (oshiImageInputRef.current) oshiImageInputRef.current.value = '';
     }
   };
 
+  // 推しの保存
   const handleSaveOshi = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = oshiName.trim();
-    if (!trimmed) return;
-
-    const now = new Date().toISOString();
-    const item: Oshi = {
-      id:
-        editingOshi?.id ||
-        `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      name: trimmed,
-      color: oshiColor || themeColor,
-      sinceDate: sinceDate || undefined,
-      birthday: birthday || undefined,
-      debutDate: debutDate || undefined,
-      image: oshiImage || undefined,
-      imagePosition: oshiImage ? `center ${oshiImagePosition}%` : undefined,
-      createdAt: editingOshi?.createdAt || now,
-      updatedAt: now,
-    };
-
-    await oshiRepository.save(item);
-    await refreshAllData();
-    setIsOshiSheetOpen(false);
-  };
-
-  const handleDeleteOshi = async () => {
-    if (!editingOshi) return;
-    if (!confirmDeleteOshi) {
-      setConfirmDeleteOshi(true);
+    if (!trimmed) {
+      showToast('推しの名前を入力してください', 'error');
       return;
     }
-    await oshiRepository.delete(editingOshi.id);
-    await refreshAllData();
-    setIsOshiSheetOpen(false);
-  };
 
-  const handleExportBackup = async () => {
-    try {
-      await backupRepository.downloadBackupFile();
-      showToast('バックアップを保存しました', 'success');
-    } catch {
-      showToast('バックアップの保存に失敗しました', 'error');
-    }
-  };
+    const oshiToSave: Oshi = {
+      id: editingOshi ? editingOshi.id : `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: trimmed,
+      color: oshiColor,
+      sinceDate: sinceDate || undefined,
+      image: oshiImage || undefined,
+      createdAt: editingOshi?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
     try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      await backupRepository.importBackup(parsed);
+      await oshiRepository.save(oshiToSave);
+      if (!activeOshiId || editingOshi === null) {
+        await setActiveOshiId(oshiToSave.id);
+      }
       await refreshAllData();
-      showToast('バックアップを復元しました', 'success');
-    } catch (err) {
-      showToast(
-        err instanceof Error ? err.message : '復元に失敗しました',
-        'error'
-      );
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setIsModalOpen(false);
+      showToast(editingOshi ? '推し情報を更新しました' : '推しを登録しました！');
+    } catch {
+      showToast('保存に失敗しました', 'error');
     }
   };
 
-  const cardBg = isDark ? '#171821' : '#FFFFFF';
-  const borderColor = isDark ? '#262838' : '#E8EBF2';
-  const textColor = isDark ? '#FFFFFF' : '#11141C';
-  const subtextColor = isDark ? '#9CA3AF' : '#6B7280';
-  const sheetBg = isDark ? '#1C1D26' : '#FFFFFF';
-  const inputBg = isDark ? '#222432' : '#F4F5F8';
-
-  const renderDatePickerTile = (
-    label: string,
-    valueStr: string,
-    inputRef: React.RefObject<HTMLInputElement | null>,
-    onChange: (val: string) => void,
-    onClear: () => void,
-    monthDayOnly = false
-  ) => {
-    const parsed = parseLocalDate(valueStr);
-    const displayValue = parsed
-      ? monthDayOnly
-        ? `${parsed.getMonth() + 1}月${parsed.getDate()}日`
-        : `${parsed.getFullYear()}/${String(parsed.getMonth() + 1).padStart(2, '0')}/${String(parsed.getDate()).padStart(2, '0')}`
-      : '未設定';
-
-    return (
-      <div
-        style={{
-          position: 'relative',
-          padding: '12px 14px',
-          backgroundColor: inputBg,
-          borderRadius: 14,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
-        <div
-          onClick={() => {
-            if (inputRef.current) {
-              if (typeof inputRef.current.showPicker === 'function') {
-                inputRef.current.showPicker();
-              } else {
-                inputRef.current.focus();
-              }
-            }
-          }}
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            cursor: 'pointer',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={themeColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          <span style={{ fontWeight: 700, fontSize: 13.5, color: textColor }}>
-            {label}: {displayValue}
-          </span>
-        </div>
-        {valueStr && (
-          <button
-            type="button"
-            onClick={onClear}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#8E8E93',
-              padding: 2,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        )}
-        <input
-          ref={inputRef}
-          type="date"
-          value={valueStr}
-          onChange={(e) => onChange(e.target.value)}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            opacity: 0,
-            pointerEvents: 'none',
-          }}
-        />
-      </div>
-    );
+  // 推しの削除
+  const handleDeleteOshi = async (id: string) => {
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      return;
+    }
+    try {
+      await oshiRepository.delete(id);
+      await refreshAllData();
+      setConfirmDeleteId(null);
+      showToast('登録を解除しました');
+    } catch {
+      showToast('削除に失敗しました', 'error');
+    }
   };
 
   return (
-    <div className="page-padding">
-      <div style={{ fontSize: 24, fontWeight: 700, color: textColor, letterSpacing: '-0.02em' }}>
-        マイページ
+    <div
+      style={{
+        padding: '24px 16px 80px',
+        maxWidth: 640,
+        margin: '0 auto',
+      }}
+    >
+      {/* ページタイトル */}
+      <div style={{ marginBottom: 24 }}>
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 900,
+            color: 'var(--text-primary)',
+            margin: 0,
+            letterSpacing: '-0.02em',
+          }}
+        >
+          マイページ
+        </h1>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'var(--text-secondary)',
+            margin: '4px 0 0',
+          }}
+        >
+          推しの設定とアプリのカラー
+        </p>
       </div>
 
-      <div style={{ height: 20 }} />
-
-      {/* スマホは1カラム、タブレット・PCは2カラム（左：推しプロフィール、右：設定・データ管理） */}
-      <div className="mypage-grid-layout">
-        {/* 左カラム：推しプロフィールカード一覧 & 追加ボタン */}
-        <div>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: subtextColor,
-              marginBottom: 12,
-            }}
-          >
-            推しプロフィール
-          </div>
-          {oshis.map((oshi) => {
-            const oColor = oshi.color || themeColor;
-            const daysSince = getOshiDaysSince(oshi);
-            const bdayDate = parseLocalDate(oshi.birthday);
-            const bDays = getDaysUntilBirthday(oshi);
-            const debutDateObj = parseLocalDate(oshi.debutDate);
-            const dDays = getDaysUntilDebut(oshi);
-            const dYears = getDebutYears(oshi);
-
-            return (
-              <div
-                key={oshi.id}
+      {/* ========================================================
+          カード1: 推しの登録
+          ======================================================== */}
+      <div
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 22,
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-card)',
+          padding: '20px',
+          marginBottom: 20,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 11,
+                backgroundColor: `${themeColor}18`,
+                color: themeColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Heart size={18} fill="currentColor" strokeWidth={2} />
+            </div>
+            <div>
+              <h2
                 style={{
-                  marginBottom: 18,
-                  backgroundColor: cardBg,
-                  borderRadius: 22,
-                  border: `1px solid var(--border-subtle)`,
-                  boxShadow: 'var(--shadow-card)',
-                  overflow: 'hidden',
-                  position: 'relative',
+                  fontSize: 16,
+                  fontWeight: 800,
+                  margin: 0,
+                  color: 'var(--text-primary)',
                 }}
               >
-                {/* 右上のシンプルな編集ボタン */}
-                <button
-                  type="button"
-                  onClick={() => openOshiSheet(oshi)}
-                  aria-label={`${oshi.name}の情報を編集`}
+                推しの登録
+              </h2>
+              <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                推しメンバーの管理
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 推し一覧 */}
+        {oshis.length === 0 ? (
+          <div
+            style={{
+              padding: '28px 16px',
+              borderRadius: 16,
+              backgroundColor: 'var(--bg-surface-subtle)',
+              border: '1.5px dashed var(--border-subtle)',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                marginBottom: 6,
+              }}
+            >
+              まだ推しが登録されていません
+            </div>
+            <p
+              style={{
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                margin: '0 0 16px',
+              }}
+            >
+              推しを登録すると、予定やグッズを推しごとに管理できます。
+            </p>
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              style={{
+                padding: '10px 22px',
+                borderRadius: 9999,
+                backgroundColor: themeColor,
+                color: '#FFFFFF',
+                border: 'none',
+                fontSize: 13,
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Plus size={16} strokeWidth={2.6} />
+              <span>推しを登録する</span>
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {oshis.map((oshi) => {
+              const daysSince = getOshiDaysSince(oshi);
+              const isActive = oshi.id === activeOshiId;
+              const oColor = oshi.color || themeColor;
+
+              return (
+                <div
+                  key={oshi.id}
                   style={{
-                    position: 'absolute',
-                    top: 16,
-                    right: 16,
-                    background: 'var(--bg-surface-subtle)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-secondary)',
-                    borderRadius: 10,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
+                    padding: '14px 16px',
+                    borderRadius: 16,
+                    backgroundColor: 'var(--bg-surface-subtle)',
+                    border: isActive
+                      ? `2px solid ${oColor}`
+                      : '1px solid var(--border-subtle)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
-                    zIndex: 2,
-                    transition: 'all 0.15s ease',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    flexWrap: 'wrap',
                   }}
                 >
-                  <Pencil size={12} strokeWidth={2.2} />
-                  <span>編集</span>
-                </button>
-
-                {/* メイン情報（写真 + 推し名 + 推し歴） */}
-                <div style={{ padding: '20px 20px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                    {/* アイコン画像 */}
                     <div
-                      onClick={() => openOshiSheet(oshi)}
-                      title="タップして画像・プロフィールを編集"
                       style={{
-                        width: 72,
-                        height: 72,
-                        borderRadius: 20,
+                        width: 48,
+                        height: 48,
+                        borderRadius: 14,
                         backgroundColor: `${oColor}22`,
+                        border: `2px solid ${oColor}`,
+                        color: oColor,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         overflow: 'hidden',
                         flexShrink: 0,
-                        cursor: 'pointer',
-                        border: `2px solid ${oColor}`,
-                        boxShadow: `0 4px 16px ${oColor}44`,
                       }}
                     >
                       {oshi.image ? (
@@ -370,631 +340,485 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                           }}
                         />
                       ) : (
-                        <svg width="34" height="34" viewBox="0 0 24 24" fill={oColor} stroke={oColor} strokeWidth="2">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
+                        <span style={{ fontSize: 18, fontWeight: 900 }}>
+                          {oshi.name.slice(0, 1)}
+                        </span>
                       )}
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0, paddingRight: 64 }}>
-                      <div
-                        style={{
-                          fontSize: 22,
-                          fontWeight: 700,
-                          letterSpacing: '-0.02em',
-                          color: textColor,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {oshi.name}
-                      </div>
-
-                      <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span
                           style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            padding: '3px 10px',
-                            borderRadius: 999,
-                            backgroundColor: `${oColor}1F`,
-                            color: oColor,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 5,
+                            fontSize: 15,
+                            fontWeight: 800,
+                            color: 'var(--text-primary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
                           }}
                         >
-                          <Heart size={11} fill="currentColor" />
-                          <span>
-                            {daysSince !== null
-                              ? `推し始めて ${daysSince} 日目`
-                              : 'ずっと応援中'}
-                          </span>
+                          {oshi.name}
                         </span>
+                        {isActive && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 800,
+                              color: '#FFFFFF',
+                              backgroundColor: oColor,
+                              padding: '2px 7px',
+                              borderRadius: 999,
+                            }}
+                          >
+                            選択中
+                          </span>
+                        )}
                       </div>
+
+                      {daysSince !== null && (
+                        <div
+                          style={{
+                            fontSize: 11.5,
+                            color: 'var(--text-secondary)',
+                            marginTop: 3,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <Calendar size={12} style={{ color: oColor }} />
+                          <span>推し始めて <strong>{daysSince}</strong> 日目</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* 記念日バッジ（誕生日・デビュー日） */}
-                  {(bdayDate || debutDateObj) && (
-                    <div
+                  {/* 操作ボタン */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {!isActive && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveOshiId(oshi.id)}
+                        style={{
+                          padding: '6px 11px',
+                          borderRadius: 8,
+                          border: '1px solid var(--border-subtle)',
+                          backgroundColor: 'var(--bg-surface)',
+                          color: 'var(--text-primary)',
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        選択
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditModal(oshi)}
+                      aria-label={`${oshi.name}を編集`}
                       style={{
-                        marginTop: 16,
-                        paddingTop: 14,
-                        borderTop: `1px dashed ${borderColor}`,
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: 8,
+                        padding: '6px 11px',
+                        borderRadius: 8,
+                        border: '1px solid var(--border-subtle)',
+                        backgroundColor: 'var(--bg-surface)',
+                        color: 'var(--text-primary)',
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
                       }}
                     >
-                      {bdayDate && (
-                        <div
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: isDark ? 'rgba(255, 45, 85, 0.16)' : 'rgba(255, 45, 85, 0.1)',
-                            borderRadius: 12,
-                            fontSize: 12,
-                            fontWeight: 800,
-                            color: '#FF2D55',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                          }}
-                        >
-                          <Gift size={13} strokeWidth={2.2} />
-                          <span>
-                            誕生日 {bdayDate.getMonth() + 1}/{bdayDate.getDate()}
-                          </span>
-                          <span style={{ opacity: 0.85, fontWeight: 700 }}>
-                            {bDays === 0 ? '（本日）' : `（あと${bDays}日）`}
-                          </span>
-                        </div>
-                      )}
-
-                      {debutDateObj && (
-                        <div
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: isDark ? 'rgba(255, 149, 0, 0.16)' : 'rgba(255, 149, 0, 0.1)',
-                            borderRadius: 12,
-                            fontSize: 12,
-                            fontWeight: 800,
-                            color: '#FF9500',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                          }}
-                        >
-                          <Sparkles size={13} strokeWidth={2.2} />
-                          <span>
-                            デビュー {debutDateObj.getFullYear()}/{debutDateObj.getMonth() + 1}/{debutDateObj.getDate()}
-                          </span>
-                          <span style={{ opacity: 0.85, fontWeight: 700 }}>
-                            {dDays === 0
-                              ? `（${dYears}周年 本日）`
-                              : `（${dYears}周年まであと${dDays}日）`}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                      <Pencil size={12} />
+                      <span>編集</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOshi(oshi.id)}
+                      aria-label={`${oshi.name}を削除`}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(255, 59, 48, 0.3)',
+                        backgroundColor:
+                          confirmDeleteId === oshi.id
+                            ? '#FF3B30'
+                            : 'rgba(255, 59, 48, 0.08)',
+                        color: confirmDeleteId === oshi.id ? '#FFFFFF' : '#FF3B30',
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Trash2 size={12} />
+                      <span>{confirmDeleteId === oshi.id ? '削除確定' : '解除'}</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* 推し追加ボタン */}
-          <button
-            type="button"
-            onClick={() => openOshiSheet()}
+            {/* 新しい推しを追加するボタン（リスト末尾に1つのみ配置） */}
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              style={{
+                marginTop: 4,
+                width: '100%',
+                padding: '11px',
+                borderRadius: 14,
+                border: '1.5px dashed var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface-subtle)',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'background-color 0.15s ease',
+              }}
+            >
+              <Plus size={15} strokeWidth={2.4} />
+              <span>新しい推しを追加する</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================
+          カード2: テーマカラー
+          ======================================================== */}
+      <div
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 22,
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-card)',
+          padding: '20px',
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div
             style={{
-              width: '100%',
-              padding: '12px 0',
-              borderRadius: 16,
-              border: `1.5px dashed ${borderColor}`,
-              backgroundColor: cardBg,
+              width: 36,
+              height: 36,
+              borderRadius: 11,
+              backgroundColor: `${themeColor}18`,
               color: themeColor,
-              fontSize: 13.5,
-              fontWeight: 800,
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-              transition: 'all 0.15s ease',
+              flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: 16 }}>＋</span>
-            <span>新しい推しを登録する</span>
-          </button>
+            <Palette size={18} strokeWidth={2.2} />
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h2
+              style={{
+                fontSize: 16,
+                fontWeight: 800,
+                margin: 0,
+                color: 'var(--text-primary)',
+              }}
+            >
+              テーマカラー
+            </h2>
+            <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+              アクセントカラーと外観モード
+            </span>
+          </div>
         </div>
 
-        {/* 右カラム：推しカラー設定・外観モード・データ管理 */}
-        <div>
-          {/* 2. 推しカラー（テーマカラー）設定 */}
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#8E8E93',
-              marginBottom: 8,
-            }}
-          >
-            推しカラー
-          </div>
-          <div
-            style={{
-              padding: 16,
-              backgroundColor: cardBg,
-              borderRadius: 16,
-              border: `1px solid ${borderColor}`,
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 12,
-            }}
-          >
-            {PRESET_OSHI_COLORS.map((preset) => {
-              const isSelected =
-                themeColor.toUpperCase() === preset.hex.toUpperCase();
-              return (
-                <button
-                  key={preset.hex}
-                  type="button"
-                  onClick={() => setThemeColor(preset.hex)}
-                  title={preset.name}
+        {/* 10色カラーパレット */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: 12,
+            marginBottom: 20,
+          }}
+        >
+          {PRESET_OSHI_COLORS.map((preset) => {
+            const isSelected = themeColor.toUpperCase() === preset.hex.toUpperCase();
+            return (
+              <button
+                key={preset.hex}
+                type="button"
+                onClick={() => setThemeColor(preset.hex)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '10px 4px',
+                  borderRadius: 14,
+                  border: isSelected
+                    ? `2px solid ${preset.hex}`
+                    : '1px solid transparent',
+                  backgroundColor: isSelected
+                    ? `${preset.hex}15`
+                    : 'var(--bg-surface-subtle)',
+                  cursor: 'pointer',
+                  transition: 'transform 0.1s ease',
+                }}
+              >
+                <div
                   style={{
                     width: 32,
                     height: 32,
                     borderRadius: '50%',
                     backgroundColor: preset.hex,
-                    border: isSelected ? '2.5px solid #FFFFFF' : 'none',
-                    boxShadow: isSelected
-                      ? `0 2px 6px ${preset.hex}88`
-                      : 'none',
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: 0,
+                    color: '#FFFFFF',
+                    boxShadow: isSelected ? `0 4px 12px ${preset.hex}66` : 'none',
                   }}
                 >
-                  {isSelected && (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                  {isSelected && <Check size={16} strokeWidth={3} />}
+                </div>
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {preset.name.replace('ビビッド', '').replace('シルバー/', '')}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-          <div style={{ height: 20 }} />
+        <div style={{ height: 1, backgroundColor: 'var(--border-subtle)', margin: '16px 0' }} />
 
-          {/* 3. 外観モード（ライト / ダーク / システム） */}
+        {/* 外観モード切り替え（システム / ライト / ダーク） */}
+        <div>
           <div
             style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#8E8E93',
+              fontSize: 12,
+              fontWeight: 700,
+              color: 'var(--text-secondary)',
               marginBottom: 8,
             }}
           >
-            外観
+            表示モード
           </div>
           <div
-            role="radiogroup"
-            aria-label="外観モード"
             style={{
-              padding: 3,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 8,
+              padding: 4,
+              borderRadius: 14,
               backgroundColor: 'var(--bg-surface-subtle)',
-              borderRadius: 10,
-              display: 'flex',
             }}
           >
             {(
               [
-                { mode: 'system', label: 'システム' },
-                { mode: 'light', label: 'ライト' },
-                { mode: 'dark', label: 'ダーク' },
-              ] as { mode: ThemeModeOption; label: string }[]
-            ).map((opt) => {
-              const selected = themeMode === opt.mode;
+                { mode: 'system', label: 'システム', Icon: Laptop },
+                { mode: 'light', label: 'ライト', Icon: Sun },
+                { mode: 'dark', label: 'ダーク', Icon: Moon },
+              ] as const
+            ).map(({ mode, label, Icon }) => {
+              const active = themeMode === mode;
               return (
                 <button
-                  key={opt.mode}
+                  key={mode}
                   type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setThemeMode(opt.mode)}
+                  onClick={() => setThemeMode(mode as ThemeModeOption)}
                   style={{
-                    flex: 1,
-                    padding: '8px 0',
-                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    padding: '8px 12px',
+                    borderRadius: 10,
                     border: 'none',
-                    backgroundColor: selected ? cardBg : 'transparent',
-                    color: selected ? textColor : 'var(--text-secondary)',
-                    fontWeight: selected ? 700 : 500,
+                    backgroundColor: active ? 'var(--bg-surface)' : 'transparent',
+                    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    fontWeight: active ? 800 : 600,
                     fontSize: 12.5,
+                    boxShadow: active ? 'var(--shadow-card)' : 'none',
                     cursor: 'pointer',
-                    boxShadow: selected ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                    transition: 'all 0.12s ease',
                   }}
                 >
-                  {opt.label}
+                  <Icon size={14} />
+                  <span>{label}</span>
                 </button>
               );
             })}
           </div>
+        </div>
+      </div>
 
-          <div style={{ height: 20 }} />
-
-          {/* 4. データ管理（バックアップ保存・復元） */}
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#8E8E93',
-              marginBottom: 8,
-            }}
-          >
-            データ管理
-          </div>
-          <div
-            style={{
-              padding: 16,
-              backgroundColor: cardBg,
-              borderRadius: 16,
-              border: `1px solid ${borderColor}`,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                gap: 8,
-              }}
-            >
-              <button
-                type="button"
-                onClick={handleExportBackup}
-                style={{
-                  flex: 1,
-                  height: 40,
-                  borderRadius: 10,
-                  border: `1px solid ${borderColor}`,
-                  backgroundColor: 'transparent',
-                  color: textColor,
-                  fontWeight: 600,
-                  fontSize: 12.5,
-                  cursor: 'pointer',
-                }}
-              >
-                バックアップ保存
-              </button>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  flex: 1,
-                  height: 40,
-                  borderRadius: 10,
-                  border: `1px solid ${borderColor}`,
-                  backgroundColor: 'transparent',
-                  color: textColor,
-                  fontWeight: 600,
-                  fontSize: 12.5,
-                  cursor: 'pointer',
-                }}
-              >
-                バックアップ復元
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json"
-                onChange={handleImportBackup}
-                style={{ display: 'none' }}
-              />
-            </div>
-
-            <div
-              style={{
-                marginTop: 10,
-                fontSize: 11.5,
-                lineHeight: 1.5,
-                color: '#8E8E93',
-              }}
-            >
-              ※ 全データを1つのJSONファイルとして端末外に保存・復元できます。
-            </div>
-
-            <div
-              style={{
-                margin: '14px 0 12px',
-                height: 1,
-                backgroundColor: borderColor,
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={() => setIsResetModalOpen(true)}
-              style={{
-                width: '100%',
-                height: 38,
-                borderRadius: 10,
-                border: 'none',
-                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
-                color: '#EF4444',
-                fontWeight: 600,
-                fontSize: 12.5,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-              }}
-            >
-              <span>全データを初期化</span>
-            </button>
-          </div>
-
-          <div style={{ height: 20 }} />
-
-          {/* 5. データとプライバシー */}
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#8E8E93',
-              marginBottom: 8,
-            }}
-          >
-            プライバシーと規約
-          </div>
-          <div
-            style={{
-              backgroundColor: cardBg,
-              borderRadius: 16,
-              border: `1px solid ${borderColor}`,
-              overflow: 'hidden',
-            }}
-          >
-            <div style={{ padding: '14px 16px' }}>
-              <div
-                style={{
-                  fontSize: 13.5,
-                  fontWeight: 600,
-                  color: textColor,
-                }}
-              >
-                対象者とデータの保存について
+      {/* ========================================================
+          カード3: Googleアカウント ＆ ログアウト（最下部）
+          ======================================================== */}
+      {googleSession && (
+        <div
+          style={{
+            padding: '14px 18px',
+            backgroundColor: 'var(--bg-surface)',
+            borderRadius: 20,
+            border: '1px solid var(--border-subtle)',
+            boxShadow: 'var(--shadow-card)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <UserCheck size={18} color="#34C759" style={{ flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                Googleログイン中
               </div>
-              <div
+              <strong
                 style={{
-                  marginTop: 4,
-                  fontSize: 12,
-                  lineHeight: 1.5,
-                  color: '#8E8E93',
+                  fontSize: 13,
+                  color: 'var(--text-primary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  display: 'block',
                 }}
               >
-                本アプリはZEN大学の生徒のみを対象としています。登録したデータはすべてお使いの端末内にのみ保存され、外部サーバーへの自動送信や個人情報収集は行われません。今後のサービス向上のため、フィードバックへのご協力をお願いいたします。
-              </div>
+                {googleSession.email}
+              </strong>
             </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogoutGoogle}
+            style={{
+              padding: '7px 15px',
+              borderRadius: 9999,
+              border: '1.2px solid rgba(255, 59, 48, 0.4)',
+              backgroundColor: 'rgba(255, 59, 48, 0.08)',
+              color: '#FF3B30',
+              fontSize: 12.5,
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <LogOut size={13} />
+            <span>ログアウト</span>
+          </button>
+        </div>
+      )}
 
+      {/* ========================================================
+          推し登録・編集モーダル
+          ======================================================== */}
+      {isModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 9999,
+          }}
+          onClick={() => setIsModalOpen(false)}
+        >
+          <form
+            onSubmit={handleSaveOshi}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 440,
+              backgroundColor: 'var(--bg-surface)',
+              borderRadius: 24,
+              border: '1px solid var(--border-subtle)',
+              boxShadow: 'var(--shadow-modal)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 18,
+            }}
+          >
+            {/* モーダルヘッダー */}
             <div
               style={{
-                height: 1,
-                backgroundColor: borderColor,
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={() => setIsPrivacyOpen(true)}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: 'none',
-                backgroundColor: 'transparent',
-                color: textColor,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
               }}
             >
-              <span>利用規約・プライバシーポリシー</span>
-              <span style={{ color: '#8E8E93', fontSize: 13 }}>›</span>
-            </button>
-          </div>
-
-          {/* 6. アプリ改善アンケート */}
-          <div style={{ height: 20 }} />
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#8E8E93',
-              marginBottom: 8,
-            }}
-          >
-            ご意見・ご要望
-          </div>
-          <div
-            style={{
-              backgroundColor: cardBg,
-              borderRadius: 16,
-              border: `1px solid ${borderColor}`,
-              padding: '16px',
-            }}
-          >
-            <div style={{ fontSize: 14, fontWeight: 700, color: textColor, marginBottom: 4 }}>
-              📝 アプリ改善アンケート
+              <h2
+                style={{
+                  fontSize: 17,
+                  fontWeight: 800,
+                  margin: 0,
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {editingOshi ? '推し情報を編集' : '新しい推しを登録'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                style={{
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: 4,
+                }}
+              >
+                <X size={20} />
+              </button>
             </div>
-            <div style={{ fontSize: 12, color: '#8E8E93', lineHeight: 1.5, marginBottom: 12 }}>
-              推しサポをより便利にするため、ご意見・ご感想をお聞かせください。（所要時間: 約2分）
-            </div>
-            <a
-              href="https://docs.google.com/forms/d/e/1FAIpQLScDDuFzycUKURbf2saIABpcYtGiMKxP9mnQkEdoRRZqPd0foA/viewform"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                width: '100%',
-                padding: '10px 16px',
-                borderRadius: 12,
-                backgroundColor: themeColor,
-                color: '#FFFFFF',
-                fontSize: 13,
-                fontWeight: 700,
-                textDecoration: 'none',
-                boxSizing: 'border-box',
-              }}
-            >
-              <span>アンケートに回答する</span>
-              <span style={{ fontSize: 12 }}>↗</span>
-            </a>
-          </div>
 
-          {/* Google認証でログイン中の場合のみアカウント表示＆ログアウトボタンを表示（管理者設定は一切表示しない） */}
-          {(() => {
-            const accessConfig = getEffectiveAccessConfig(settings);
-            const session = getSavedGoogleSession();
-            if (!accessConfig.enabled || !session) return null;
-            return (
-              <>
-                <div style={{ height: 24 }} />
-                <div
-                  style={{
-                    padding: '14px 18px',
-                    backgroundColor: cardBg,
-                    borderRadius: 18,
-                    border: `1.2px solid ${borderColor}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <div style={{ fontSize: 12.5, color: '#8E8E93', fontWeight: 700 }}>
-                    認証中のGoogleアカウント:{' '}
-                    <span style={{ color: textColor, fontWeight: 800 }}>
-                      {session.email}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearGoogleSession();
-                      showToast('ログアウトしました');
-                      onLogout?.();
-                    }}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 10,
-                      border: `1px solid ${borderColor}`,
-                      backgroundColor: 'transparent',
-                      color: textColor,
-                      fontSize: 12,
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ログアウト
-                  </button>
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      </div>
-
-      {/* データの取り扱い・プライバシーポリシー詳細モーダル */}
-      <TermsPrivacyModal
-        isOpen={isPrivacyOpen}
-        mode="view"
-        onClose={() => setIsPrivacyOpen(false)}
-      />
-
-      {/* 全データ初期化確認モーダル */}
-      <ResetDataModal
-        isOpen={isResetModalOpen}
-        onClose={() => setIsResetModalOpen(false)}
-        onConfirmReset={clearAllData}
-      />
-
-      {/* 推し登録・編集モーダル */}
-      {isOshiSheetOpen && (
-        <div
-          className="flutter-sheet-backdrop"
-          onClick={() => setIsOshiSheetOpen(false)}
-        >
-          <form
-            ref={oshiSheetRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="oshi-sheet-title"
-            onSubmit={handleSaveOshi}
-            className="flutter-bottom-sheet"
-            style={{
-              backgroundColor: sheetBg,
-              padding: '14px 20px calc(24px + var(--safe-bottom))',
-              maxHeight: '90dvh',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flutter-sheet-handle" />
-            <h2
-              id="oshi-sheet-title"
-              style={{
-                marginTop: 14,
-                fontSize: 18,
-                fontWeight: 900,
-                color: textColor,
-                margin: '14px 0 0',
-              }}
-            >
-              {editingOshi === null ? '推しを登録' : '推し情報を編集'}
-            </h2>
-
-            {/* 推しの画像選択（IndexedDBに保存） */}
-            <div
-              style={{
-                marginTop: 16,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-              }}
-            >
+            {/* 写真と名前 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {/* アイコン写真選択 */}
               <input
-                ref={oshiImageInputRef}
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleOshiImageSelect}
+                onChange={handleImageChange}
                 style={{ display: 'none' }}
               />
               <button
                 type="button"
-                onClick={() => oshiImageInputRef.current?.click()}
+                onClick={() => fileInputRef.current?.click()}
                 style={{
                   width: 68,
                   height: 68,
-                  borderRadius: '50%',
-                  border: `2px dashed ${themeColor}`,
-                  backgroundColor: `${themeColor}1A`,
+                  borderRadius: 18,
+                  border: `2px dashed ${oshiColor}`,
+                  backgroundColor: `${oshiColor}18`,
+                  color: oshiColor,
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  overflow: 'hidden',
+                  gap: 4,
                   cursor: 'pointer',
+                  overflow: 'hidden',
                   padding: 0,
                   flexShrink: 0,
                 }}
@@ -1002,214 +826,106 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                 {oshiImage ? (
                   <img
                     src={oshiImage}
-                    alt="推し画像"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
+                    alt="プレビュー"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={themeColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                    <circle cx="9" cy="9" r="2" />
-                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                  </svg>
+                  <>
+                    <Camera size={20} />
+                    <span style={{ fontSize: 9.5, fontWeight: 700 }}>写真</span>
+                  </>
                 )}
               </button>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <button
-                  type="button"
-                  onClick={() => oshiImageInputRef.current?.click()}
+              {/* 推しの名前 */}
+              <div style={{ flex: 1 }}>
+                <label
                   style={{
-                    padding: '8px 14px',
-                    borderRadius: 10,
-                    border: 'none',
-                    backgroundColor: inputBg,
-                    color: textColor,
-                    fontSize: 13,
-                    fontWeight: 800,
-                    cursor: 'pointer',
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: 'var(--text-secondary)',
+                    marginBottom: 6,
                   }}
                 >
-                  {oshiImage ? 'アイコン画像を変更' : 'アイコン画像を選択'}
-                </button>
-                {oshiImage && (
-                  <button
-                    type="button"
-                    onClick={() => setOshiImage('')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      color: '#FF3B30',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    画像を削除
-                  </button>
-                )}
+                  推しの名前 <span style={{ color: '#FF3B30' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={oshiName}
+                  onChange={(e) => setOshiName(e.target.value)}
+                  placeholder="例: 星街すいせい"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-surface-subtle)',
+                    color: 'var(--text-primary)',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                  autoFocus
+                />
               </div>
             </div>
 
-            {oshiImage && (
-              <div
+            {/* 推し始めた日 */}
+            <div>
+              <label
                 style={{
-                  marginTop: 12,
-                  padding: 12,
-                  borderRadius: 14,
-                  backgroundColor: inputBg,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
+                  display: 'block',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: 'var(--text-secondary)',
+                  marginBottom: 6,
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: subtextColor }}>
-                    カバー表示位置（顔のフォーカス）
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: themeColor }}>
-                    {oshiImagePosition}%
-                  </span>
-                </div>
-
-                {/* ミニカバープレビュー */}
-                <div
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: 70,
-                    borderRadius: 10,
-                    overflow: 'hidden',
-                    border: `1px solid ${subtextColor}33`,
-                  }}
-                >
-                  <img
-                    src={oshiImage}
-                    alt="プレビュー"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      objectPosition: `center ${oshiImagePosition}%`,
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: subtextColor }}>上</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={oshiImagePosition}
-                    onChange={(e) => setOshiImagePosition(Number(e.target.value))}
-                    style={{ flex: 1, accentColor: themeColor, cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: subtextColor }}>下</span>
-                </div>
-
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {[
-                    { label: '顔優先 (15%)', val: 15 },
-                    { label: '標準 (25%)', val: 25 },
-                    { label: '中央 (50%)', val: 50 },
-                  ].map((p) => (
-                    <button
-                      key={p.val}
-                      type="button"
-                      onClick={() => setOshiImagePosition(p.val)}
-                      style={{
-                        flex: 1,
-                        padding: '4px 6px',
-                        borderRadius: 6,
-                        border: `1px solid ${oshiImagePosition === p.val ? themeColor : `${subtextColor}33`}`,
-                        backgroundColor: oshiImagePosition === p.val ? `${themeColor}22` : 'transparent',
-                        color: oshiImagePosition === p.val ? themeColor : subtextColor,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <input
-              type="text"
-              value={oshiName}
-              onChange={(e) => setOshiName(e.target.value)}
-              placeholder="推しの名前"
-              autoFocus
-              style={{
-                marginTop: 14,
-                width: '100%',
-                padding: '14px 16px',
-                borderRadius: 14,
-                border: 'none',
-                backgroundColor: inputBg,
-                color: textColor,
-                fontSize: 16,
-                fontWeight: 700,
-                outline: 'none',
-              }}
-            />
-
-            <div style={{ marginTop: 10 }}>
-              {renderDatePickerTile(
-                '推し始めた日',
-                sinceDate,
-                sinceInputRef,
-                (val) => setSinceDate(val),
-                () => setSinceDate('')
-              )}
-            </div>
-
-            <div style={{ marginTop: 8 }}>
-              {renderDatePickerTile(
-                '誕生日',
-                birthday,
-                birthdayInputRef,
-                (val) => setBirthday(val),
-                () => setBirthday(''),
-                true
-              )}
-            </div>
-
-            <div style={{ marginTop: 8 }}>
-              {renderDatePickerTile(
-                'デビュー日・結成日',
-                debutDate,
-                debutInputRef,
-                (val) => setDebutDate(val),
-                () => setDebutDate('')
-              )}
-            </div>
-
-            {/* この推しのメンバーカラー選択 */}
-            <div style={{ marginTop: 12 }}>
-              <div
+                推し始めた日（記念日）
+              </label>
+              <input
+                type="date"
+                value={sinceDate}
+                onChange={(e) => setSinceDate(e.target.value)}
                 style={{
-                  fontSize: 12.5,
-                  fontWeight: 800,
-                  color: '#8E8E93',
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-surface-subtle)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* メンバーカラー */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: 'var(--text-secondary)',
                   marginBottom: 8,
                 }}
               >
-                この推しのイメージカラー
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                メンバーカラー
+              </label>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 10,
+                }}
+              >
                 {PRESET_OSHI_COLORS.map((preset) => {
-                  const selected =
-                    oshiColor.toUpperCase() === preset.hex.toUpperCase();
+                  const isSelected = oshiColor.toUpperCase() === preset.hex.toUpperCase();
                   return (
                     <button
                       key={preset.hex}
@@ -1217,76 +933,61 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                       onClick={() => setOshiColor(preset.hex)}
                       title={preset.name}
                       style={{
-                        width: 30,
-                        height: 30,
+                        width: 32,
+                        height: 32,
                         borderRadius: '50%',
                         backgroundColor: preset.hex,
-                        border: selected ? '2.5px solid #FFFFFF' : 'none',
-                        boxShadow: selected
-                          ? `0 2px 8px ${preset.hex}99`
-                          : 'none',
+                        border: isSelected
+                          ? '3px solid var(--text-primary)'
+                          : '2px solid transparent',
                         cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
                         padding: 0,
+                        transform: isSelected ? 'scale(1.15)' : 'scale(1)',
+                        transition: 'transform 0.1s ease',
                       }}
-                    >
-                      {selected && (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </button>
+                    />
                   );
                 })}
               </div>
             </div>
 
-            <button
-              type="submit"
-              style={{
-                marginTop: 18,
-                width: '100%',
-                height: 52,
-                borderRadius: 16,
-                border: 'none',
-                backgroundColor: oshiColor || themeColor,
-                color: '#FFFFFF',
-                fontSize: 16,
-                fontWeight: 900,
-                cursor: 'pointer',
-              }}
-            >
-              {editingOshi === null ? '登録' : '保存'}
-            </button>
-
-            {editingOshi !== null && (
-              <div style={{ marginTop: 10, textAlign: 'center' }}>
-                <button
-                  type="button"
-                  onClick={handleDeleteOshi}
-                  style={{
-                    background: confirmDeleteOshi
-                      ? 'rgba(255,59,48,0.14)'
-                      : 'none',
-                    border: confirmDeleteOshi
-                      ? '1.2px solid #FF3B30'
-                      : 'none',
-                    borderRadius: 12,
-                    color: '#FF3B30',
-                    fontWeight: 800,
-                    fontSize: 13.5,
-                    padding: '8px 16px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {confirmDeleteOshi
-                    ? 'もう一度タップして登録を解除'
-                    : '登録を解除'}
-                </button>
-              </div>
-            )}
+            {/* 保存 / キャンセル */}
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: 12,
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-surface-subtle)',
+                  color: 'var(--text-primary)',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                style={{
+                  flex: 2,
+                  padding: '12px',
+                  borderRadius: 12,
+                  border: 'none',
+                  backgroundColor: themeColor,
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  boxShadow: `0 4px 14px ${themeColor}44`,
+                }}
+              >
+                保存する
+              </button>
+            </div>
           </form>
         </div>
       )}

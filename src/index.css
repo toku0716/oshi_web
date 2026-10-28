@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap');
+
 /* =========================================================
    推しサポ (Oshi Support) - Luxury Weverse & Apple Music Design System
    Minimalist, Photo-First, Refined Typography, Quiet Elegance
@@ -7,26 +9,27 @@
   --oshi-color: #FF2D55;
   --oshi-color-rgb: 255, 45, 85;
 
-  /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Helvetica Neue", sans-serif;
+  /* Typography (Google Fonts: M PLUS Rounded 1c & JetBrains Mono) */
+  --font-sans: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, "Hiragino Maru Gothic ProN", sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Dark Canvas (Deep Luxury Black) */
-  --bg-canvas: #090A0D;
-  --bg-surface: #12141B;
-  --bg-surface-elevated: #181B24;
-  --bg-surface-subtle: #1E222E;
-  --bg-glass: rgba(14, 16, 22, 0.82);
+  /* Dark Canvas (Spotify Pure Dark System) */
+  --bg-canvas: #121212;
+  --bg-surface: #181818;
+  --bg-surface-elevated: #242424;
+  --bg-surface-subtle: #1e1e1e;
+  --bg-glass: rgba(18, 18, 18, 0.94);
 
-  /* Precise Subtle Borders */
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-medium: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.20);
+  /* Precise Subtle Borders (Spotify Style) */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.22);
 
-  /* Typography Colors */
+  /* Typography Colors (Spotify Standard) */
   --text-primary: #FFFFFF;
-  --text-secondary: #8E95A5;
-  --text-muted: #7A8192;
-  --text-tertiary: #6B7284;
+  --text-secondary: #B3B3B3;
+  --text-muted: #888888;
+  --text-tertiary: #6A6A6A;
   --text-on-accent: #FFFFFF;
 
   /* Semantic Colors */
@@ -56,35 +59,36 @@
   color-scheme: dark;
 }
 
-/* Light Canvas (Crisp Gallery White) */
+/* Light Canvas (Crisp Gallery White / Apple Clean Light) */
 :root:not(.dark) {
-  --bg-canvas: #F9FAFB;
+  --bg-canvas: #F8F9FA;
   --bg-surface: #FFFFFF;
   --bg-surface-elevated: #FFFFFF;
-  --bg-surface-subtle: #F3F4F6;
-  --bg-glass: rgba(255, 255, 255, 0.88);
+  --bg-surface-subtle: #F1F3F5;
+  --bg-glass: rgba(255, 255, 255, 0.92);
 
-  --border-subtle: rgba(0, 0, 0, 0.06);
-  --border-medium: rgba(0, 0, 0, 0.10);
-  --border-strong: rgba(0, 0, 0, 0.18);
+  --border-subtle: rgba(0, 0, 0, 0.07);
+  --border-medium: rgba(0, 0, 0, 0.12);
+  --border-strong: rgba(0, 0, 0, 0.20);
 
-  --text-primary: #0F172A;
-  --text-secondary: #5B6577;
-  --text-muted: #6B7587;
-  --text-tertiary: #7C8798;
+  --text-primary: #121212;
+  --text-secondary: #5F6368;
+  --text-muted: #80868B;
+  --text-tertiary: #9AA0A6;
+  --text-on-accent: #FFFFFF;
 
   --color-danger: #DC2626;
-  --color-danger-bg: rgba(220, 38, 38, 0.1);
-  --color-warning: #C2410C;
-  --color-warning-bg: rgba(234, 88, 12, 0.1);
-  --color-success: #15803D;
-  --color-success-bg: rgba(22, 163, 74, 0.1);
+  --color-danger-bg: rgba(220, 38, 38, 0.08);
+  --color-warning: #D97706;
+  --color-warning-bg: rgba(217, 119, 6, 0.08);
+  --color-success: #16A34A;
+  --color-success-bg: rgba(22, 163, 74, 0.08);
 
-  --bg-overlay: rgba(15, 23, 42, 0.45);
-  --bg-toast: #1C1C1E;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
+  --bg-toast: #1F2937;
 
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -6px rgba(15, 23, 42, 0.08);
-  --shadow-glow: 0 10px 28px -4px rgba(var(--oshi-color-rgb), 0.18);
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --shadow-glow: 0 8px 24px -4px rgba(var(--oshi-color-rgb), 0.18);
 
   color-scheme: light;
 }
@@ -255,7 +259,7 @@ input:focus, select:focus, textarea:focus {
   display: none;
 }
 
-/* Bottom Floating Dock (Glassmorphism & Safe-Area Aware) */
+/* Bottom Floating Dock (Spotify Style Glassmorphism & Safe-Area Aware) */
 .bottom-nav {
   position: fixed;
   left: 0;
@@ -289,6 +293,10 @@ input:focus, select:focus, textarea:focus {
   min-height: 48px;
 }
 
+.bottom-nav-tab:hover {
+  color: var(--text-primary);
+}
+
 .bottom-nav-tab.is-active {
   color: var(--oshi-color);
 }
@@ -305,10 +313,12 @@ input:focus, select:focus, textarea:focus {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  color: inherit;
 }
 
 .bottom-nav-tab.is-active .bottom-nav-tab-label {
   font-weight: 800;
+  color: var(--oshi-color);
 }
 
 .bottom-nav-add-slot {
@@ -319,22 +329,22 @@ input:focus, select:focus, textarea:focus {
 }
 
 .bottom-nav-add-btn {
-  width: 46px;
-  height: 46px;
-  border-radius: 15px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   background-color: var(--oshi-color);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(var(--oshi-color-rgb), 0.4);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(var(--oshi-color-rgb), 0.35);
   transform: translateY(-2px);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .bottom-nav-add-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(var(--oshi-color-rgb), 0.5);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(var(--oshi-color-rgb), 0.45);
 }
 
 .bottom-nav-add-btn:active {
@@ -342,6 +352,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Multi-device layouts */
+.home-top-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 【配置設定：スマホ時の並び順】
+   スマホ（幅768px未満）では「今後の予定」と「TODO」を縦1列に並べます */
 .home-grid {
   display: flex;
   flex-direction: column;
@@ -481,6 +499,15 @@ input:focus, select:focus, textarea:focus {
     margin: 0 auto;
   }
 
+  .home-top-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  /* 【配置設定：PC・タブレット時の並び順】
+     幅768px以上では「今後の予定（左 1.15比率）」と「TODO（右 0.85比率）」を左右2列に並べます */
   .home-grid {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
@@ -1262,6 +1289,9 @@ input:focus, select:focus, textarea:focus {
 .flutter-sheet-backdrop {
   position: fixed;
   inset: 0;
+  height: 100%;
+  height: 100dvh;
+  max-height: var(--visual-viewport-height, 100dvh);
   background-color: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -1270,6 +1300,7 @@ input:focus, select:focus, textarea:focus {
   justify-content: center;
   z-index: 1100;
   animation: fadeIn 0.16s ease-out;
+  overflow: hidden;
 }
 
 .flutter-bottom-sheet {
@@ -1278,10 +1309,37 @@ input:focus, select:focus, textarea:focus {
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
-  max-height: 90vh;
+  max-height: 88dvh;
+  max-height: min(88dvh, calc(var(--visual-viewport-height, 88dvh) - 16px));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   border-top: 1px solid var(--border-medium);
   animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: calc(24px + var(--keyboard-inset-height, 0px) + var(--safe-bottom, 0px)) !important;
+  transition: padding-bottom 0.2s ease, max-height 0.2s ease;
+}
+
+/* スマホ端末のキーボード展開時 */
+html.keyboard-open .flutter-bottom-sheet {
+  max-height: min(85dvh, calc(var(--visual-viewport-height, 85dvh) - 10px));
+}
+
+html.keyboard-open {
+  overflow: hidden;
+}
+
+/* キーボード表示中はスマホ下部ナビゲーションを隠して被りを防止 */
+html.keyboard-open .bottom-nav {
+  display: none !important;
+}
+
+/* スマホでの自動ズーム防止: iOS Safariは16px未満のフォーム要素フォーカス時に強制ズームする */
+@media screen and (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 .flutter-sheet-handle {

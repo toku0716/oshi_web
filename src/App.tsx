@@ -21,7 +21,10 @@ import {
 } from './types';
 import {
   cacheAccessConfig,
+  cacheAdminAccessConfig,
+  clearGoogleSession,
   getEffectiveAccessConfig,
+  getEffectiveAdminAccessConfig,
   getSavedGoogleSession,
   isGoogleEmailAllowed,
 } from './utils/googleAuthUtils';
@@ -75,7 +78,7 @@ const LoadingScreen: React.FC<{ label?: string }> = ({ label = '推しサポを�
 );
 
 const MainApp: React.FC = () => {
-  const { isLoading, settings, refreshAllData, themeColor, isDark } = useApp();
+  const { isLoading, settings, refreshAllData, switchAccount, themeColor, isDark } = useApp();
 
   const [authSession, setAuthSession] = useState<GoogleAuthSession | null>(() =>
     getSavedGoogleSession()
@@ -201,10 +204,14 @@ const MainApp: React.FC = () => {
   }
 
   const accessConfig = getEffectiveAccessConfig(settings);
+  const adminAccessConfig = getEffectiveAdminAccessConfig(settings);
+  const combinedAllowedEmails = Array.from(
+    new Set([...accessConfig.allowedEmails, ...adminAccessConfig.allowedEmails])
+  );
   const isAuthorizedSession =
     Boolean(authSession?.email) &&
-    (accessConfig.allowedEmails.length === 0 ||
-      isGoogleEmailAllowed(authSession!.email, accessConfig.allowedEmails));
+    (combinedAllowedEmails.length === 0 ||
+      isGoogleEmailAllowed(authSession!.email, combinedAllowedEmails));
 
   if (accessConfig.enabled && !isAuthorizedSession) {
     return (
@@ -212,9 +219,31 @@ const MainApp: React.FC = () => {
         themeColor={themeColor}
         isDark={isDark}
         googleClientId={accessConfig.googleClientId}
-        allowedEmails={accessConfig.allowedEmails}
+        allowedEmails={combinedAllowedEmails}
         onAuthenticated={async (session, autoRegisterFirstOwnerEmail) => {
+          try {
+            const res = await fetch(`./active_policy.json?t=${Date.now()}`, {
+              cache: 'no-store',
+            });
+            if (res.ok) {
+              const freshPolicy = await res.json();
+              if (Array.isArray(freshPolicy?.allowedGoogleEmails)) {
+                await settingsRepository.saveSettings({
+                  allowedGoogleEmails: freshPolicy.allowedGoogleEmails,
+                  allowedAdminGoogleEmails: freshPolicy.allowedAdminGoogleEmails,
+                });
+                cacheAccessConfig({ allowedGoogleEmails: freshPolicy.allowedGoogleEmails });
+                cacheAdminAccessConfig({ allowedAdminGoogleEmails: freshPolicy.allowedAdminGoogleEmails });
+              }
+            }
+          } catch {}
+          await switchAccount(session.email);
           setAuthSession(session);
+          setCurrentIndex(0);
+          try {
+            window.history.replaceState(null, '', '#/home');
+            window.scrollTo({ top: 0 });
+          } catch {}
           if (autoRegisterFirstOwnerEmail) {
             await settingsRepository.saveSettings({
               allowedGoogleEmails: [autoRegisterFirstOwnerEmail],
@@ -326,7 +355,20 @@ const MainApp: React.FC = () => {
             onOpenEditGoods={handleOpenEditGoods}
           />
         )}
-        {currentIndex === 3 && <MyPageView onLogout={() => setAuthSession(null)} />}
+        {currentIndex === 3 && (
+          <MyPageView
+            onLogout={async () => {
+              clearGoogleSession();
+              await switchAccount(null);
+              setAuthSession(null);
+              setCurrentIndex(0);
+              try {
+                window.history.replaceState(null, '', '#/home');
+                window.scrollTo({ top: 0 });
+              } catch {}
+            }}
+          />
+        )}
       </main>
 
       {/* Smartphone Bottom Navigation Bar */}

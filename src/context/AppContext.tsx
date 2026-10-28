@@ -1,15 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { Oshi, OshiEvent, Todo, Goods, ExpenseItem, JournalEntry, AppSettings, BackupData, ThemeModeOption } from '../types';
+import type { Oshi, OshiEvent, Todo, Goods, ExpenseItem, AppSettings, BackupData, ThemeModeOption } from '../types';
 import {
   oshiRepository,
   eventRepository,
   todoRepository,
   goodsRepository,
   expenseRepository,
-  journalRepository,
   settingsRepository,
   backupRepository,
 } from '../repository';
+import { getActiveUserEmail, toSafeUserKey, setCurrentUserEmail } from '../db/database';
 
 export interface ToastOptions {
   /** トースト内に表示するアクションボタン（例: 「元に戻す」） */
@@ -33,7 +33,6 @@ interface AppContextType {
   todos: Todo[];
   goods: Goods[];
   expenses: ExpenseItem[];
-  journals: JournalEntry[];
   settings: AppSettings | null;
   activeOshiId: string;
   activeOshi: Oshi | undefined;
@@ -53,6 +52,7 @@ interface AppContextType {
   setActiveOshiId: (id: string) => Promise<void>;
   refreshAllData: () => Promise<void>;
   clearAllData: () => Promise<void>;
+  switchAccount: (email: string | null) => Promise<void>;
   recoverableBackup: BackupData | null;
   restoreRecoverableBackup: () => Promise<void>;
 }
@@ -65,7 +65,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [todos, setTodos] = useState<Todo[]>([]);
   const [goods, setGoods] = useState<Goods[]>([]);
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
-  const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [activeOshiId, setActiveOshiIdState] = useState<string>('all');
   const [themeMode, setThemeModeState] = useState<ThemeModeOption>(() => {
@@ -98,7 +97,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem('oshiss_theme_mode', themeMode);
     // ステータスバー / アドレスバーの色をテーマに追従させる
-    const bg = isDark ? '#090A0D' : '#F9FAFB';
+    const bg = isDark ? '#121212' : '#F8F9FA';
     document
       .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
       .forEach((m) => m.setAttribute('content', bg));
@@ -133,14 +132,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const refreshAllData = useCallback(async () => {
     try {
-      let [fetchedOshis, fetchedEvents, fetchedTodos, fetchedGoods, fetchedExpenses, fetchedJournals, fetchedSettings] =
+      let [fetchedOshis, fetchedEvents, fetchedTodos, fetchedGoods, fetchedExpenses, fetchedSettings] =
         await Promise.all([
           oshiRepository.getAll(),
           eventRepository.getAll(),
           todoRepository.getAll(),
           goodsRepository.getAll(),
           expenseRepository.getAll(),
-          journalRepository.getAll().catch(() => []),
           settingsRepository.getSettings(),
         ]);
 
@@ -151,25 +149,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       let dataChanged = false;
       for (const o of fetchedOshis) {
-        if (sampleOshiIds.has(o.id)) {
+        if (sampleOshiIds.has(o.id) || o.id.startsWith('oshi-seed-')) {
           await oshiRepository.delete(o.id);
           dataChanged = true;
         }
       }
       for (const e of fetchedEvents) {
-        if (sampleEventIds.has(e.id)) {
+        if (sampleEventIds.has(e.id) || e.id.startsWith('event-test') || e.id.includes('test')) {
           await eventRepository.delete(e.id);
           dataChanged = true;
         }
       }
       for (const t of fetchedTodos) {
-        if (sampleTodoIds.has(t.id)) {
+        if (sampleTodoIds.has(t.id) || t.id.startsWith('todo-test') || t.id.includes('test')) {
           await todoRepository.delete(t.id);
           dataChanged = true;
         }
       }
       for (const g of fetchedGoods) {
-        if (sampleGoodsIds.has(g.id)) {
+        if (sampleGoodsIds.has(g.id) || g.id.startsWith('goods-test') || g.id.includes('test')) {
           await goodsRepository.delete(g.id);
           dataChanged = true;
         }
@@ -189,7 +187,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setTodos(fetchedTodos);
       setGoods(fetchedGoods);
       setExpenses(fetchedExpenses);
-      setJournals(fetchedJournals);
       setSettings(fetchedSettings);
       setActiveOshiIdState(fetchedSettings.activeOshiId || 'all');
 
@@ -202,7 +199,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         backupRepository
           .exportBackup()
           .then((backup) => {
-            localStorage.setItem('oshiss_auto_safety_snapshot', JSON.stringify(backup));
+            const email = getActiveUserEmail();
+            const userKey = email ? toSafeUserKey(email) : 'guest';
+            localStorage.setItem(`oshiss_auto_safety_snapshot_${userKey}`, JSON.stringify(backup));
           })
           .catch(() => {});
         setRecoverableBackup(null);
@@ -218,24 +217,103 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [showToast]);
 
+  const switchAccount = useCallback(async (email: string | null) => {
+    setIsLoading(true);
+    await setCurrentUserEmail(email);
+    setOshis([]);
+    setEvents([]);
+    setTodos([]);
+    setGoods([]);
+    setExpenses([]);
+    setSettings(null);
+    setRecoverableBackup(null);
+    await refreshAllData();
+  }, [refreshAllData]);
+
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
       navigator.storage.persist().catch(() => {});
     }
-    refreshAllData();
+
+    // サーバー（public/active_policy.json）から最新の規約・ポリシー設定を同期（スマートフォン等の他端末同期用）
+    const syncServerPolicy = async () => {
+      try {
+        const res = await fetch(`./active_policy.json?t=${Date.now()}`, {
+          cache: 'no-store',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.version) {
+            localStorage.setItem('oshiss_active_policy_version', data.version);
+            if (data.dateLabel) {
+              localStorage.setItem('oshiss_active_policy_date_label', data.dateLabel);
+            }
+            if (data.termsContent) {
+              localStorage.setItem('oshiss_custom_terms_content', data.termsContent);
+            }
+            if (data.privacyContent) {
+              localStorage.setItem('oshiss_custom_privacy_content', data.privacyContent);
+            }
+            const patch: Partial<AppSettings> = {
+              activePolicyVersion: data.version,
+              activePolicyDateLabel: data.dateLabel,
+              customTermsContent: data.termsContent,
+              customPrivacyContent: data.privacyContent,
+            };
+            if (typeof data.accessControlEnabled === 'boolean') {
+              patch.accessControlEnabled = data.accessControlEnabled;
+              try {
+                const prevRaw = localStorage.getItem('oshiss_access_control_cache');
+                const prev = prevRaw ? JSON.parse(prevRaw) : {};
+                localStorage.setItem(
+                  'oshiss_access_control_cache',
+                  JSON.stringify({ ...prev, accessControlEnabled: data.accessControlEnabled })
+                );
+              } catch {}
+            }
+            if (Array.isArray(data.allowedGoogleEmails)) {
+              patch.allowedGoogleEmails = data.allowedGoogleEmails;
+              try {
+                const prevRaw = localStorage.getItem('oshiss_access_control_cache');
+                const prev = prevRaw ? JSON.parse(prevRaw) : {};
+                localStorage.setItem(
+                  'oshiss_access_control_cache',
+                  JSON.stringify({ ...prev, allowedGoogleEmails: data.allowedGoogleEmails })
+                );
+              } catch {}
+            }
+            if (Array.isArray(data.allowedAdminGoogleEmails)) {
+              patch.allowedAdminGoogleEmails = data.allowedAdminGoogleEmails;
+              try {
+                const prevRaw = localStorage.getItem('oshiss_admin_access_control_cache');
+                const prev = prevRaw ? JSON.parse(prevRaw) : {};
+                localStorage.setItem(
+                  'oshiss_admin_access_control_cache',
+                  JSON.stringify({ ...prev, allowedAdminGoogleEmails: data.allowedAdminGoogleEmails })
+                );
+              } catch {}
+            }
+            await settingsRepository.saveSettings(patch);
+            setSettings((prev) => ({ ...(prev || {}), ...patch } as AppSettings));
+            await refreshAllData();
+          }
+        }
+      } catch {
+        // オフライン時は既存のキャッシュを使用
+      } finally {
+        await refreshAllData();
+      }
+    };
+
+    syncServerPolicy();
   }, [refreshAllData]);
 
   const setActiveOshiId = useCallback(
     async (id: string) => {
       setActiveOshiIdState(id);
       await settingsRepository.saveSettings({ activeOshiId: id });
-      const target = oshis.find((o) => o.id === id);
-      if (target?.color) {
-        setThemeColorState(target.color);
-        localStorage.setItem('oshiss_theme_color', target.color);
-      }
     },
-    [oshis]
+    []
   );
 
   const activeOshi = oshis.find((o) => o.id === activeOshiId);
@@ -245,17 +323,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setThemeColorState(color);
       localStorage.setItem('oshiss_theme_color', color);
       document.documentElement.style.setProperty('--oshi-color', color);
-      if (activeOshi) {
-        const updated: Oshi = {
-          ...activeOshi,
-          color,
-          updatedAt: new Date().toISOString(),
-        };
-        await oshiRepository.save(updated);
-        setOshis((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-      }
     },
-    [activeOshi]
+    []
   );
 
   useEffect(() => {
@@ -317,7 +386,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         todos,
         goods,
         expenses,
-        journals,
         settings,
         activeOshiId,
         activeOshi,
@@ -333,6 +401,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveOshiId,
         refreshAllData,
         clearAllData,
+        switchAccount,
         recoverableBackup,
         restoreRecoverableBackup,
       }}

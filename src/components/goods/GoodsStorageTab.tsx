@@ -86,7 +86,7 @@ export const GoodsStorageTab: React.FC<GoodsStorageTabProps> = ({
           <MapPin size={24} />
         </div>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
-          所持グッズがまだありません
+          グッズがまだありません
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
           グッズ登録時に「保管場所」を設定すると、場所ごとに整理・一覧できます

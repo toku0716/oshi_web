@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Lock, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Lock, ShieldAlert, AlertTriangle, RefreshCw } from 'lucide-react';
 import type { GoogleAuthSession } from '../../types';
 import {
   decodeGoogleJwtCredential,
@@ -52,6 +52,9 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
 }) => {
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [liveAllowedEmails, setLiveAllowedEmails] = useState<string[]>(allowedEmails);
+  const [isRechecking, setIsRechecking] = useState<boolean>(false);
+  const [recheckNotice, setRecheckNotice] = useState<string | null>(null);
   const [deniedProfile, setDeniedProfile] = useState<{
     email: string;
     name?: string;
@@ -59,7 +62,34 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
   } | null>(null);
   const [gsiReady, setGsiReady] = useState<boolean>(false);
   const [gsiLoadError, setGsiLoadError] = useState<boolean>(false);
-  const [localTestEmail, setLocalTestEmail] = useState<string>('');
+
+  // 初回マウント時にもサーバーから最新のポリシーを取得して即時同期
+  useEffect(() => {
+    let cancelled = false;
+    const fetchFresh = async () => {
+      try {
+        const res = await fetch(`./active_policy.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          const serverAllowed = [
+            ...(Array.isArray(data?.allowedGoogleEmails) ? data.allowedGoogleEmails : []),
+            ...(Array.isArray(data?.allowedAdminGoogleEmails) ? data.allowedAdminGoogleEmails : []),
+          ];
+          if (serverAllowed.length > 0) {
+            setLiveAllowedEmails((prev) => Array.from(new Set([...prev, ...serverAllowed])));
+          }
+        }
+      } catch {}
+    };
+    fetchFresh();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setLiveAllowedEmails((prev) => Array.from(new Set([...prev, ...allowedEmails])));
+  }, [allowedEmails]);
 
   useEffect(() => {
     if (!googleClientId) {
@@ -80,7 +110,7 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
 
         gsi.initialize({
           client_id: googleClientId,
-          callback: (response: GisCredentialResponse) => {
+          callback: async (response: GisCredentialResponse) => {
             if (!response.credential) {
               setErrorMsg('Googleからの認証情報を取得できませんでした。');
               return;
@@ -88,9 +118,29 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
             try {
               const payload = decodeGoogleJwtCredential(response.credential);
               setErrorMsg(null);
+              setRecheckNotice(null);
+
+              // 認証ボタン押下時にサーバーの最新ポリシーを即時取得して他端末の追加を瞬時に反映
+              let checkPool = liveAllowedEmails;
+              try {
+                const freshRes = await fetch(`./active_policy.json?t=${Date.now()}`, {
+                  cache: 'no-store',
+                });
+                if (freshRes.ok) {
+                  const data = await freshRes.json();
+                  const serverAllowed = [
+                    ...(Array.isArray(data?.allowedGoogleEmails) ? data.allowedGoogleEmails : []),
+                    ...(Array.isArray(data?.allowedAdminGoogleEmails) ? data.allowedAdminGoogleEmails : []),
+                  ];
+                  if (serverAllowed.length > 0) {
+                    checkPool = Array.from(new Set([...checkPool, ...serverAllowed]));
+                    setLiveAllowedEmails(checkPool);
+                  }
+                }
+              } catch {}
 
               // 許可リストがまだ空（初回セットアップ直後）の場合は、最初にログインしたGoogleアカウントをオーナーとして自動許可
-              if (allowedEmails.length === 0) {
+              if (checkPool.length === 0) {
                 const session: GoogleAuthSession = {
                   email: payload.email,
                   name: payload.name,
@@ -103,7 +153,7 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
               }
 
               // 許可リストに含まれているかチェック
-              if (isGoogleEmailAllowed(payload.email, allowedEmails)) {
+              if (isGoogleEmailAllowed(payload.email, checkPool)) {
                 setDeniedProfile(null);
                 const session: GoogleAuthSession = {
                   email: payload.email,
@@ -155,42 +205,45 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [googleClientId, allowedEmails, isDark, onAuthenticated]);
+  }, [googleClientId, liveAllowedEmails, isDark, onAuthenticated]);
 
-  const handleLocalQuickVerify = (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = normalizeEmail(localTestEmail);
-    if (!email || !email.includes('@')) {
-      setErrorMsg('有効なGoogleメールアドレスを入力してください。');
-      return;
-    }
+  // 最新の許可リストをサーバーから再取得して再判定
+  const handleRecheckAllowed = async () => {
+    setIsRechecking(true);
+    setRecheckNotice(null);
+    try {
+      const res = await fetch(`./active_policy.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        const serverAllowed = [
+          ...(Array.isArray(data?.allowedGoogleEmails) ? data.allowedGoogleEmails : []),
+          ...(Array.isArray(data?.allowedAdminGoogleEmails) ? data.allowedAdminGoogleEmails : []),
+        ];
+        const merged = Array.from(new Set([...liveAllowedEmails, ...serverAllowed]));
+        setLiveAllowedEmails(merged);
 
-    if (allowedEmails.length === 0) {
-      const session: GoogleAuthSession = {
-        email,
-        name: email.split('@')[0],
-        authenticatedAt: new Date().toISOString(),
-      };
-      saveGoogleSession(session);
-      onAuthenticated(session, email);
-      return;
-    }
-
-    if (isGoogleEmailAllowed(email, allowedEmails)) {
-      setDeniedProfile(null);
-      setErrorMsg(null);
-      const session: GoogleAuthSession = {
-        email,
-        name: email.split('@')[0],
-        authenticatedAt: new Date().toISOString(),
-      };
-      saveGoogleSession(session);
-      onAuthenticated(session);
-    } else {
-      setDeniedProfile({
-        email,
-        name: email.split('@')[0],
-      });
+        if (deniedProfile && isGoogleEmailAllowed(deniedProfile.email, merged)) {
+          const session: GoogleAuthSession = {
+            email: deniedProfile.email,
+            name: deniedProfile.name,
+            picture: deniedProfile.picture,
+            authenticatedAt: new Date().toISOString(),
+          };
+          saveGoogleSession(session);
+          setDeniedProfile(null);
+          onAuthenticated(session);
+          return;
+        }
+        setRecheckNotice(
+          `最新の許可リスト（${merged.length}件）を再同期しました。`
+        );
+      } else {
+        setRecheckNotice('サーバーから許可リストを取得できませんでした。');
+      }
+    } catch {
+      setRecheckNotice('ネットワークエラーが発生しました。接続を確認してください。');
+    } finally {
+      setIsRechecking(false);
     }
   };
 
@@ -331,8 +384,52 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
                 lineHeight: 1.5,
               }}
             >
-              許可リストに登録されているGoogleアカウントに切り替えて再度ログインしてください。
+              許可リストに登録されているGoogleアカウントに切り替えて再度ログインするか、管理者に連絡してください。
             </div>
+
+            <button
+              onClick={handleRecheckAllowed}
+              disabled={isRechecking}
+              style={{
+                marginTop: 10,
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: 10,
+                backgroundColor: isDark ? '#262834' : '#FFFFFF',
+                border: `1px solid ${borderColor}`,
+                color: textColor,
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: isRechecking ? 'wait' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+              }}
+            >
+              <RefreshCw
+                size={13}
+                style={{
+                  animation: isRechecking ? 'spin 1s linear infinite' : 'none',
+                }}
+              />
+              <span>{isRechecking ? '最新リストを確認中...' : '最新の許可リストを再取得して再判定'}</span>
+            </button>
+
+            {recheckNotice && (
+              <div
+                style={{
+                  marginTop: 6,
+                  fontSize: 11,
+                  color: '#FF9500',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                }}
+              >
+                {recheckNotice}
+              </div>
+            )}
           </div>
         )}
 
@@ -385,65 +482,6 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
             )}
           </div>
         )}
-
-        {/* 許可アカウント確認フォーム（.ac.jp 等の学内ポリシー制限時やClient ID未設定時にも利用可能） */}
-        <div
-          style={{
-            width: '100%',
-            marginTop: 22,
-            paddingTop: 18,
-            borderTop: `1px solid ${borderColor}`,
-            textAlign: 'left',
-          }}
-        >
-          <form onSubmit={handleLocalQuickVerify}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 12,
-                fontWeight: 800,
-                color: textColor,
-                marginBottom: 6,
-              }}
-            >
-              Googleメールアドレスで認証
-            </label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="email"
-                value={localTestEmail}
-                onChange={(e) => setLocalTestEmail(e.target.value)}
-                placeholder="your-account@gmail.com / @xxx.ac.jp"
-                style={{
-                  flex: 1,
-                  padding: '10px 12px',
-                  borderRadius: 12,
-                  border: `1px solid ${borderColor}`,
-                  backgroundColor: isDark ? '#14151B' : '#F9FAFB',
-                  color: textColor,
-                  fontSize: 13,
-                  outline: 'none',
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: 12,
-                  border: 'none',
-                  backgroundColor: themeColor,
-                  color: '#FFFFFF',
-                  fontSize: 13,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                認証する
-              </button>
-            </div>
-          </form>
-        </div>
 
         <div
           style={{

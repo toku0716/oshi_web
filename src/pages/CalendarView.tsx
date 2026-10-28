@@ -9,6 +9,7 @@ import {
   getWeekdayJa,
   isSameDay,
   isTodayDate,
+  isEventEnded,
   parseLocalDate,
   sortEventsByTime,
 } from '../utils/oshiUtils';
@@ -562,26 +563,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               {totalSelectedCount}件
             </span>
           </div>
-
-          <button
-            type="button"
-            onClick={() => onOpenAddEvent(selectedDateStr)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: themeColor,
-              fontSize: 13,
-              fontWeight: 800,
-              cursor: 'pointer',
-              padding: '4px 6px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <span>＋</span>
-            <span>予定を追加</span>
-          </button>
         </div>
 
         {totalSelectedCount === 0 ? (
@@ -613,21 +594,22 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               この日の予定・タスクはありません
             </div>
             <div style={{ fontSize: 12, color: subtextColor, marginTop: 4 }}>
-              ライブ参戦・配信・記念日などの予定を記録しよう
+              イベント・配信・記念日・発売日などの予定を記録しよう
             </div>
             <button
               type="button"
               onClick={() => onOpenAddEvent(selectedDateStr)}
               style={{
                 marginTop: 14,
-                padding: '7px 18px',
-                borderRadius: 10,
+                padding: '8px 20px',
+                borderRadius: 9999,
                 border: 'none',
                 backgroundColor: themeColor,
                 color: '#FFFFFF',
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: 800,
                 cursor: 'pointer',
+                boxShadow: `0 4px 12px ${themeColor}44`,
               }}
             >
               ＋ 予定を登録
@@ -638,89 +620,116 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             {/* イベントカード */}
             {selectedEvents.map((ev) => {
               const isToday = isTodayDate(ev.date);
+              const isEnded = isEventEnded(ev);
+
               return (
                 <div
                   key={ev.id}
                   onClick={() => onOpenEditEvent(ev)}
                   className={`event-row ${isToday ? 'is-today' : ''}`}
-                  style={{ padding: '12px 16px', ...(isToday ? { borderColor: `${themeColor}88` } : {}) }}
+                  style={{
+                    padding: '12px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    ...(isToday ? { borderColor: `${themeColor}88` } : {}),
+                  }}
                 >
-                  <div
-                    className={`event-date-block ${isToday ? 'is-today' : ''}`}
-                    style={{
-                      width: 46,
-                      height: 46,
-                      ...(isToday ? { backgroundColor: themeColor, borderColor: themeColor } : {}),
-                    }}
-                  >
-                    <span className="event-date-month" style={{ fontSize: 9.5 }}>{isToday ? 'TODAY' : '時間'}</span>
-                    <span className="event-date-day" style={{ fontSize: 13, fontWeight: 700 }}>
-                      {ev.time ? ev.time : '終日'}
-                    </span>
-                  </div>
-
-                  <div className="event-info">
-                    <div className="event-title" style={{ fontWeight: isToday ? 700 : 600 }}>
-                      {ev.title}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+                    <div
+                      className={`event-date-block ${isToday ? 'is-today' : ''}`}
+                      style={{
+                        width: 46,
+                        height: 46,
+                        flexShrink: 0,
+                        ...(isToday ? { backgroundColor: themeColor, borderColor: themeColor } : {}),
+                      }}
+                    >
+                      <span className="event-date-month" style={{ fontSize: 9.5 }}>{isToday ? 'TODAY' : '時間'}</span>
+                      <span className="event-date-day" style={{ fontSize: 13, fontWeight: 700 }}>
+                        {ev.time ? ev.time : '終日'}
+                      </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 3 }}>
-                      {ev.ticketStatus && ev.ticketStatus !== 'none' && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            padding: '1px 6px',
-                            borderRadius: 4,
-                            backgroundColor: ev.ticketStatus === 'won' ? '#10B98120' : ev.ticketStatus === 'applied' ? '#3B82F620' : '#6B728020',
-                            color: ev.ticketStatus === 'won' ? '#10B981' : ev.ticketStatus === 'applied' ? '#3B82F6' : '#6B7280',
-                          }}
-                        >
-                          {ev.ticketStatus === 'won' ? '当選' : ev.ticketStatus === 'applied' ? '申込中' : ev.ticketStatus === 'purchased' ? '発券済' : '落選'}
-                        </span>
-                      )}
+                    <div className="event-info" style={{ flex: 1, minWidth: 0 }}>
+                      <div className="event-title" style={{ fontWeight: isToday ? 700 : 600 }}>
+                        {ev.title}
+                      </div>
 
-                      {ev.seatInfo && (
-                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                          💺 {ev.seatInfo}
-                        </span>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 3 }}>
+                        {isEnded && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              backgroundColor: 'var(--bg-surface-subtle)',
+                              color: 'var(--text-muted)',
+                              border: '1px solid var(--border-subtle)',
+                            }}
+                          >
+                            終了
+                          </span>
+                        )}
 
-                      {ev.ticketDeadline && (
-                        <span style={{ fontSize: 10.5, color: '#EF4444', fontWeight: 600 }}>
-                          申込締切: {ev.ticketDeadline.replace(/-/g, '/')}
-                        </span>
-                      )}
+                        {ev.ticketStatus && ev.ticketStatus !== 'none' && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              backgroundColor: ev.ticketStatus === 'won' ? '#10B98120' : ev.ticketStatus === 'applied' ? '#3B82F620' : '#6B728020',
+                              color: ev.ticketStatus === 'won' ? '#10B981' : ev.ticketStatus === 'applied' ? '#3B82F6' : '#6B7280',
+                            }}
+                          >
+                            {ev.ticketStatus === 'won' ? '当選' : ev.ticketStatus === 'applied' ? '申込中' : ev.ticketStatus === 'purchased' ? '発券済' : '落選'}
+                          </span>
+                        )}
 
-                      {ev.paymentDeadline && (
-                        <span style={{ fontSize: 10.5, color: '#F59E0B', fontWeight: 600 }}>
-                          入金締切: {ev.paymentDeadline.replace(/-/g, '/')}
-                        </span>
-                      )}
-                    </div>
+                        {ev.seatInfo && (
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                            💺 {ev.seatInfo}
+                          </span>
+                        )}
 
-                    {ev.location && ev.location.trim() && (
-                      <div className="event-meta" style={{ marginTop: 3 }}>
-                        <div className="event-meta-item">
-                          <MapPin size={11} strokeWidth={2} />
-                          <span>{ev.location}</span>
+                        {ev.ticketDeadline && (
+                          <span style={{ fontSize: 10.5, color: '#EF4444', fontWeight: 600 }}>
+                            申込締切: {ev.ticketDeadline.replace(/-/g, '/')}
+                          </span>
+                        )}
+
+                        {ev.paymentDeadline && (
+                          <span style={{ fontSize: 10.5, color: '#F59E0B', fontWeight: 600 }}>
+                            入金締切: {ev.paymentDeadline.replace(/-/g, '/')}
+                          </span>
+                        )}
+                      </div>
+
+                      {ev.location && ev.location.trim() && (
+                        <div className="event-meta" style={{ marginTop: 3 }}>
+                          <div className="event-meta-item">
+                            <MapPin size={11} strokeWidth={2} />
+                            <span>{ev.location}</span>
+                          </div>
                         </div>
+                      )}
+                    </div>
+
+                    {isToday && (
+                      <div
+                        className="live-badge"
+                        style={{
+                          backgroundColor: themeColor,
+                          fontSize: 10.5,
+                          padding: '3px 9px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <span>本日開催</span>
                       </div>
                     )}
                   </div>
-
-                  {isToday && (
-                    <div
-                      className="live-badge"
-                      style={{
-                        backgroundColor: themeColor,
-                        fontSize: 10.5,
-                        padding: '3px 9px',
-                      }}
-                    >
-                      <span>本日開催</span>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -756,6 +765,29 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 ))}
               </div>
             )}
+
+            {/* この日の予定追加ボタン（リスト末尾） */}
+            <button
+              type="button"
+              onClick={() => onOpenAddEvent(selectedDateStr)}
+              style={{
+                marginTop: 6,
+                padding: '11px',
+                borderRadius: 14,
+                border: '1.5px dashed var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface-subtle)',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
+              <span>＋ この日の予定を追加</span>
+            </button>
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useDialog } from '../../hooks/useDialog';
 import {
@@ -85,6 +86,7 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
 
   const [type, setType] = useState<number>(initialType);
   const [title, setTitle] = useState<string>('');
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [location, setLocation] = useState<string>('');
   const [priceDisplay, setPriceDisplay] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(() =>
@@ -103,6 +105,7 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
   const [isTimeKeypadOpen, setIsTimeKeypadOpen] = useState<boolean>(false);
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
 
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,6 +117,7 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
   useEffect(() => {
     if (isOpen) {
       setConfirmDelete(false);
+      setTitleError(null);
       if (editingEvent) {
         setType(0);
         setTitle(editingEvent.title || '');
@@ -261,7 +265,28 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const trimmedTitle = title.trim();
-    if (!trimmedTitle) return;
+    if (!trimmedTitle) {
+      const fieldName =
+        type === 2
+          ? 'グッズ名'
+          : type === 1
+            ? 'やるべきこと'
+            : type === 3
+              ? '支出内容'
+              : '予定のタイトル';
+      const errorMsg = `${fieldName}を入力してください`;
+      setTitleError(errorMsg);
+      showToast(errorMsg, 'error');
+      if (titleInputRef.current) {
+        titleInputRef.current.focus();
+      }
+      return;
+    }
+
+    if (!selectedDate) {
+      showToast('日付を選択してください', 'error');
+      return;
+    }
 
     const now = new Date().toISOString();
 
@@ -400,12 +425,12 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
 
   const placeholderText =
     type === 0
-      ? '予定のタイトル (ライブ、配信など)'
+      ? '予定のタイトル (イベント、配信、発売日など)'
       : type === 1
-        ? 'やるべきこと (チケット発券など)'
+        ? 'やるべきこと (予約、発券、購入など)'
         : type === 2
-          ? 'グッズ名 (アクスタ、ペンライトなど)'
-          : '支出内容 (ライブチケット代、遠征費など)';
+          ? 'グッズ名 (アクスタ、本、円盤など)'
+          : '支出内容 (グッズ代、チケット代、遠征費など)';
 
   const displayDateSlash = selectedDate.replace(/-/g, '/');
 
@@ -427,8 +452,8 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
           className="flutter-bottom-sheet"
           style={{
             backgroundColor: sheetBg,
-            padding: '16px 20px calc(24px + var(--safe-bottom))',
-            maxHeight: '90dvh',
+            padding: '16px 20px calc(24px + var(--keyboard-inset-height, 0px) + var(--safe-bottom))',
+            maxHeight: 'min(90dvh, calc(var(--visual-viewport-height, 90dvh) - 16px))',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -492,7 +517,10 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
                     type="button"
                     role="tab"
                     aria-selected={selected}
-                    onClick={() => setType(idx)}
+                    onClick={() => {
+                      setType(idx);
+                      setTitleError(null);
+                    }}
                     style={{
                       flex: 1,
                       padding: '9px 0',
@@ -515,24 +543,58 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
           )}
 
           {/* タイトル入力 */}
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={placeholderText}
-            autoFocus
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              borderRadius: 14,
-              border: 'none',
-              backgroundColor: inputBg,
-              color: textColor,
-              fontSize: 16,
-              fontWeight: 700,
-              outline: 'none',
-            }}
-          />
+          <div style={{ width: '100%' }}>
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (titleError) setTitleError(null);
+              }}
+              placeholder={placeholderText}
+              autoFocus
+              aria-invalid={!!titleError}
+              aria-describedby={titleError ? 'entry-title-error' : undefined}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                borderRadius: 14,
+                border: titleError
+                  ? '1.5px solid #FF3B30'
+                  : '1.5px solid transparent',
+                backgroundColor: inputBg,
+                color: textColor,
+                fontSize: 16,
+                fontWeight: 700,
+                outline: 'none',
+                boxShadow: titleError
+                  ? '0 0 0 3px rgba(255, 59, 48, 0.18)'
+                  : 'none',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+                boxSizing: 'border-box',
+              }}
+            />
+            {titleError && (
+              <div
+                id="entry-title-error"
+                role="alert"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  color: '#FF3B30',
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  marginTop: 6,
+                  marginLeft: 4,
+                }}
+              >
+                <AlertCircle size={14} />
+                <span>{titleError}</span>
+              </div>
+            )}
+          </div>
 
           {/* 予定 or TODO or 支出: 日付・時間 */}
           {(type === 0 || type === 1 || type === 3) && (

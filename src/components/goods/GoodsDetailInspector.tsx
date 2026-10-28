@@ -70,10 +70,10 @@ export const GoodsDetailInspector: React.FC<GoodsDetailInspectorProps> = ({
         </div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
-            アイテムが選択されていません
+            グッズを選んでください
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-            左の一覧からグッズをクリックすると、ここに詳細が表示されます
+            グッズをタップすると、ここに詳しい情報が表示されます
           </div>
         </div>
       </div>
@@ -211,7 +211,7 @@ export const GoodsDetailInspector: React.FC<GoodsDetailInspectorProps> = ({
               }}
             >
               <Package size={44} strokeWidth={1.2} />
-              <span style={{ fontSize: 12 }}>写真未登録</span>
+              <span style={{ fontSize: 12 }}>写真がまだありません</span>
             </div>
           )}
 
@@ -238,7 +238,7 @@ export const GoodsDetailInspector: React.FC<GoodsDetailInspectorProps> = ({
             }}
           >
             <Camera size={13} />
-            <span>{item.image ? '変更' : '写真追加'}</span>
+            <span>{item.image ? '変更' : '写真を追加'}</span>
           </button>
         </div>
 
@@ -297,7 +297,7 @@ export const GoodsDetailInspector: React.FC<GoodsDetailInspectorProps> = ({
             <>
               {/* 所持数 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>所持数</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>持っている数</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <button
                     type="button"
@@ -353,7 +353,7 @@ export const GoodsDetailInspector: React.FC<GoodsDetailInspectorProps> = ({
 
               {/* 状態 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>開封状況</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>状態</span>
                 <span
                   style={{
                     fontSize: 11.5,
@@ -390,7 +390,7 @@ export const GoodsDetailInspector: React.FC<GoodsDetailInspectorProps> = ({
 
           {item.purchaseDate && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>登録日・購入日</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>購入日・お迎え日</span>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
                 {item.purchaseDate.replace(/-/g, '/')}
               </span>
@@ -435,7 +435,7 @@ export const GoodsDetailInspector: React.FC<GoodsDetailInspectorProps> = ({
               }}
             >
               <CheckCircle2 size={16} />
-              <span>{item.isPreorder ? '届いた！（所持へ移動）' : '購入した！（所持へ移動）'}</span>
+              <span>{item.isPreorder ? '届いた！（コレクションへ）' : '購入した！（コレクションへ）'}</span>
             </button>
           )}
 
@@ -456,7 +456,7 @@ export const GoodsDetailInspector: React.FC<GoodsDetailInspectorProps> = ({
               }}
             >
               <Edit2 size={14} />
-              <span>編集</span>
+              <span>編集する</span>
             </button>
 
             {onDelete && (

@@ -1,11 +1,48 @@
 import react from '@vitejs/plugin-react'
+import fs from 'node:fs'
 import { resolve } from 'node:path'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+function policyServerPlugin(): Plugin {
+  return {
+    name: 'policy-server-plugin',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url === '/api/policy' && req.method === 'POST') {
+          let body = ''
+          req.on('data', (chunk) => {
+            body += chunk
+          })
+          req.on('end', () => {
+            try {
+              const data = JSON.parse(body)
+              const filePath = resolve(import.meta.dirname, 'public/active_policy.json')
+              fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
+              res.statusCode = 200
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ ok: true, data }))
+            } catch (err) {
+              res.statusCode = 500
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ error: String(err) }))
+            }
+          })
+          return
+        }
+        next()
+      })
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
+  server: {
+    host: true, // Listen on 0.0.0.0 (LAN / smartphone access)
+    port: 5173,
+  },
   build: {
     rollupOptions: {
       input: {
@@ -16,6 +53,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    policyServerPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'favicon.svg'],

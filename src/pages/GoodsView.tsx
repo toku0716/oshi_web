@@ -196,27 +196,7 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
           >
             グッズ管理
           </h1>
-          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, margin: 0 }}>
-            コレクション・保管場所・予約状況の一元管理
-          </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onOpenAddGoods(activeTab === 'orders')}
-          className="btn-primary"
-          style={{
-            height: 38,
-            padding: '0 16px',
-            fontSize: 13,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
-          <Plus size={16} strokeWidth={2.6} />
-          <span>{activeTab === 'orders' ? '予約・欲しいものを追加' : 'グッズを追加'}</span>
-        </button>
       </div>
 
       {/* 機能分割タブバー (4タブ) */}
@@ -235,7 +215,7 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
         }}
       >
         {[
-          { key: 'gallery', label: 'コレクション', icon: ShoppingBag, count: ownedCount },
+          { key: 'gallery', label: '一覧', icon: ShoppingBag, count: ownedCount },
           { key: 'storage', label: '保管場所別', icon: MapPin, count: storageLocationCount },
           { key: 'orders', label: '予約・欲しいもの', icon: Clock, count: ordersCount },
           { key: 'analytics', label: '分析・内訳', icon: PieChart, count: null },

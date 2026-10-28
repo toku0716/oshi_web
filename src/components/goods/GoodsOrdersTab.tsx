@@ -27,6 +27,7 @@ export const GoodsOrdersTab: React.FC<GoodsOrdersTabProps> = ({
   onToggleFavorite,
   onMoveToOwned,
   onOpenAddGoods,
+  themeColor = '#FF2D55',
 }) => {
   const [activeSubSection, setActiveSubSection] = useState<'preorder' | 'wish'>('preorder');
 
@@ -137,23 +138,6 @@ export const GoodsOrdersTab: React.FC<GoodsOrdersTabProps> = ({
             </span>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onOpenAddGoods(activeSubSection === 'wish')}
-          className="btn-primary"
-          style={{
-            height: 36,
-            padding: '0 14px',
-            fontSize: 12.5,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-          }}
-        >
-          <Plus size={15} />
-          <span>{activeSubSection === 'preorder' ? '予約を追加' : '欲しいものを追加'}</span>
-        </button>
       </div>
 
       {/* リスト表示 */}
@@ -189,20 +173,26 @@ export const GoodsOrdersTab: React.FC<GoodsOrdersTabProps> = ({
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
             {activeSubSection === 'preorder'
-              ? '通販や店舗で予約したグッズを登録しておくと、届いた時にワンタップで所持へ移動できます'
+              ? '通販や店舗で予約したグッズを登録しておくと、届いた時にワンタップでコレクションへ移動できます'
               : '次に買いたいグッズや検討中のアイテムをメモしておきましょう'}
           </p>
           <button
             type="button"
             onClick={() => onOpenAddGoods(activeSubSection === 'wish')}
-            className="btn-primary"
             style={{
               marginTop: 14,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              padding: '8px 16px',
+              padding: '8px 20px',
               fontSize: 13,
+              fontWeight: 800,
+              backgroundColor: themeColor,
+              color: '#FFFFFF',
+              borderRadius: 9999,
+              border: 'none',
+              boxShadow: `0 4px 12px ${themeColor}44`,
+              cursor: 'pointer',
             }}
           >
             <Plus size={15} />
@@ -210,30 +200,58 @@ export const GoodsOrdersTab: React.FC<GoodsOrdersTabProps> = ({
           </button>
         </div>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-            gap: 12,
-          }}
-        >
-          {currentList.map((item) => {
-            const oshi = oshis.find((o) => o.id === item.oshiId);
-            return (
-              <GoodsCard
-                key={item.id}
-                item={item}
-                oshiName={oshi?.name}
-                oshiColor={oshi?.color}
-                isSelected={selectedItem?.id === item.id}
-                viewMode="grid"
-                onClick={() => onSelectItem(item)}
-                onToggleFavorite={onToggleFavorite}
-                onMoveToOwned={onMoveToOwned}
-              />
-            );
-          })}
-        </div>
+        <>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {currentList.map((item) => {
+              const oshi = oshis.find((o) => o.id === item.oshiId);
+              return (
+                <GoodsCard
+                  key={item.id}
+                  item={item}
+                  oshiName={oshi?.name}
+                  oshiColor={oshi?.color}
+                  isSelected={selectedItem?.id === item.id}
+                  viewMode="grid"
+                  onClick={() => onSelectItem(item)}
+                  onToggleFavorite={onToggleFavorite}
+                  onMoveToOwned={onMoveToOwned}
+                />
+              );
+            })}
+          </div>
+
+          {/* リスト末尾の追加ボタン */}
+          <div style={{ marginTop: 14 }}>
+            <button
+              type="button"
+              onClick={() => onOpenAddGoods(activeSubSection === 'wish')}
+              style={{
+                width: '100%',
+                padding: '11px',
+                borderRadius: 14,
+                border: '1.5px dashed var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface-subtle)',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
+              <Plus size={15} strokeWidth={2.4} />
+              <span>{activeSubSection === 'preorder' ? '新しい予約グッズを追加する' : '新しい欲しいものを追加する'}</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
