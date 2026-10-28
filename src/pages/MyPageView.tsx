@@ -14,9 +14,12 @@ import {
   Laptop,
   X,
   Calendar,
+  Database,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { oshiRepository } from '../repository';
+import { oshiRepository, backupRepository } from '../repository';
 import type { Oshi, ThemeModeOption } from '../types';
 import {
   clearAdminGoogleSession,
@@ -58,6 +61,76 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const backupFileInputRef = useRef<HTMLInputElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
+  // バックアップJSONダウンロード（データ保存）
+  const handleExportBackup = async () => {
+    setIsExporting(true);
+    try {
+      const fileName = await backupRepository.downloadBackupFile();
+      showToast(`バックアップを保存しました（${fileName}）`, 'success');
+    } catch {
+      showToast('バックアップの保存に失敗しました', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // バックアップJSONファイル読み込み（データ復元）
+  const handleImportBackupFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    e.target.value = '';
+    setIsImporting(true);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parsed = JSON.parse(content);
+
+        const oCount = parsed.data?.oshis?.length ?? (Array.isArray(parsed.oshis) ? parsed.oshis.length : 0);
+        const eCount = parsed.data?.events?.length ?? (Array.isArray(parsed.events) ? parsed.events.length : 0);
+        const tCount = parsed.data?.todos?.length ?? (Array.isArray(parsed.todos) ? parsed.todos.length : 0);
+        const gCount = parsed.data?.goods?.length ?? (Array.isArray(parsed.goods) ? parsed.goods.length : 0);
+
+        const confirmMsg =
+          `バックアップファイルから以下のデータが見つかりました：\n` +
+          `・推し: ${oCount}件\n` +
+          `・予定: ${eCount}件\n` +
+          `・TODO: ${tCount}件\n` +
+          `・グッズ: ${gCount}件\n\n` +
+          `現在の端末内データに上書き復元しますか？`;
+
+        if (!window.confirm(confirmMsg)) {
+          setIsImporting(false);
+          return;
+        }
+
+        const result = await backupRepository.importBackup(parsed);
+        await refreshAllData();
+        showToast(
+          `データを復元しました！（推し: ${result.oshisCount}件, 予定: ${result.eventsCount}件, グッズ: ${result.goodsCount}件）`,
+          'success'
+        );
+      } catch (err) {
+        showToast(
+          err instanceof Error ? err.message : 'バックアップファイルの読み込みに失敗しました',
+          'error'
+        );
+      } finally {
+        setIsImporting(false);
+      }
+    };
+    reader.onerror = () => {
+      showToast('ファイルの読み込みに失敗しました', 'error');
+      setIsImporting(false);
+    };
+    reader.readAsText(file);
+  };
 
   // ログアウト処理
   const handleLogoutGoogle = () => {
@@ -665,7 +738,126 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
       </div>
 
       {/* ========================================================
-          カード3: Googleアカウント ＆ ログアウト（最下部）
+          カード3: データの保存と復元（バックアップ）
+          ======================================================== */}
+      <div
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 22,
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-card)',
+          padding: '20px',
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 11,
+              backgroundColor: `${themeColor}18`,
+              color: themeColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Database size={18} strokeWidth={2.2} />
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h2
+              style={{
+                fontSize: 16,
+                fontWeight: 800,
+                margin: 0,
+                color: 'var(--text-primary)',
+              }}
+            >
+              データの保存と復元
+            </h2>
+            <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+              バックアップJSONの書き出し・読み込み
+            </span>
+          </div>
+        </div>
+
+        <p
+          style={{
+            fontSize: 12,
+            color: 'var(--text-secondary)',
+            lineHeight: 1.6,
+            margin: '0 0 16px',
+          }}
+        >
+          推し・予定・TODO・グッズなどの登録データは端末（ブラウザ）内に保存されています。バックアップをJSONファイルとして保存・復元できます。
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+          {/* バックアップ保存（ダウンロード）ボタン */}
+          <button
+            type="button"
+            onClick={handleExportBackup}
+            disabled={isExporting}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '12px 16px',
+              borderRadius: 14,
+              border: `1.5px solid ${themeColor}44`,
+              backgroundColor: `${themeColor}12`,
+              color: themeColor,
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: isExporting ? 'wait' : 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Download size={16} strokeWidth={2.4} />
+            <span>{isExporting ? '保存中...' : 'データを保存 (JSON)'}</span>
+          </button>
+
+          {/* バックアップ復元（ファイル選択）ボタン */}
+          <button
+            type="button"
+            onClick={() => backupFileInputRef.current?.click()}
+            disabled={isImporting}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '12px 16px',
+              borderRadius: 14,
+              border: '1.5px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-surface-subtle)',
+              color: 'var(--text-primary)',
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: isImporting ? 'wait' : 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Upload size={16} strokeWidth={2.4} />
+            <span>{isImporting ? '復元中...' : 'データを復元 (JSON)'}</span>
+          </button>
+        </div>
+
+        {/* 非表示のファイル入力 */}
+        <input
+          ref={backupFileInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleImportBackupFile}
+          style={{ display: 'none' }}
+        />
+      </div>
+
+      {/* ========================================================
+          カード4: Googleアカウント ＆ ログアウト（最下部）
           ======================================================== */}
       {googleSession && (
         <div
