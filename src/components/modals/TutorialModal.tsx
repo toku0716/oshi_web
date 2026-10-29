@@ -28,7 +28,6 @@ interface TutorialStep {
   title: string;
   headline: string;
   description: string;
-  image?: string;
   icon: React.FC<{ size?: number; color?: string; strokeWidth?: number }>;
   highlights: { label: string; text: string; icon: React.FC<{ size?: number; color?: string }> }[];
 }
@@ -43,15 +42,12 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
 
-  const baseUrl = import.meta.env.BASE_URL || '/';
-
   const steps: TutorialStep[] = [
     {
       stepNumber: '1',
       badge: 'ようこそ',
       title: '推しサポへようこそ！',
       headline: '推し活を一元管理できるプライベート空間',
-      image: `${baseUrl}guides/guide_01_welcome.png`,
       description:
         '予定・TODO・グッズ・推し活支出のすべてをこのアプリひとつに集約。データはお使いの端末（ブラウザ）内にのみ安全に保存され、外部サーバーに送信・蓄積されることはありません。',
       icon: Heart,
@@ -73,7 +69,6 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
       badge: 'Step 1',
       title: '推しを登録＆テーマカラー設定',
       headline: 'あなただけの「推し色」にカスタマイズ',
-      image: `${baseUrl}guides/guide_02_register_oshi.png`,
       description:
         'マイページの「推しの登録」から推しの名前・推し始めた記念日・アイコン写真を登録できます。テーマカラーを選べば、アプリ全体のアクセントが推し色に染まります！',
       icon: Palette,
@@ -95,7 +90,6 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
       badge: 'Step 2',
       title: '予定・TODO・グッズ・支出を管理',
       headline: '中央の「＋」ボタンからサッと何でも追加',
-      image: `${baseUrl}guides/guide_03_events_and_expenses.png`,
       description:
         'ライブ・イベント・配信の予定、FC先行申し込みのTODO、購入したグッズ、そしてチケット代や遠征費などの「推し活支出」も漏れなく記録できます。',
       icon: Plus,
@@ -117,7 +111,6 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
       badge: 'Step 3',
       title: 'データの保存と復元（バックアップ）',
       headline: '大切な推し活データをワンタップで守る',
-      image: `${baseUrl}guides/guide_04_backup_and_pwa.png`,
       description:
         'マイページの「データの保存と復元」から、いつでも全データをJSONファイルとしてダウンロード保存・復元できます。機種変更や万が一の際も一瞬で元通りに復旧できます。',
       icon: Database,
@@ -139,7 +132,6 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
       badge: 'Ready',
       title: '準備完了！推し活をはじめよう',
       headline: '推しサポで、最高の推し活ライフを',
-      image: `${baseUrl}guides/guide_01_welcome.png`,
       description:
         'これで基本の準備はバッチリです！まずはマイページで推しを登録するか、中央の「＋」ボタンから予定やTODOを追加してみてください。',
       icon: Sparkles,
@@ -303,24 +295,6 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
           </button>
         </div>
 
-        {/* イラストバナー画像 */}
-        {currentStep.image && (
-          <div style={{ padding: '12px 20px 0', width: '100%', boxSizing: 'border-box' }}>
-            <img
-              src={currentStep.image}
-              alt={currentStep.title}
-              style={{
-                width: '100%',
-                height: 150,
-                objectFit: 'cover',
-                borderRadius: 16,
-                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.08)',
-                border: '1px solid var(--border-subtle)',
-                display: 'block',
-              }}
-            />
-          </div>
-        )}
 
         {/* メインイラスト・アイコンカード */}
         <div
