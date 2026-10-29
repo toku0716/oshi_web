@@ -1,73 +1,69 @@
 import React, { useState } from 'react';
-import { Star, Send, CheckCircle2, MessageSquare, X, Smartphone, Monitor, Tablet, Heart } from 'lucide-react';
+import {
+  MessageSquare,
+  ExternalLink,
+  X,
+  Sparkles,
+  Link2,
+  Check,
+  Edit2,
+  AlertCircle,
+} from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useDialog } from '../../hooks/useDialog';
+import { settingsRepository } from '../../repository';
+import { getEffectiveGoogleFormUrl, formatGoogleFormEmbedUrl } from '../../types';
 
 interface SurveyModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const FEATURE_OPTIONS = [
-  '推しの登録・記念日カウント',
-  'ライブ・イベント予定管理',
-  'TODO・持ち物チェックリスト',
-  'グッズ管理（写真・保管場所・ステータス）',
-  '推し活支出管理',
-  'テーマカラー・ダークモード',
-  'スマホ・PC間データ同期',
-];
-
 export const SurveyModal: React.FC<SurveyModalProps> = ({ isOpen, onClose }) => {
-  const { themeColor, showToast } = useApp();
+  const { settings, themeColor, isDark, showToast, refreshAllData } = useApp();
 
-  const [rating, setRating] = useState<number>(5);
-  const [hoverRating, setHoverRating] = useState<number | null>(null);
-  const [device, setDevice] = useState<'smartphone' | 'pc' | 'tablet' | 'other'>('smartphone');
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(['推しの登録・記念日カウント']);
-  const [feedback, setFeedback] = useState<string>('');
-  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const effectiveUrl = getEffectiveGoogleFormUrl(settings);
+  const [isEditingUrl, setIsEditingUrl] = useState<boolean>(!effectiveUrl);
+  const [urlInput, setUrlInput] = useState<string>(effectiveUrl);
+  const [viewMode, setViewMode] = useState<'card' | 'embedded'>('card');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const dialogRef = useDialog<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
-  const handleToggleFeature = (feat: string) => {
-    setSelectedFeatures((prev) =>
-      prev.includes(feat) ? prev.filter((f) => f !== feat) : [...prev, feat]
-    );
+  const handleOpenGoogleForm = () => {
+    if (!effectiveUrl) {
+      setIsEditingUrl(true);
+      return;
+    }
+    window.open(effectiveUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSaveUrl = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmed = urlInput.trim();
 
-    const surveyResponse = {
-      submittedAt: new Date().toISOString(),
-      rating,
-      device,
-      features: selectedFeatures,
-      feedback: feedback.trim(),
-    };
-
-    try {
-      const existingStr = localStorage.getItem('oshiss_survey_responses');
-      const existing = existingStr ? JSON.parse(existingStr) : [];
-      existing.push(surveyResponse);
-      localStorage.setItem('oshiss_survey_responses', JSON.stringify(existing));
-    } catch {
-      // ignore
+    if (trimmed && !/^https?:\/\//i.test(trimmed)) {
+      showToast('正しいURL（https://...）を入力してください', 'error');
+      return;
     }
 
-    setIsSubmitted(true);
-    showToast('アンケートへのご協力ありがとうございます！✨', 'success');
+    setIsSaving(true);
+    try {
+      localStorage.setItem('oshiss_google_form_url', trimmed);
+      await settingsRepository.saveSettings({ googleFormUrl: trimmed });
+      await refreshAllData();
+      setIsEditingUrl(false);
+      showToast('GoogleフォームのURLを保存しました✨', 'success');
+    } catch {
+      showToast('保存中にエラーが発生しました', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleResetAndClose = () => {
-    setIsSubmitted(false);
-    setRating(5);
-    setFeedback('');
-    onClose();
-  };
+  const embedUrl = formatGoogleFormEmbedUrl(effectiveUrl);
 
   return (
     <div className="flutter-sheet-backdrop" style={{ zIndex: 1200 }} onClick={onClose}>
@@ -78,8 +74,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ isOpen, onClose }) => 
         aria-labelledby="survey-title"
         className="flutter-sheet"
         style={{
-          maxWidth: 540,
-          maxHeight: '90vh',
+          maxWidth: 560,
+          maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: 'var(--bg-surface-elevated)',
@@ -98,14 +94,15 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ isOpen, onClose }) => 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexShrink: 0,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
+                width: 38,
+                height: 38,
+                borderRadius: 11,
                 backgroundColor: `${themeColor}22`,
                 display: 'flex',
                 alignItems: 'center',
@@ -116,17 +113,34 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ isOpen, onClose }) => 
               <MessageSquare size={20} />
             </div>
             <div>
-              <h2 id="survey-title" style={{ fontSize: 16, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                推しサポ アンケート
-              </h2>
-              <p style={{ fontSize: 11.5, margin: 0, color: 'var(--text-muted)' }}>
-                皆様の声をもとにアプリをより良く改善します
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h2
+                  id="survey-title"
+                  style={{ fontSize: 16, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}
+                >
+                  改善アンケート
+                </h2>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    padding: '2px 7px',
+                    borderRadius: 999,
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#7248B918',
+                    color: isDark ? '#D8B4FE' : '#7248B9',
+                  }}
+                >
+                  Googleフォーム
+                </span>
+              </div>
+              <p style={{ fontSize: 11.5, margin: '2px 0 0', color: 'var(--text-muted)' }}>
+                推し活をより快適にするためのご意見・ご要望
               </p>
             </div>
           </div>
           <button
             type="button"
-            onClick={handleResetAndClose}
+            onClick={onClose}
             aria-label="閉じる"
             style={{
               background: 'none',
@@ -144,222 +158,330 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ isOpen, onClose }) => 
 
         {/* コンテンツエリア */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px' }}>
-          {isSubmitted ? (
-            <div style={{ textAlign: 'center', padding: '30px 10px' }}>
+          {/* URL編集フォーム */}
+          {isEditingUrl ? (
+            <form
+              onSubmit={handleSaveUrl}
+              style={{
+                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'var(--bg-surface-subtle)',
+                borderRadius: 18,
+                padding: '18px 16px',
+                border: '1px solid var(--border-subtle)',
+                marginBottom: 18,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <Link2 size={16} color={themeColor} />
+                <label
+                  htmlFor="google-form-url-input"
+                  style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}
+                >
+                  アンケート用 GoogleフォームURL設定
+                </label>
+              </div>
+              <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                Googleフォームで作成したアンケートのURL（<code>https://docs.google.com/forms/...</code> または <code>https://forms.gle/...</code>）を入力してください。
+              </p>
+              <input
+                id="google-form-url-input"
+                type="url"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                placeholder="https://docs.google.com/forms/d/e/.../viewform"
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '11px 14px',
+                  borderRadius: 12,
+                  border: isDark ? '1px solid rgba(255,255,255,0.18)' : '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  marginBottom: 12,
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                {effectiveUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUrlInput(effectiveUrl);
+                      setIsEditingUrl(false);
+                    }}
+                    style={{
+                      padding: '9px 16px',
+                      borderRadius: 10,
+                      border: '1px solid var(--border-subtle)',
+                      backgroundColor: 'transparent',
+                      color: 'var(--text-secondary)',
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    キャンセル
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    border: 'none',
+                    backgroundColor: themeColor,
+                    color: '#FFFFFF',
+                    fontSize: 12.5,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: `0 3px 10px ${themeColor}44`,
+                  }}
+                >
+                  <Check size={14} />
+                  <span>{isSaving ? '保存中...' : 'URLを保存'}</span>
+                </button>
+              </div>
+            </form>
+          ) : null}
+
+          {/* URL未設定時の注意ガイド */}
+          {!effectiveUrl && !isEditingUrl ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '28px 16px',
+                borderRadius: 18,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'var(--bg-surface-subtle)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
               <div
                 style={{
-                  width: 60,
-                  height: 60,
+                  width: 52,
+                  height: 52,
                   borderRadius: '50%',
-                  backgroundColor: `${themeColor}20`,
+                  backgroundColor: `${themeColor}18`,
                   color: themeColor,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  margin: '0 auto 16px',
+                  margin: '0 auto 14px',
                 }}
               >
-                <CheckCircle2 size={36} />
+                <AlertCircle size={28} />
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 8px', color: 'var(--text-primary)' }}>
-                送信が完了しました！
+              <h3 style={{ fontSize: 15, fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>
+                GoogleフォームURLが未設定です
               </h3>
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 24px' }}>
-                貴重なご意見・ご要望をいただき、誠にありがとうございます。
-                <br />
-                いただいた内容は開発チームで大切に拝見し、今後の機能向上・UI改善に役立たせていただきます。
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
+                管理者によってアンケート用のGoogleフォームURLを設定すると、<br />
+                アプリ内から直接アンケートの回答を受け付けることができます。
               </p>
               <button
                 type="button"
-                onClick={handleResetAndClose}
+                onClick={() => setIsEditingUrl(true)}
                 style={{
-                  padding: '10px 28px',
+                  padding: '10px 20px',
                   borderRadius: 12,
                   border: 'none',
                   backgroundColor: themeColor,
                   color: '#FFFFFF',
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: 800,
                   cursor: 'pointer',
                 }}
               >
-                閉じる
+                GoogleフォームURLを設定する
               </button>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {/* 質問1: 満足度 */}
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', display: 'block', marginBottom: 8 }}>
-                  1. アプリの総合満足度をお聞かせください
-                </label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const active = (hoverRating ?? rating) >= star;
-                    return (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setRating(star)}
-                        onMouseEnter={() => setHoverRating(star)}
-                        onMouseLeave={() => setHoverRating(null)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: 4,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          transition: 'transform 0.15s ease',
-                        }}
-                        aria-label={`${star}点`}
-                      >
-                        <Star
-                          size={28}
-                          color={active ? '#FFB800' : 'var(--text-muted)'}
-                          fill={active ? '#FFB800' : 'none'}
-                          strokeWidth={2}
-                        />
-                      </button>
-                    );
-                  })}
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-secondary)', marginLeft: 8 }}>
-                    {rating === 5 && 'とても満足 ✨'}
-                    {rating === 4 && '満足 😊'}
-                    {rating === 3 && '普通 😐'}
-                    {rating === 2 && 'やや不満 🙁'}
-                    {rating === 1 && '改善を希望 😢'}
-                  </span>
-                </div>
-              </div>
+          ) : null}
 
-              {/* 質問2: 主な利用デバイス */}
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', display: 'block', marginBottom: 8 }}>
-                  2. 主にどのデバイスで利用していますか？
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {[
-                    { key: 'smartphone', label: 'スマホ', icon: <Smartphone size={16} /> },
-                    { key: 'pc', label: 'パソコン', icon: <Monitor size={16} /> },
-                    { key: 'tablet', label: 'タブレット', icon: <Tablet size={16} /> },
-                  ].map((dev) => {
-                    const isSelected = device === dev.key;
-                    return (
-                      <button
-                        key={dev.key}
-                        type="button"
-                        onClick={() => setDevice(dev.key as any)}
-                        style={{
-                          padding: '10px 8px',
-                          borderRadius: 12,
-                          border: `1.5px solid ${isSelected ? themeColor : 'var(--border-subtle)'}`,
-                          backgroundColor: isSelected ? `${themeColor}15` : 'var(--bg-surface)',
-                          color: isSelected ? themeColor : 'var(--text-secondary)',
-                          fontSize: 12.5,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        {dev.icon}
-                        <span>{dev.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 質問3: よく使う機能 */}
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', display: 'block', marginBottom: 8 }}>
-                  3. 特によく使っている機能（複数選択可）
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {FEATURE_OPTIONS.map((feat) => {
-                    const isSelected = selectedFeatures.includes(feat);
-                    return (
-                      <button
-                        key={feat}
-                        type="button"
-                        onClick={() => handleToggleFeature(feat)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: 9999,
-                          border: `1.2px solid ${isSelected ? themeColor : 'var(--border-subtle)'}`,
-                          backgroundColor: isSelected ? `${themeColor}20` : 'var(--bg-surface)',
-                          color: isSelected ? themeColor : 'var(--text-secondary)',
-                          fontSize: 12,
-                          fontWeight: isSelected ? 700 : 500,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 5,
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        {isSelected && <Heart size={12} fill={themeColor} color={themeColor} />}
-                        <span>{feat}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 質問4: ご意見・改善要望 */}
-              <div>
-                <label htmlFor="survey-feedback" style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', display: 'block', marginBottom: 8 }}>
-                  4. ご意見・改善要望・欲しい新機能など
-                </label>
-                <textarea
-                  id="survey-feedback"
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="例: グッズの検索機能を強化してほしい、通知機能があると嬉しい、など自由にご記入ください"
-                  rows={4}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    padding: '12px 14px',
-                    borderRadius: 12,
-                    border: '1px solid var(--border-medium)',
-                    backgroundColor: 'var(--bg-surface)',
-                    color: 'var(--text-primary)',
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                  }}
-                />
-              </div>
-
-              {/* 送信ボタン */}
-              <button
-                type="submit"
+          {/* URL設定済み時の表示 */}
+          {effectiveUrl && (
+            <div>
+              {/* 紹介カード */}
+              <div
                 style={{
-                  padding: '12px 20px',
-                  borderRadius: 14,
-                  border: 'none',
-                  backgroundColor: themeColor,
-                  color: '#FFFFFF',
-                  fontSize: 14,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  marginTop: 4,
-                  boxShadow: `0 4px 14px ${themeColor}40`,
+                  borderRadius: 18,
+                  padding: '18px 20px',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : `${themeColor}0C`,
+                  border: isDark ? '1px solid rgba(255,255,255,0.1)' : `1px solid ${themeColor}26`,
+                  marginBottom: 16,
                 }}
               >
-                <Send size={16} />
-                <span>アンケートを送信する</span>
-              </button>
-            </form>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Sparkles size={16} color={themeColor} />
+                  <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-primary)' }}>
+                    皆様の声をお聞かせください
+                  </span>
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 14px' }}>
+                  「推しサポ」をより使いやすく、推し活をもっと楽しくサポートするために、機能のご要望や使い心地についてのアンケートをGoogleフォームにて実施しています。
+                </p>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    fontSize: 11.5,
+                    color: 'var(--text-secondary)',
+                    backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    border: '1px solid var(--border-subtle)',
+                    marginBottom: 16,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: themeColor, fontWeight: 800 }}>✓</span>
+                    <span>アプリの総合満足度や使いやすさ</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: themeColor, fontWeight: 800 }}>✓</span>
+                    <span>今後欲しい新機能・連携機能のアイデア</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: themeColor, fontWeight: 800 }}>✓</span>
+                    <span>気になった不具合や改善点のご報告</span>
+                  </div>
+                </div>
+
+                {/* メインアクションボタン */}
+                <button
+                  type="button"
+                  onClick={handleOpenGoogleForm}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '14px 20px',
+                    borderRadius: 14,
+                    border: 'none',
+                    backgroundColor: themeColor,
+                    color: '#FFFFFF',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: `0 4px 16px ${themeColor}44`,
+                    transition: 'transform 0.1s ease',
+                  }}
+                >
+                  <span>Googleフォームを開いて回答する</span>
+                  <ExternalLink size={16} />
+                </button>
+              </div>
+
+              {/* 埋め込み表示切り替え */}
+              {embedUrl && (
+                <div style={{ marginTop: 14 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: 10,
+                    }}
+                  >
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                      アプリ内プレビュー
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode((prev) => (prev === 'card' ? 'embedded' : 'card'))}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: 12,
+                        color: themeColor,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      {viewMode === 'card' ? 'アプリ内で開く ▼' : '閉じる ▲'}
+                    </button>
+                  </div>
+
+                  {viewMode === 'embedded' && (
+                    <div
+                      style={{
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        border: '1px solid var(--border-subtle)',
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: 'var(--shadow-card)',
+                      }}
+                    >
+                      <iframe
+                        src={embedUrl}
+                        title="Googleフォーム アンケート"
+                        style={{
+                          width: '100%',
+                          height: 480,
+                          border: 'none',
+                          display: 'block',
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 設定URL変更フッター */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: 18,
+                  paddingTop: 12,
+                  borderTop: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+                  <Link2 size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--text-muted)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={effectiveUrl}
+                  >
+                    {effectiveUrl}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingUrl(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    background: 'none',
+                    border: 'none',
+                    fontSize: 11.5,
+                    color: themeColor,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Edit2 size={12} />
+                  <span>URLを変更</span>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

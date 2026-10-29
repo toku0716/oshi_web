@@ -1041,15 +1041,16 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <MessageSquare size={17} color={themeColor} />
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 800, color: isDark ? '#FFFFFF' : themeColor }}>
-                  アンケート・改善要望を送る
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: isDark ? '#FFFFFF' : themeColor, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span>アンケート・改善要望を送る</span>
+                  <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 999, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#7248B918', color: isDark ? '#D8B4FE' : '#7248B9', fontWeight: 800 }}>Googleフォーム</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                  推しサポの使い心地や欲しい機能をお聞かせください
+                  Googleフォームで使い心地や欲しい機能をお聞かせください
                 </div>
               </div>
             </div>
-            <span style={{ fontSize: 13, color: themeColor, fontWeight: 800 }}>回答 →</span>
+            <span style={{ fontSize: 13, color: themeColor, fontWeight: 800 }}>回答 ↗</span>
           </button>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

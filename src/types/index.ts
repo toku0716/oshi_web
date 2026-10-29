@@ -181,6 +181,7 @@ export interface AppSettings {
   adminAccessControlEnabled?: boolean;
   allowedAdminGoogleEmails?: string[];
   tutorialCompleted?: boolean;
+  googleFormUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -233,6 +234,26 @@ export function getEffectivePolicyInfo(settings?: AppSettings | null): {
       !!((settings?.customPrivacyContent || cachedPrivacy || '').trim() &&
       (settings?.customPrivacyContent || cachedPrivacy || '').trim() !== DEFAULT_PRIVACY_CONTENT),
   };
+}
+
+export const DEFAULT_GOOGLE_FORM_URL = '';
+
+export function getEffectiveGoogleFormUrl(settings?: AppSettings | null): string {
+  const cachedUrl =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('oshiss_google_form_url')
+      : null;
+  return (settings?.googleFormUrl || cachedUrl || DEFAULT_GOOGLE_FORM_URL).trim();
+}
+
+export function formatGoogleFormEmbedUrl(url: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (trimmed.includes('embedded=true')) return trimmed;
+  if (trimmed.includes('docs.google.com/forms') && trimmed.includes('/viewform')) {
+    return trimmed.includes('?') ? `${trimmed}&embedded=true` : `${trimmed}?embedded=true`;
+  }
+  return trimmed;
 }
 
 export interface BackupData {

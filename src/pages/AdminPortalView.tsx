@@ -19,6 +19,8 @@ import {
   Save,
   RotateCcw,
   CheckCircle2,
+  MessageSquare,
+  Link2,
 } from 'lucide-react';
 import { ToastContainer } from '../components/common/ToastContainer';
 import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
@@ -116,6 +118,20 @@ export const AdminPortalView: React.FC = () => {
   const [editingPrivacyContent, setEditingPrivacyContent] = useState<string>(
     policyInfo.privacyContent
   );
+
+  // 5. 改善アンケート GoogleフォームURLステート
+  const [googleFormUrlInput, setGoogleFormUrlInput] = useState<string>(
+    settings?.googleFormUrl ??
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('oshiss_google_form_url') ?? ''
+        : '')
+  );
+
+  useEffect(() => {
+    if (settings?.googleFormUrl && !googleFormUrlInput) {
+      setGoogleFormUrlInput(settings.googleFormUrl);
+    }
+  }, [settings?.googleFormUrl]);
 
   useEffect(() => {
     if (policyInfo.termsContent && !editingTermsContent) {
@@ -451,6 +467,29 @@ export const AdminPortalView: React.FC = () => {
     );
   };
 
+  // アンケート GoogleフォームURLの保存
+  const handleSaveGoogleFormUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = googleFormUrlInput.trim();
+    if (trimmed && !/^https?:\/\//i.test(trimmed)) {
+      showToast('正しいURL（https://...）を入力してください', 'error');
+      return;
+    }
+    await settingsRepository.saveSettings({
+      googleFormUrl: trimmed,
+    });
+    localStorage.setItem('oshiss_google_form_url', trimmed);
+    await syncPolicyToServer({
+      googleFormUrl: trimmed,
+    });
+    await refreshAllData();
+    showToast(
+      trimmed
+        ? '改善アンケート用GoogleフォームURLを保存しました✨'
+        : 'GoogleフォームURLをクリアしました'
+    );
+  };
+
   // サーバー（ファイル）への規約・アクセス制限同期（スマホ等の別端末共有用）
   const syncPolicyToServer = async (payload?: {
     version?: string;
@@ -461,6 +500,7 @@ export const AdminPortalView: React.FC = () => {
     adminAccessControlEnabled?: boolean;
     allowedGoogleEmails?: string[];
     allowedAdminGoogleEmails?: string[];
+    googleFormUrl?: string;
   }) => {
     try {
       await fetch('/api/policy', {
@@ -2421,6 +2461,142 @@ export const AdminPortalView: React.FC = () => {
               <Eye size={13} />
               <span>改定モーダルを今すぐプレビュー</span>
             </button>
+          </div>
+        </section>
+
+        {/* セクション 5: 改善アンケート（Googleフォーム）設定 */}
+        <section
+          style={{
+            padding: 22,
+            borderRadius: 22,
+            backgroundColor: cardBg,
+            border: `1px solid ${borderColor}`,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MessageSquare size={20} color={themeColor} />
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900 }}>
+              5. 改善アンケート（Googleフォーム）設定
+            </h2>
+            <span
+              style={{
+                fontSize: 10.5,
+                fontWeight: 800,
+                padding: '2px 8px',
+                borderRadius: 999,
+                backgroundColor: `${themeColor}18`,
+                color: themeColor,
+              }}
+            >
+              Google Forms
+            </span>
+          </div>
+          <p
+            style={{
+              margin: '4px 0 16px',
+              fontSize: 12.5,
+              color: subTextColor,
+            }}
+          >
+            マイページの「改善アンケート」ボタンからユーザーに回答してもらう GoogleフォームのURLを設定します。<br />
+            短縮リンク（<code>https://forms.gle/...</code>）または閲覧URL（<code>https://docs.google.com/forms/d/e/.../viewform</code>）を入力してください。
+          </p>
+
+          <form
+            onSubmit={handleSaveGoogleFormUrl}
+            style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}
+          >
+            <input
+              type="url"
+              value={googleFormUrlInput}
+              onChange={(e) => setGoogleFormUrlInput(e.target.value)}
+              placeholder="https://docs.google.com/forms/d/e/.../viewform"
+              style={{
+                flex: '1 1 320px',
+                padding: '11px 14px',
+                borderRadius: 12,
+                border: `1px solid ${borderColor}`,
+                backgroundColor: subtleBg,
+                color: textColor,
+                fontSize: 13,
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                padding: '11px 20px',
+                borderRadius: 12,
+                border: 'none',
+                backgroundColor: themeColor,
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: 13,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: `0 3px 12px ${themeColor}44`,
+              }}
+            >
+              <Save size={15} />
+              <span>URLを保存</span>
+            </button>
+            {googleFormUrlInput && (
+              <button
+                type="button"
+                onClick={() => window.open(googleFormUrlInput, '_blank', 'noopener,noreferrer')}
+                style={{
+                  padding: '11px 16px',
+                  borderRadius: 12,
+                  border: `1px solid ${borderColor}`,
+                  backgroundColor: subtleBg,
+                  color: textColor,
+                  fontWeight: 800,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <ExternalLink size={15} />
+                <span>フォームを開いてテスト</span>
+              </button>
+            )}
+          </form>
+
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: 14,
+              backgroundColor: subtleBg,
+              fontSize: 12,
+              color: subTextColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}
+          >
+            <div>
+              現在の設定: <strong>{settings?.googleFormUrl || (typeof window !== 'undefined' ? localStorage.getItem('oshiss_google_form_url') : '') || '未設定（アプリ内未設定ガイドが表示されます）'}</strong>
+            </div>
+            <a
+              href="https://forms.google.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                color: themeColor,
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              <span>Googleフォームを新規作成 ↗</span>
+            </a>
           </div>
         </section>
       </main>
