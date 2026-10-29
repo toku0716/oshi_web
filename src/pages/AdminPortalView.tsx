@@ -18,11 +18,18 @@ import {
   Save,
   RotateCcw,
   MessageSquare,
+  Power,
+  ToggleLeft,
+  ToggleRight,
+  Clock,
+  ShieldAlert,
+  CheckCircle2,
 } from 'lucide-react';
 import { ToastContainer } from '../components/common/ToastContainer';
 import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
 import { AdminGoogleAccessGate } from '../components/auth/AdminGoogleAccessGate';
 import { PolicyContentRenderer } from '../components/common/PolicyContentRenderer';
+import { MaintenanceScreen } from '../components/common/MaintenanceScreen';
 import {
   DEFAULT_TERMS_CONTENT,
   DEFAULT_PRIVACY_CONTENT,
@@ -36,6 +43,8 @@ import {
   CURRENT_POLICY_VERSION,
   getEffectivePolicyInfo,
   DEFAULT_GOOGLE_FORM_URL,
+  DEFAULT_MAINTENANCE_TITLE,
+  DEFAULT_MAINTENANCE_MESSAGE,
 } from '../types';
 import {
   cacheAccessConfig,
@@ -124,6 +133,64 @@ export const AdminPortalView: React.FC = () => {
         ? localStorage.getItem('oshiss_google_form_url') ?? DEFAULT_GOOGLE_FORM_URL
         : DEFAULT_GOOGLE_FORM_URL)
   );
+
+  // 6. メンテナンスモードステート
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(() => {
+    if (typeof settings?.maintenanceMode === 'boolean') return settings.maintenanceMode;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('oshiss_maintenance_mode') === 'true';
+    }
+    return false;
+  });
+
+  const [maintenanceTitleInput, setMaintenanceTitleInput] = useState<string>(() => {
+    return (
+      settings?.maintenanceTitle ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('oshiss_maintenance_title') || DEFAULT_MAINTENANCE_TITLE
+        : DEFAULT_MAINTENANCE_TITLE)
+    );
+  });
+
+  const [maintenanceMessageInput, setMaintenanceMessageInput] = useState<string>(() => {
+    return (
+      settings?.maintenanceMessage ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('oshiss_maintenance_message') || DEFAULT_MAINTENANCE_MESSAGE
+        : DEFAULT_MAINTENANCE_MESSAGE)
+    );
+  });
+
+  const [maintenanceEstimatedEndInput, setMaintenanceEstimatedEndInput] = useState<string>(() => {
+    return (
+      settings?.maintenanceEstimatedEnd ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('oshiss_maintenance_estimated_end') || ''
+        : '')
+    );
+  });
+
+  const [isPreviewMaintenanceOpen, setIsPreviewMaintenanceOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof settings?.maintenanceMode === 'boolean') {
+      setMaintenanceMode(settings.maintenanceMode);
+    }
+    if (settings?.maintenanceTitle) {
+      setMaintenanceTitleInput(settings.maintenanceTitle);
+    }
+    if (settings?.maintenanceMessage) {
+      setMaintenanceMessageInput(settings.maintenanceMessage);
+    }
+    if (typeof settings?.maintenanceEstimatedEnd === 'string') {
+      setMaintenanceEstimatedEndInput(settings.maintenanceEstimatedEnd);
+    }
+  }, [
+    settings?.maintenanceMode,
+    settings?.maintenanceTitle,
+    settings?.maintenanceMessage,
+    settings?.maintenanceEstimatedEnd,
+  ]);
 
   useEffect(() => {
     if (settings?.googleFormUrl && !googleFormUrlInput) {
@@ -499,6 +566,10 @@ export const AdminPortalView: React.FC = () => {
     allowedGoogleEmails?: string[];
     allowedAdminGoogleEmails?: string[];
     googleFormUrl?: string;
+    maintenanceMode?: boolean;
+    maintenanceTitle?: string;
+    maintenanceMessage?: string;
+    maintenanceEstimatedEnd?: string;
   }) => {
     try {
       await fetch('/api/policy', {
@@ -512,6 +583,15 @@ export const AdminPortalView: React.FC = () => {
           accessControlEnabled: config.enabled,
           allowedGoogleEmails: config.allowedEmails,
           allowedAdminGoogleEmails: adminConfig.allowedEmails,
+          googleFormUrl: googleFormUrlInput.trim(),
+          maintenanceMode:
+            payload?.maintenanceMode !== undefined ? payload.maintenanceMode : maintenanceMode,
+          maintenanceTitle:
+            payload?.maintenanceTitle ?? (maintenanceTitleInput.trim() || DEFAULT_MAINTENANCE_TITLE),
+          maintenanceMessage:
+            payload?.maintenanceMessage ?? (maintenanceMessageInput.trim() || DEFAULT_MAINTENANCE_MESSAGE),
+          maintenanceEstimatedEnd:
+            payload?.maintenanceEstimatedEnd ?? maintenanceEstimatedEndInput.trim(),
           ...payload,
           updatedAt: new Date().toISOString(),
         }),
@@ -519,6 +599,67 @@ export const AdminPortalView: React.FC = () => {
     } catch (err) {
       console.warn('Could not sync to server disk:', err);
     }
+  };
+
+  // メンテナンスモード ON/OFF 切り替え
+  const handleToggleMaintenanceMode = async (targetMode?: boolean) => {
+    const nextMode = targetMode !== undefined ? targetMode : !maintenanceMode;
+    const title = maintenanceTitleInput.trim() || DEFAULT_MAINTENANCE_TITLE;
+    const msg = maintenanceMessageInput.trim() || DEFAULT_MAINTENANCE_MESSAGE;
+    const end = maintenanceEstimatedEndInput.trim();
+
+    setMaintenanceMode(nextMode);
+    localStorage.setItem('oshiss_maintenance_mode', String(nextMode));
+    localStorage.setItem('oshiss_maintenance_title', title);
+    localStorage.setItem('oshiss_maintenance_message', msg);
+    localStorage.setItem('oshiss_maintenance_estimated_end', end);
+
+    await settingsRepository.saveSettings({
+      maintenanceMode: nextMode,
+      maintenanceTitle: title,
+      maintenanceMessage: msg,
+      maintenanceEstimatedEnd: end,
+    });
+    await syncPolicyToServer({
+      maintenanceMode: nextMode,
+      maintenanceTitle: title,
+      maintenanceMessage: msg,
+      maintenanceEstimatedEnd: end,
+    });
+    await refreshAllData();
+    showToast(
+      nextMode
+        ? '🚨 メンテナンスモードを【有効（アクセス遮断）】にしました'
+        : '🟢 メンテナンスモードを【解除（通常稼働）】にしました',
+      nextMode ? 'error' : 'success'
+    );
+  };
+
+  // メンテナンス画面の詳細設定を保存
+  const handleSaveMaintenanceSettings = async () => {
+    const title = maintenanceTitleInput.trim() || DEFAULT_MAINTENANCE_TITLE;
+    const msg = maintenanceMessageInput.trim() || DEFAULT_MAINTENANCE_MESSAGE;
+    const end = maintenanceEstimatedEndInput.trim();
+
+    localStorage.setItem('oshiss_maintenance_title', title);
+    localStorage.setItem('oshiss_maintenance_message', msg);
+    localStorage.setItem('oshiss_maintenance_estimated_end', end);
+    localStorage.setItem('oshiss_maintenance_mode', String(maintenanceMode));
+
+    await settingsRepository.saveSettings({
+      maintenanceMode,
+      maintenanceTitle: title,
+      maintenanceMessage: msg,
+      maintenanceEstimatedEnd: end,
+    });
+    await syncPolicyToServer({
+      maintenanceMode,
+      maintenanceTitle: title,
+      maintenanceMessage: msg,
+      maintenanceEstimatedEnd: end,
+    });
+    await refreshAllData();
+    showToast('メンテナンス画面の設定を保存・同期しました！', 'success');
   };
 
   // 利用規約・プライバシーポリシーの文面のみ下書き・即時保存（再同意要求なし）
@@ -1088,7 +1229,357 @@ export const AdminPortalView: React.FC = () => {
               OAuth ID: {config.googleClientId ? '設定済' : '未設定'}
             </div>
           </div>
+
+          {/* カード 5: サイト稼働（メンテナンスモード） */}
+          <div
+            style={{
+              padding: 18,
+              borderRadius: 18,
+              backgroundColor: cardBg,
+              border: `1.5px solid ${maintenanceMode ? '#ef4444' : borderColor}`,
+              boxShadow: maintenanceMode ? '0 0 16px rgba(239, 68, 68, 0.25)' : 'none',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 700, color: subTextColor }}>
+              サイト稼働ステータス
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              {maintenanceMode ? (
+                <ShieldAlert size={18} color="#ef4444" strokeWidth={2.4} />
+              ) : (
+                <CheckCircle2 size={18} color="#22c55e" strokeWidth={2.4} />
+              )}
+              <span
+                style={{
+                  fontSize: 18,
+                  fontWeight: 900,
+                  color: maintenanceMode ? '#ef4444' : '#22c55e',
+                }}
+              >
+                {maintenanceMode ? '🚨 メンテ中 (遮断)' : '🟢 通常公開中'}
+              </span>
+            </div>
+            <div
+              style={{
+                marginTop: 4,
+                fontSize: 11.5,
+                color: subTextColor,
+              }}
+            >
+              {maintenanceMode ? '一般ユーザーアクセス遮断中' : '全ユーザー利用可能'}
+            </div>
+          </div>
         </div>
+
+        {/* メンテナンスモード管理セクション */}
+        <section
+          style={{
+            padding: 24,
+            borderRadius: 22,
+            backgroundColor: cardBg,
+            border: `1.8px solid ${maintenanceMode ? '#ef4444' : borderColor}`,
+            boxShadow: maintenanceMode
+              ? isDark
+                ? '0 12px 36px rgba(239, 68, 68, 0.25)'
+                : '0 12px 36px rgba(239, 68, 68, 0.15)'
+              : 'none',
+            position: 'relative',
+            transition: 'all 0.3s ease',
+          }}
+        >
+          {/* ヘッダー */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 12,
+                  backgroundColor: maintenanceMode ? '#ef444422' : subtleBg,
+                  color: maintenanceMode ? '#ef4444' : themeColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Wrench size={20} strokeWidth={2.4} />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>メンテナンスモード（サイトアクセス遮断）</span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                      backgroundColor: maintenanceMode ? '#ef4444' : (isDark ? '#22c55e22' : '#22c55e18'),
+                      color: maintenanceMode ? '#ffffff' : '#22c55e',
+                    }}
+                  >
+                    {maintenanceMode ? '🚨 アクセス遮断中' : '🟢 通常稼働中'}
+                  </span>
+                </h2>
+                <p style={{ margin: '3px 0 0', fontSize: 12, color: subTextColor }}>
+                  メンテナンスモードをONにすると、一般ユーザーのアクセスを遮断しメンテナンス専用画面を表示します。
+                </p>
+              </div>
+            </div>
+
+            {/* ON / OFF 切替ボタンスイッチ */}
+            <button
+              type="button"
+              onClick={() => handleToggleMaintenanceMode()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                borderRadius: 14,
+                border: 'none',
+                backgroundColor: maintenanceMode ? '#ef4444' : (isDark ? '#22c55e22' : '#22c55e18'),
+                color: maintenanceMode ? '#ffffff' : '#22c55e',
+                fontSize: 13.5,
+                fontWeight: 900,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: maintenanceMode ? '0 4px 14px rgba(239, 68, 68, 0.4)' : 'none',
+              }}
+            >
+              <Power size={17} strokeWidth={2.6} />
+              <span>
+                {maintenanceMode
+                  ? 'メンテナンスモード実行中（クリックで解除）'
+                  : 'メンテナンスモードを開始する'}
+              </span>
+            </button>
+          </div>
+
+          {/* 実行中警告バナー */}
+          {maintenanceMode && (
+            <div
+              style={{
+                marginBottom: 20,
+                padding: '12px 16px',
+                borderRadius: 14,
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)',
+                border: '1.2px solid rgba(239, 68, 68, 0.3)',
+                color: isDark ? '#fca5a5' : '#b91c1c',
+                fontSize: 13,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 8,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ShieldAlert size={18} style={{ flexShrink: 0 }} />
+                <span>
+                  現在メンテナンスモードが稼働中です。一般ユーザーはアプリにアクセスできません。
+                  管理者アカウントは管理画面・アプリ双方に引き続きアクセス可能です。
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleToggleMaintenanceMode(false)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  border: 'none',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                今すぐ解除する
+              </button>
+            </div>
+          )}
+
+          {/* 設定フォーム */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+              backgroundColor: subtleBg,
+              padding: 18,
+              borderRadius: 16,
+              border: `1.2px solid ${borderColor}`,
+            }}
+          >
+            {/* 1. タイトル入力 */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  marginBottom: 6,
+                  color: textColor,
+                }}
+              >
+                メンテナンス画面の見出し（タイトル）
+              </label>
+              <input
+                type="text"
+                value={maintenanceTitleInput}
+                onChange={(e) => setMaintenanceTitleInput(e.target.value)}
+                placeholder={DEFAULT_MAINTENANCE_TITLE}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: `1.2px solid ${borderColor}`,
+                  backgroundColor: cardBg,
+                  color: textColor,
+                  fontSize: 13.5,
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* 2. 本文メッセージ入力 */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  marginBottom: 6,
+                  color: textColor,
+                }}
+              >
+                メンテナンスのお知らせ本文（メッセージ）
+              </label>
+              <textarea
+                rows={3}
+                value={maintenanceMessageInput}
+                onChange={(e) => setMaintenanceMessageInput(e.target.value)}
+                placeholder={DEFAULT_MAINTENANCE_MESSAGE}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: `1.2px solid ${borderColor}`,
+                  backgroundColor: cardBg,
+                  color: textColor,
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                  boxSizing: 'border-box',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+
+            {/* 3. 終了予定時刻 */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  marginBottom: 6,
+                  color: textColor,
+                }}
+              >
+                終了予定時刻・目安（任意）
+              </label>
+              <input
+                type="text"
+                value={maintenanceEstimatedEndInput}
+                onChange={(e) => setMaintenanceEstimatedEndInput(e.target.value)}
+                placeholder="例: 2026年10月29日 22:00頃 終了予定（未定の場合は空欄）"
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: `1.2px solid ${borderColor}`,
+                  backgroundColor: cardBg,
+                  color: textColor,
+                  fontSize: 13,
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* アクションボタンバー */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: 10,
+                marginTop: 6,
+                flexWrap: 'wrap',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsPreviewMaintenanceOpen(true)}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: 10,
+                  border: `1.2px solid ${borderColor}`,
+                  backgroundColor: cardBg,
+                  color: textColor,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Eye size={15} />
+                <span>表示画面をプレビュー</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveMaintenanceSettings}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: 10,
+                  border: 'none',
+                  backgroundColor: themeColor,
+                  color: '#ffffff',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: `0 4px 12px ${themeColor}33`,
+                }}
+              >
+                <Save size={15} />
+                <span>設定を保存・即時同期</span>
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* セクション 1: 管理者（Admin）Googleアカウントのアクセス許可管理 */}
         <section
@@ -2594,7 +3085,7 @@ export const AdminPortalView: React.FC = () => {
         </section>
       </main>
 
-      {/* プレビュー用モーダル */}
+      {/* 規約プレビュー用モーダル */}
       <TermsPrivacyModal
         isOpen={previewModalMode !== 'none'}
         mode={previewModalMode === 'view' ? 'view' : 'consent'}
@@ -2602,6 +3093,28 @@ export const AdminPortalView: React.FC = () => {
         onAccept={() => setPreviewModalMode('none')}
         onClose={() => setPreviewModalMode('none')}
       />
+
+      {/* メンテナンス画面プレビュー表示 */}
+      {isPreviewMaintenanceOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            overflowY: 'auto',
+          }}
+        >
+          <MaintenanceScreen
+            title={maintenanceTitleInput}
+            message={maintenanceMessageInput}
+            estimatedEnd={maintenanceEstimatedEndInput}
+            themeColor={themeColor}
+            isDark={isDark}
+            isPreview={true}
+            onClosePreview={() => setIsPreviewMaintenanceOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -293,6 +293,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 );
               } catch {}
             }
+            if (typeof data.maintenanceMode === 'boolean') {
+              patch.maintenanceMode = data.maintenanceMode;
+              try {
+                localStorage.setItem('oshiss_maintenance_mode', String(data.maintenanceMode));
+                if (data.maintenanceTitle) {
+                  localStorage.setItem('oshiss_maintenance_title', data.maintenanceTitle);
+                }
+                if (data.maintenanceMessage) {
+                  localStorage.setItem('oshiss_maintenance_message', data.maintenanceMessage);
+                }
+                if (typeof data.maintenanceEstimatedEnd === 'string') {
+                  localStorage.setItem('oshiss_maintenance_estimated_end', data.maintenanceEstimatedEnd);
+                }
+              } catch {}
+            }
+            if (data.maintenanceTitle) {
+              patch.maintenanceTitle = data.maintenanceTitle;
+            }
+            if (data.maintenanceMessage) {
+              patch.maintenanceMessage = data.maintenanceMessage;
+            }
+            if (typeof data.maintenanceEstimatedEnd === 'string') {
+              patch.maintenanceEstimatedEnd = data.maintenanceEstimatedEnd;
+            }
             await settingsRepository.saveSettings(patch);
             setSettings((prev) => ({ ...(prev || {}), ...patch } as AppSettings));
             await refreshAllData();

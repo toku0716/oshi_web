@@ -1,9 +1,10 @@
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
-import { Calendar, Heart, Home, Plus, ShoppingBag, User } from 'lucide-react';
+import { Calendar, Heart, Home, Plus, ShoppingBag, User, Wrench } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { GoogleAccessGate } from './components/auth/GoogleAccessGate';
 import { ToastContainer } from './components/common/ToastContainer';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { MaintenanceScreen } from './components/common/MaintenanceScreen';
 import { HomeView } from './pages/HomeView';
 import { CalendarView } from './pages/CalendarView';
 import { GoodsView } from './pages/GoodsView';
@@ -232,6 +233,10 @@ const MainApp: React.FC = () => {
     );
   }
 
+  const isMaintenanceMode =
+    settings?.maintenanceMode ??
+    (typeof window !== 'undefined' && localStorage.getItem('oshiss_maintenance_mode') === 'true');
+
   const accessConfig = getEffectiveAccessConfig(settings);
   const adminAccessConfig = getEffectiveAdminAccessConfig(settings);
   const combinedAllowedEmails = Array.from(
@@ -241,6 +246,29 @@ const MainApp: React.FC = () => {
     Boolean(authSession?.email) &&
     (combinedAllowedEmails.length === 0 ||
       isGoogleEmailAllowed(authSession!.email, combinedAllowedEmails));
+
+  const isAdminUser =
+    Boolean(authSession?.email) &&
+    (adminAccessConfig.allowedEmails.length === 0 ||
+      isGoogleEmailAllowed(authSession!.email, adminAccessConfig.allowedEmails));
+
+  if (isMaintenanceMode && !isAdminUser) {
+    return (
+      <MaintenanceScreen
+        title={settings?.maintenanceTitle}
+        message={settings?.maintenanceMessage}
+        estimatedEnd={settings?.maintenanceEstimatedEnd}
+        themeColor={themeColor}
+        isDark={isDark}
+        onRefresh={async () => {
+          await refreshAllData();
+          const freshMode =
+            localStorage.getItem('oshiss_maintenance_mode') === 'true';
+          return !freshMode;
+        }}
+      />
+    );
+  }
 
   if (accessConfig.enabled && !isAuthorizedSession) {
     return (
@@ -314,6 +342,43 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="app-shell">
+      {isMaintenanceMode && isAdminUser && (
+        <div
+          style={{
+            backgroundColor: '#dc2626',
+            color: '#ffffff',
+            padding: '8px 16px',
+            fontSize: 12.5,
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'sticky',
+            top: 0,
+            zIndex: 9999,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Wrench size={16} />
+            <span>⚠️ メンテナンスモード実行中（管理者としてバイパスアクセス中・一般遮断中）</span>
+          </div>
+          <a
+            href="./admin.html"
+            style={{
+              color: '#ffffff',
+              textDecoration: 'underline',
+              fontWeight: 800,
+              fontSize: 12,
+              padding: '2px 8px',
+              borderRadius: 6,
+              background: 'rgba(0,0,0,0.2)',
+            }}
+          >
+            管理画面で設定
+          </a>
+        </div>
+      )}
       <a href="#main-content" className="skip-link">
         メインコンテンツへスキップ
       </a>

@@ -150,6 +150,10 @@ export type ThemeModeOption = 'system' | 'light' | 'dark';
 export const CURRENT_POLICY_VERSION = '2026-10-27';
 export const CURRENT_POLICY_DATE_LABEL = '2026年10月27日';
 
+export const DEFAULT_MAINTENANCE_TITLE = '現在メンテナンス中です';
+export const DEFAULT_MAINTENANCE_MESSAGE =
+  'ただいまサービスの改善およびシステムメンテナンスを行っております。ご不便をおかけしますが、完了まで今しばらくお待ちください。';
+
 export interface GoogleAuthSession {
   email: string;
   name?: string;
@@ -182,6 +186,10 @@ export interface AppSettings {
   allowedAdminGoogleEmails?: string[];
   tutorialCompleted?: boolean;
   googleFormUrl?: string;
+  maintenanceMode?: boolean;
+  maintenanceTitle?: string;
+  maintenanceMessage?: string;
+  maintenanceEstimatedEnd?: string;
   createdAt: string;
   updatedAt: string;
 }
