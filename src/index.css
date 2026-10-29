@@ -13,36 +13,36 @@
   --font-sans: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, "Hiragino Maru Gothic ProN", sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* High-Contrast Clear Dark Canvas & Surfaces (Apple Music & iOS Premium Dark) */
-  --bg-canvas: #0E1013;
-  --bg-surface: #181B22;
-  --bg-surface-elevated: #222630;
-  --bg-surface-subtle: #242834;
-  --bg-glass: rgba(14, 16, 19, 0.94);
+  /* Mobile OLED-Optimized High-Contrast Dark Canvas (Apple iOS / Material 3 Dark) */
+  --bg-canvas: #0A0C10;
+  --bg-surface: #1B1E27;
+  --bg-surface-elevated: #242835;
+  --bg-surface-subtle: #292E3D;
+  --bg-glass: rgba(24, 27, 36, 0.94);
 
-  /* Precise Clear Borders (High Contrast for Dark Mode) */
-  --border-subtle: rgba(255, 255, 255, 0.12);
-  --border-medium: rgba(255, 255, 255, 0.18);
-  --border-strong: rgba(255, 255, 255, 0.28);
+  /* Mobile-Crisp High-Contrast Borders */
+  --border-subtle: rgba(255, 255, 255, 0.15);
+  --border-medium: rgba(255, 255, 255, 0.22);
+  --border-strong: rgba(255, 255, 255, 0.32);
 
-  /* Typography Colors */
+  /* Typography Colors (High-readability on Mobile OLED) */
   --text-primary: #FFFFFF;
-  --text-secondary: #A6ADBA;
-  --text-muted: #7E8597;
-  --text-tertiary: #5D6373;
+  --text-secondary: #B0B7C6;
+  --text-muted: #8890A4;
+  --text-tertiary: #656C80;
   --text-on-accent: #FFFFFF;
 
   /* Semantic Colors */
   --color-danger: #FF453A;
-  --color-danger-bg: rgba(255, 69, 58, 0.16);
+  --color-danger-bg: rgba(255, 69, 58, 0.18);
   --color-warning: #FF9F0A;
-  --color-warning-bg: rgba(255, 159, 10, 0.16);
+  --color-warning-bg: rgba(255, 159, 10, 0.18);
   --color-success: #30D158;
-  --color-success-bg: rgba(48, 209, 88, 0.16);
+  --color-success-bg: rgba(48, 209, 88, 0.18);
 
   /* Overlays */
-  --bg-overlay: rgba(0, 0, 0, 0.7);
-  --bg-toast: #222630;
+  --bg-overlay: rgba(0, 0, 0, 0.75);
+  --bg-toast: #242835;
 
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(var(--oshi-color-rgb), 0.45);
@@ -52,9 +52,9 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* Shadows (with crisp depth & edge highlight for dark canvases) */
-  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  --shadow-glow: 0 10px 30px -4px rgba(var(--oshi-color-rgb), 0.32);
+  /* Shadows (Crisp Mobile Depth & Edge Highlight for OLED screens) */
+  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-glow: 0 10px 30px -4px rgba(var(--oshi-color-rgb), 0.35);
 
   color-scheme: dark;
 }
@@ -259,7 +259,7 @@ input:focus, select:focus, textarea:focus {
   display: none;
 }
 
-/* Bottom Floating Dock (Spotify Style Glassmorphism & Safe-Area Aware) */
+/* Bottom Floating Dock (Mobile OLED High-Contrast & Safe-Area Aware) */
 .bottom-nav {
   position: fixed;
   left: 0;
@@ -271,10 +271,11 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   justify-content: space-around;
   z-index: 950;
-  background-color: var(--bg-glass);
+  background-color: var(--bg-surface-elevated);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1.5px solid var(--border-medium);
+  box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.55), 0 -1px 0 rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
 }
 
@@ -288,7 +289,7 @@ input:focus, select:focus, textarea:focus {
   background: transparent;
   border: none;
   padding: 6px 0;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   transition: color 0.15s ease, transform 0.15s ease;
   min-height: 48px;
 }
@@ -1075,9 +1076,10 @@ input:focus, select:focus, textarea:focus {
   padding: 16px;
   border-radius: 16px;
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .event-row:hover {
@@ -1214,7 +1216,8 @@ input:focus, select:focus, textarea:focus {
 .reminder-list {
   background-color: var(--bg-surface);
   border-radius: 18px;
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 

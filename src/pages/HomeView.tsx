@@ -254,18 +254,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
               onClick={onOpenAddEvent}
               style={{
                 marginTop: 4,
-                padding: '10px 16px',
+                padding: '12px 16px',
                 fontSize: 13,
                 fontWeight: 700,
-                backgroundColor: 'var(--bg-surface-subtle)',
+                backgroundColor: isDark ? '#202432' : 'var(--bg-surface-subtle)',
                 color: 'var(--text-primary)',
-                border: '1.5px dashed var(--border-subtle)',
+                border: isDark ? '1.5px dashed rgba(255, 255, 255, 0.24)' : '1.5px dashed var(--border-medium)',
                 borderRadius: 14,
+                boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : 'none',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
+                transition: 'all 0.15s ease',
               }}
             >
               <Plus size={15} />
@@ -278,7 +280,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
             style={{
               backgroundColor: 'var(--bg-surface-elevated)',
               borderRadius: 20,
-              border: '1.5px dashed var(--border-subtle)',
+              border: isDark ? '1.5px dashed rgba(255, 255, 255, 0.22)' : '1.5px dashed var(--border-medium)',
+              boxShadow: isDark ? '0 6px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06)' : 'none',
               padding: '32px 20px',
               textAlign: 'center',
               display: 'flex',
@@ -434,9 +437,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     padding: '14px 16px',
                     borderRadius: 16,
                     backgroundColor: 'var(--bg-surface-elevated)',
-                    border: '1.5px solid var(--border-subtle)',
+                    border: isDark ? '1.5px solid rgba(255, 255, 255, 0.16)' : '1.5px solid var(--border-subtle)',
                     boxShadow: isDark
-                      ? '0 2px 8px rgba(0, 0, 0, 0.25)'
+                      ? '0 4px 14px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06)'
                       : '0 2px 6px rgba(0, 0, 0, 0.04)',
                     cursor: 'pointer',
                     transition: 'transform 0.1s ease',
@@ -454,8 +457,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       width: 24,
                       height: 24,
                       borderRadius: 8,
-                      border: `2px solid ${isToday || isOverdue ? '#FF453A' : 'var(--border-strong)'}`,
-                      backgroundColor: 'transparent',
+                      border: `2px solid ${isToday || isOverdue ? '#FF453A' : isDark ? 'rgba(255, 255, 255, 0.35)' : 'var(--border-strong)'}`,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
                       cursor: 'pointer',
                       flexShrink: 0,
                       display: 'flex',
@@ -507,18 +510,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
               onClick={onOpenAddTodo}
               style={{
                 marginTop: 4,
-                padding: '10px 16px',
+                padding: '12px 16px',
                 fontSize: 13,
                 fontWeight: 700,
-                backgroundColor: 'var(--bg-surface-subtle)',
+                backgroundColor: isDark ? '#202432' : 'var(--bg-surface-subtle)',
                 color: 'var(--text-primary)',
-                border: '1.5px dashed var(--border-subtle)',
+                border: isDark ? '1.5px dashed rgba(255, 255, 255, 0.24)' : '1.5px dashed var(--border-medium)',
                 borderRadius: 14,
+                boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : 'none',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
+                transition: 'all 0.15s ease',
               }}
             >
               <Plus size={15} />
@@ -531,7 +536,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
             style={{
               backgroundColor: 'var(--bg-surface-elevated)',
               borderRadius: 20,
-              border: '1.5px dashed var(--border-subtle)',
+              border: isDark ? '1.5px dashed rgba(255, 255, 255, 0.22)' : '1.5px dashed var(--border-medium)',
+              boxShadow: isDark ? '0 6px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06)' : 'none',
               padding: '32px 20px',
               textAlign: 'center',
               display: 'flex',

@@ -61,10 +61,10 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
       style={{
         backgroundColor: isDark
           ? isActive
-            ? '#15171E'
+            ? '#181C25'
             : isHovered
-            ? '#222632'
-            : '#181B24'
+            ? '#262A37'
+            : '#1E222D'
           : isActive
           ? '#F3F4F6'
           : isHovered
@@ -73,8 +73,8 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
         borderRadius: 20,
         border: isDark
           ? isHovered
-            ? '1.5px solid rgba(255, 255, 255, 0.24)'
-            : '1.5px solid rgba(255, 255, 255, 0.14)'
+            ? '1.5px solid rgba(255, 255, 255, 0.28)'
+            : '1.5px solid rgba(255, 255, 255, 0.18)'
           : isHovered
           ? '1.5px solid var(--border-medium)'
           : '1.5px solid var(--border-subtle)',
@@ -82,8 +82,8 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
         cursor: 'pointer',
         boxShadow: isDark
           ? isHovered
-            ? '0 14px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08)'
-            : '0 8px 26px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+            ? '0 14px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.12)'
+            : '0 8px 26px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08)'
           : isHovered
           ? '0 12px 30px rgba(0, 0, 0, 0.08)'
           : 'var(--shadow-card)',

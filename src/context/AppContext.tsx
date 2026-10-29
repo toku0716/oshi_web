@@ -97,7 +97,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem('oshiss_theme_mode', themeMode);
     // ステータスバー / アドレスバーの色をテーマに追従させる
-    const bg = isDark ? '#121212' : '#F8F9FA';
+    const bg = isDark ? '#0A0C10' : '#F8F9FA';
     document
       .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
       .forEach((m) => m.setAttribute('content', bg));
