@@ -180,6 +180,7 @@ export interface AppSettings {
   allowedGoogleEmails?: string[];
   adminAccessControlEnabled?: boolean;
   allowedAdminGoogleEmails?: string[];
+  tutorialCompleted?: boolean;
   createdAt: string;
   updatedAt: string;
 }

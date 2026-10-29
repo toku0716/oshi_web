@@ -10,6 +10,7 @@ import { GoodsView } from './pages/GoodsView';
 import { MyPageView } from './pages/MyPageView';
 import { AddEntrySpeedDialSheet } from './components/modals/AddEntrySpeedDialSheet';
 import { TermsPrivacyModal } from './components/modals/TermsPrivacyModal';
+import { TutorialModal } from './components/modals/TutorialModal';
 import { settingsRepository } from './repository';
 import {
   getEffectivePolicyInfo,
@@ -87,6 +88,21 @@ const MainApp: React.FC = () => {
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<string>(() =>
     formatIsoDate(getTodayMidnight())
   );
+
+  // 初回起動時チュートリアルステート
+  const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return !localStorage.getItem('oshiss_tutorial_completed');
+  });
+
+  const handleCompleteTutorial = async () => {
+    setIsTutorialOpen(false);
+    try {
+      localStorage.setItem('oshiss_tutorial_completed', 'true');
+      await settingsRepository.saveSettings({ tutorialCompleted: true });
+      await refreshAllData();
+    } catch {}
+  };
 
   // モーダル制御ステート（追加・各種編集）
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
@@ -372,6 +388,7 @@ const MainApp: React.FC = () => {
         )}
         {currentIndex === 3 && (
           <MyPageView
+            onOpenTutorial={() => setIsTutorialOpen(true)}
             onLogout={async () => {
               clearGoogleSession();
               await switchAccount(null);
@@ -438,6 +455,14 @@ const MainApp: React.FC = () => {
           });
           await refreshAllData();
         }}
+      />
+
+      <TutorialModal
+        isOpen={isTutorialOpen && acceptedPolicyVersion === activePolicyVersion}
+        onClose={handleCompleteTutorial}
+        onComplete={handleCompleteTutorial}
+        themeColor={themeColor}
+        isDark={isDark}
       />
     </div>
   );

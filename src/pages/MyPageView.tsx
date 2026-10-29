@@ -22,6 +22,8 @@ import {
   Shield,
   MessageSquare,
   AlertTriangle,
+  Sparkles,
+  BookOpen,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { oshiRepository, backupRepository } from '../repository';
@@ -42,9 +44,10 @@ import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
 
 interface MyPageViewProps {
   onLogout?: () => void;
+  onOpenTutorial?: () => void;
 }
 
-export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
+export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial }) => {
   const {
     oshis,
     activeOshiId,
@@ -972,15 +975,50 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                 color: 'var(--text-primary)',
               }}
             >
-              規約・ポリシー・アンケート
+              ガイド・規約・アンケート
             </h2>
             <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-              利用規約、プライバシーポリシー、改善アンケート
+              使い方チュートリアル、利用規約、改善アンケート
             </span>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* チュートリアル（使い方ガイド）ボタン */}
+          {onOpenTutorial && (
+            <button
+              type="button"
+              onClick={onOpenTutorial}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '13px 16px',
+                borderRadius: 14,
+                border: isDark ? '1.5px solid rgba(255, 255, 255, 0.16)' : `1.5px solid ${themeColor}33`,
+                backgroundColor: isDark ? '#23262F' : `${themeColor}10`,
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.25)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Sparkles size={17} color={themeColor} />
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: isDark ? '#FFFFFF' : themeColor }}>
+                    アプリの使い方（チュートリアル）
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    推しサポの基本操作と便利機能ガイドを見る
+                  </div>
+                </div>
+              </div>
+              <span style={{ fontSize: 13, color: themeColor, fontWeight: 800 }}>見る →</span>
+            </button>
+          )}
+
           {/* アンケートボタン */}
           <button
             type="button"
