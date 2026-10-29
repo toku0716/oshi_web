@@ -18,6 +18,18 @@ export interface Oshi {
 
 export type EventCategory = 'live' | 'event' | 'broadcast' | 'release' | 'ticket' | 'other';
 
+export const EVENT_CATEGORY_META: Record<
+  EventCategory,
+  { label: string; shortLabel: string; icon: string; color: string }
+> = {
+  live: { label: 'ライブ・コンサート', shortLabel: 'ライブ', icon: '🎤', color: '#FF2D55' },
+  event: { label: 'イベント・舞台・ファンミ', shortLabel: 'イベント', icon: '🎪', color: '#AF52DE' },
+  broadcast: { label: '配信・TV・ラジオ', shortLabel: '配信・TV', icon: '📺', color: '#007AFF' },
+  release: { label: '発売・リリース', shortLabel: 'リリース', icon: '💿', color: '#FF9500' },
+  ticket: { label: 'チケット締切・当落', shortLabel: 'チケット', icon: '🎟', color: '#34C759' },
+  other: { label: 'その他', shortLabel: 'その他', icon: '📌', color: '#8E8E93' },
+};
+
 export type TicketStatus = 'none' | 'applied' | 'won' | 'lost' | 'purchased';
 
 export interface OshiEvent {

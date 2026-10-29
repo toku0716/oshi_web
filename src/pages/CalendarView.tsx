@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Gift, Sparkles, MapPin, CalendarDays } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { todoRepository } from '../repository';
-import type { OshiEvent, Todo } from '../types';
+import { EVENT_CATEGORY_META, type OshiEvent, type Todo } from '../types';
 import {
   formatIsoDate,
   getTodayMidnight,
@@ -656,6 +656,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 3 }}>
+                        {/* イベントの種類（カテゴリー）バッジ */}
+                        {ev.category && EVENT_CATEGORY_META[ev.category] && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: '1.5px 6.5px',
+                              borderRadius: 4,
+                              backgroundColor: `${EVENT_CATEGORY_META[ev.category].color}18`,
+                              color: EVENT_CATEGORY_META[ev.category].color,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                          >
+                            <span>{EVENT_CATEGORY_META[ev.category].icon}</span>
+                            <span>{EVENT_CATEGORY_META[ev.category].shortLabel}</span>
+                          </span>
+                        )}
+
                         {isEnded && (
                           <span
                             style={{

@@ -9,9 +9,11 @@ import {
   expenseRepository,
 } from '../../repository';
 import {
+  EVENT_CATEGORY_META,
   EXPENSE_CATEGORY_META,
   GOODS_CATEGORY_META,
   GOODS_OPEN_STATUS_META,
+  type EventCategory,
   type ExpenseCategory,
   type ExpenseItem,
   type Goods,
@@ -93,6 +95,7 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
     initialDate || formatIsoDate(getTodayMidnight())
   );
   const [selectedTime, setSelectedTime] = useState<string>('');
+  const [eventCategory, setEventCategory] = useState<EventCategory>('live');
   const [goodsStatus, setGoodsStatus] = useState<'owned' | 'preorder' | 'wish'>(() =>
     initialIsWish ? 'wish' : 'owned'
   );
@@ -122,6 +125,7 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
         setType(0);
         setTitle(editingEvent.title || '');
         setLocation(editingEvent.location || '');
+        setEventCategory(editingEvent.category || 'live');
         setSelectedDate(
           editingEvent.date || formatIsoDate(getTodayMidnight())
         );
@@ -298,6 +302,7 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
         time: selectedTime || undefined,
         location: location.trim() || undefined,
         image: imageDataUrl || undefined,
+        category: eventCategory,
         updatedAt: now,
       });
       await refreshAllData();
@@ -368,7 +373,7 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
         time: selectedTime || undefined,
         location: location.trim() || undefined,
         image: imageDataUrl || undefined,
-        category: 'event',
+        category: eventCategory,
         createdAt: now,
         updatedAt: now,
       });
@@ -711,6 +716,62 @@ export const AddEntrySpeedDialSheet: React.FC<AddEntrySpeedDialSheetProps> = ({
                   outline: 'none',
                 }}
               />
+            </div>
+          )}
+
+          {/* 予定: イベントの種類（カテゴリー）選択 */}
+          {type === 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: 'var(--text-secondary)',
+                  marginBottom: 8,
+                  marginLeft: 4,
+                }}
+              >
+                イベントの種類
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 8,
+                }}
+              >
+                {(Object.keys(EVENT_CATEGORY_META) as EventCategory[]).map((catKey) => {
+                  const meta = EVENT_CATEGORY_META[catKey];
+                  const isSelected = eventCategory === catKey;
+                  return (
+                    <button
+                      key={catKey}
+                      type="button"
+                      onClick={() => setEventCategory(catKey)}
+                      style={{
+                        padding: '9px 6px',
+                        borderRadius: 12,
+                        border: `1.5px solid ${isSelected ? meta.color : 'var(--border-subtle)'}`,
+                        backgroundColor: isSelected
+                          ? `${meta.color}18`
+                          : 'var(--bg-surface-subtle)',
+                        color: isSelected ? meta.color : 'var(--text-secondary)',
+                        fontSize: 12,
+                        fontWeight: isSelected ? 800 : 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <span style={{ fontSize: 13 }}>{meta.icon}</span>
+                      <span>{meta.shortLabel}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { OshiEvent } from '../../types';
+import { EVENT_CATEGORY_META, type OshiEvent } from '../../types';
 import { getEventLiveCountdown, isEventEnded } from '../../utils/oshiUtils';
 import { pressable } from '../../utils/a11y';
 
@@ -73,6 +73,28 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
         outline: 'none',
       }}
     >
+      {/* 0. イベントの種類バッジ */}
+      {event.category && EVENT_CATEGORY_META[event.category] && (
+        <div style={{ marginBottom: 8 }}>
+          <span
+            style={{
+              fontSize: 11.5,
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: 6,
+              backgroundColor: `${EVENT_CATEGORY_META[event.category].color}25`,
+              color: EVENT_CATEGORY_META[event.category].color,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <span>{EVENT_CATEGORY_META[event.category].icon}</span>
+            <span>{EVENT_CATEGORY_META[event.category].label}</span>
+          </span>
+        </div>
+      )}
+
       {/* 1. 上段（左寄せ）：予定名をh1見出しで配置、そのすぐ右隣にベースライン揃えで開始時刻を表示 */}
       <div
         style={{
