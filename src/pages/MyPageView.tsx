@@ -21,6 +21,7 @@ import {
   FileText,
   Shield,
   MessageSquare,
+  AlertTriangle,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { oshiRepository, backupRepository } from '../repository';
@@ -78,6 +79,23 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
   const [termsInitialTab, setTermsInitialTab] = useState<'terms' | 'privacy'>('terms');
   const [isSurveyOpen, setIsSurveyOpen] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // 全データ削除処理
+  const handleConfirmDeleteAll = async () => {
+    setIsDeleting(true);
+    try {
+      await backupRepository.clearAllData();
+      await refreshAllData();
+      setIsDeleteModalOpen(false);
+      showToast('すべての推し活データを削除しました', 'info');
+    } catch {
+      showToast('データの削除処理に失敗しました', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // バックアップJSONダウンロード（データ保存）
   const handleExportBackup = async () => {
@@ -855,6 +873,51 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
           <span>スマホ・PC 端末間直接同期 (P2P / 6桁コード)</span>
         </button>
 
+        {/* データ全削除（初期化）エリア */}
+        <div
+          style={{
+            marginTop: 18,
+            paddingTop: 16,
+            borderTop: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 10,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-danger)' }}>
+              全データの初期化・全削除
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              推し・予定・TODO・グッズ等の全データを端末から消去
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsDeleteModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              borderRadius: 10,
+              border: isDark ? '1.5px solid rgba(255, 69, 58, 0.45)' : '1.5px solid rgba(220, 38, 38, 0.35)',
+              backgroundColor: isDark ? 'rgba(255, 69, 58, 0.12)' : 'rgba(220, 38, 38, 0.06)',
+              color: 'var(--color-danger)',
+              fontSize: 12.5,
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : 'none',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Trash2 size={14} />
+            <span>データ全削除</span>
+          </button>
+        </div>
+
         {/* 非表示のファイル入力 */}
         <input
           ref={backupFileInputRef}
@@ -1354,6 +1417,133 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
         isOpen={isSyncModalOpen}
         onClose={() => setIsSyncModalOpen(false)}
       />
+
+      {/* データ全削除確認モーダル */}
+      {isDeleteModalOpen && (
+        <div
+          className="flutter-sheet-backdrop"
+          style={{ zIndex: 1300 }}
+          onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-all-modal-title"
+            className="flutter-sheet"
+            style={{
+              maxWidth: 440,
+              width: '90%',
+              backgroundColor: 'var(--bg-surface-elevated)',
+              borderRadius: 24,
+              padding: '24px 22px',
+              border: isDark ? '1.5px solid rgba(255, 69, 58, 0.45)' : '1.5px solid var(--border-medium)',
+              boxShadow: 'var(--shadow-card)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  backgroundColor: 'rgba(255, 69, 58, 0.15)',
+                  color: 'var(--color-danger)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3
+                  id="delete-all-modal-title"
+                  style={{ fontSize: 16, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}
+                >
+                  全データを削除しますか？
+                </h3>
+                <p style={{ fontSize: 11.5, color: 'var(--color-danger)', margin: '3px 0 0', fontWeight: 700 }}>
+                  この操作は取り消せません
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: '14px 16px',
+                borderRadius: 14,
+                backgroundColor: isDark ? '#1C1F28' : 'var(--bg-surface-subtle)',
+                border: '1px solid var(--border-subtle)',
+                fontSize: 12.5,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+              }}
+            >
+              端末内に保存されている以下の推し活データが<strong>すべて完全に消去</strong>されます：
+              <ul style={{ margin: '8px 0 0', paddingLeft: 18, color: 'var(--text-primary)' }}>
+                <li>登録したすべての推しメンバー情報</li>
+                <li>カレンダー・予定・チケット応募履歴</li>
+                <li>TODO・やることタスク</li>
+                <li>グッズ管理・所持・欲しいものリスト</li>
+                <li>推し活支出記録・収支統計</li>
+              </ul>
+              <div style={{ marginTop: 10, fontSize: 11.5, color: 'var(--text-muted)' }}>
+                ※ データを残しておきたい場合は、削除前に「データを保存 (JSON)」を行ってください。
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeleting}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  borderRadius: 12,
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid var(--border-subtle)',
+                  backgroundColor: isDark ? '#252936' : 'var(--bg-surface)',
+                  color: 'var(--text-secondary)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteAll}
+                disabled={isDeleting}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  borderRadius: 12,
+                  border: 'none',
+                  backgroundColor: 'var(--color-danger)',
+                  color: '#FFFFFF',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: isDeleting ? 'wait' : 'pointer',
+                  boxShadow: '0 4px 14px rgba(255, 69, 58, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+              >
+                <Trash2 size={15} />
+                <span>{isDeleting ? '削除中...' : 'すべて削除する'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
