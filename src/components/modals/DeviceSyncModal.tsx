@@ -27,7 +27,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
   onClose,
   initialMode = 'select',
 }) => {
-  const { themeColor, showToast, refreshAllData } = useApp();
+  const { themeColor, showToast, refreshAllData, isDark } = useApp();
 
   const [mode, setMode] = useState<'select' | 'send' | 'receive'>(initialMode);
   const [step, setStep] = useState<'idle' | 'connecting' | 'transferring' | 'done' | 'error'>('idle');
@@ -296,8 +296,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                 style={{
                   padding: '14px 16px',
                   borderRadius: 14,
-                  backgroundColor: 'var(--bg-surface)',
-                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: isDark ? '#23262F' : 'var(--bg-surface)',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid var(--border-subtle)',
                   fontSize: 12.5,
                   color: 'var(--text-secondary)',
                   lineHeight: 1.6,
@@ -313,8 +313,9 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                   style={{
                     padding: '20px 14px',
                     borderRadius: 18,
-                    border: `1.5px solid ${themeColor}44`,
-                    backgroundColor: `${themeColor}10`,
+                    border: isDark ? `2px solid ${themeColor}` : `1.5px solid ${themeColor}44`,
+                    backgroundColor: isDark ? '#23262F' : `${themeColor}10`,
+                    boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.4)' : 'none',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -353,8 +354,9 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                   style={{
                     padding: '20px 14px',
                     borderRadius: 18,
-                    border: '1.5px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-surface)',
+                    border: isDark ? '1.5px solid rgba(255, 255, 255, 0.18)' : '1.5px solid var(--border-subtle)',
+                    backgroundColor: isDark ? '#252830' : 'var(--bg-surface)',
+                    boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.4)' : 'none',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -368,8 +370,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                       width: 48,
                       height: 48,
                       borderRadius: 14,
-                      backgroundColor: 'var(--bg-surface-elevated)',
-                      border: '1px solid var(--border-medium)',
+                      backgroundColor: isDark ? '#2F333E' : 'var(--bg-surface-elevated)',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid var(--border-medium)',
                       color: themeColor,
                       display: 'flex',
                       alignItems: 'center',
@@ -447,8 +449,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                       style={{
                         padding: '9px 18px',
                         borderRadius: 10,
-                        border: '1px solid var(--border-subtle)',
-                        backgroundColor: 'var(--bg-surface)',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid var(--border-subtle)',
+                        backgroundColor: isDark ? '#252830' : 'var(--bg-surface)',
                         color: 'var(--text-secondary)',
                         fontSize: 13,
                         fontWeight: 700,
@@ -490,8 +492,9 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                       gap: 12,
                       padding: '14px 24px',
                       borderRadius: 18,
-                      backgroundColor: `${themeColor}15`,
-                      border: `2px dashed ${themeColor}`,
+                      backgroundColor: isDark ? '#23262F' : `${themeColor}15`,
+                      border: isDark ? `2px dashed ${themeColor}` : `2px dashed ${themeColor}`,
+                      boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.4)' : 'none',
                       cursor: 'pointer',
                       marginBottom: 16,
                       transition: 'transform 0.1s ease',
@@ -545,8 +548,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                     style={{
                       padding: '8px 20px',
                       borderRadius: 10,
-                      border: '1px solid var(--border-subtle)',
-                      backgroundColor: 'transparent',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid var(--border-subtle)',
+                      backgroundColor: isDark ? '#252830' : 'transparent',
                       color: 'var(--text-secondary)',
                       fontSize: 12.5,
                       fontWeight: 700,
@@ -633,8 +636,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                         letterSpacing: '0.2em',
                         padding: '12px 16px',
                         borderRadius: 14,
-                        border: `2px solid ${inputCode.length === 6 ? themeColor : 'var(--border-medium)'}`,
-                        backgroundColor: 'var(--bg-surface)',
+                        border: `2px solid ${inputCode.length === 6 ? themeColor : isDark ? 'rgba(255, 255, 255, 0.22)' : 'var(--border-medium)'}`,
+                        backgroundColor: isDark ? '#23262F' : 'var(--bg-surface)',
                         color: 'var(--text-primary)',
                         fontFamily: 'monospace',
                       }}
@@ -668,8 +671,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                       style={{
                         padding: '12px 18px',
                         borderRadius: 12,
-                        border: '1px solid var(--border-subtle)',
-                        backgroundColor: 'var(--bg-surface)',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid var(--border-subtle)',
+                        backgroundColor: isDark ? '#252830' : 'var(--bg-surface)',
                         color: 'var(--text-secondary)',
                         fontSize: 13,
                         fontWeight: 700,

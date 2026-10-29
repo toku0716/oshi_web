@@ -52,6 +52,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
     setThemeColor,
     themeMode,
     setThemeMode,
+    isDark,
     refreshAllData,
     showToast,
   } = useApp();
@@ -786,12 +787,13 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
               gap: 8,
               padding: '12px 16px',
               borderRadius: 14,
-              border: `1.5px solid ${themeColor}44`,
-              backgroundColor: `${themeColor}12`,
-              color: themeColor,
+              border: 'none',
+              backgroundColor: themeColor,
+              color: '#FFFFFF',
               fontSize: 13,
               fontWeight: 800,
               cursor: isExporting ? 'wait' : 'pointer',
+              boxShadow: `0 3px 12px ${themeColor}40`,
               transition: 'all 0.15s ease',
             }}
           >
@@ -811,12 +813,13 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
               gap: 8,
               padding: '12px 16px',
               borderRadius: 14,
-              border: '1.5px solid var(--border-subtle)',
-              backgroundColor: 'var(--bg-surface-subtle)',
+              border: isDark ? '1.5px solid rgba(255, 255, 255, 0.18)' : '1.5px solid var(--border-medium)',
+              backgroundColor: isDark ? '#252830' : 'var(--bg-surface-subtle)',
               color: 'var(--text-primary)',
               fontSize: 13,
               fontWeight: 800,
               cursor: isImporting ? 'wait' : 'pointer',
+              boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : 'none',
               transition: 'all 0.15s ease',
             }}
           >
@@ -836,18 +839,19 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
-            padding: '12px 16px',
+            padding: '13px 16px',
             borderRadius: 14,
-            border: `1.5px solid ${themeColor}44`,
-            backgroundColor: `${themeColor}12`,
-            color: themeColor,
+            border: isDark ? `1.5px solid ${themeColor}` : `1.5px solid ${themeColor}60`,
+            backgroundColor: isDark ? '#23262F' : `${themeColor}12`,
+            color: isDark ? '#FFFFFF' : themeColor,
             fontSize: 13,
             fontWeight: 800,
             cursor: 'pointer',
+            boxShadow: isDark ? '0 4px 14px rgba(0, 0, 0, 0.35)' : 'none',
             transition: 'all 0.15s ease',
           }}
         >
-          <ArrowRightLeft size={16} strokeWidth={2.4} />
+          <ArrowRightLeft size={16} strokeWidth={2.4} color={isDark ? themeColor : undefined} />
           <span>スマホ・PC 端末間直接同期 (P2P / 6桁コード)</span>
         </button>
 
@@ -924,17 +928,19 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
               justifyContent: 'space-between',
               padding: '13px 16px',
               borderRadius: 14,
-              border: `1.5px solid ${themeColor}33`,
-              backgroundColor: `${themeColor}10`,
+              border: isDark ? '1.5px solid rgba(255, 255, 255, 0.16)' : `1.5px solid ${themeColor}33`,
+              backgroundColor: isDark ? '#23262F' : `${themeColor}10`,
               color: 'var(--text-primary)',
               cursor: 'pointer',
               textAlign: 'left',
+              boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.25)' : 'none',
+              transition: 'all 0.15s ease',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <MessageSquare size={17} color={themeColor} />
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 800, color: themeColor }}>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: isDark ? '#FFFFFF' : themeColor }}>
                   アンケート・改善要望を送る
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -960,8 +966,8 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                 gap: 8,
                 padding: '11px 14px',
                 borderRadius: 14,
-                border: '1px solid var(--border-subtle)',
-                backgroundColor: 'var(--bg-surface-subtle)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid var(--border-subtle)',
+                backgroundColor: isDark ? '#252830' : 'var(--bg-surface-subtle)',
                 color: 'var(--text-primary)',
                 fontSize: 12.5,
                 fontWeight: 700,
@@ -986,8 +992,8 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                 gap: 8,
                 padding: '11px 14px',
                 borderRadius: 14,
-                border: '1px solid var(--border-subtle)',
-                backgroundColor: 'var(--bg-surface-subtle)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid var(--border-subtle)',
+                backgroundColor: isDark ? '#252830' : 'var(--bg-surface-subtle)',
                 color: 'var(--text-primary)',
                 fontSize: 12.5,
                 fontWeight: 700,
