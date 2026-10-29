@@ -72,7 +72,7 @@ export const PolicyContentRenderer: React.FC<PolicyContentRendererProps> = ({
 
     // List item check
     if (trimmed.startsWith('・') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-      const itemText = trimmed.replace(/^[・\-\*]\s*/, '');
+      const itemText = trimmed.replace(/^[・\-*]\s*/, '');
       currentList.push(itemText);
       continue;
     }

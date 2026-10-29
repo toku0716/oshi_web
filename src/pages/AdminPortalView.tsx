@@ -13,14 +13,11 @@ import {
   FlaskConical,
   ShieldCheck,
   LogOut,
-  UserCheck,
   Users,
   Edit3,
   Save,
   RotateCcw,
-  CheckCircle2,
   MessageSquare,
-  Link2,
 } from 'lucide-react';
 import { ToastContainer } from '../components/common/ToastContainer';
 import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
@@ -687,11 +684,6 @@ export const AdminPortalView: React.FC = () => {
       '利用規約の同意状態を未同意にリセットしました。ユーザーサイトを開くと初回同意画面が出ます！'
     );
   };
-
-  const acceptedVer =
-    settings?.acceptedPolicyVersion ||
-    localStorage.getItem('oshiss_accepted_policy_version') ||
-    '';
 
   const isAuthorizedAdmin =
     Boolean(adminSession?.email) &&

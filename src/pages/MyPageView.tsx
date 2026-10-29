@@ -23,7 +23,6 @@ import {
   MessageSquare,
   AlertTriangle,
   Sparkles,
-  BookOpen,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { oshiRepository, backupRepository } from '../repository';

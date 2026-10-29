@@ -72,14 +72,6 @@ export function sortEventsByTime(list: OshiEvent[]): OshiEvent[] {
   return [...list].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 }
 
-export function sortEventsByDateAndTime(list: OshiEvent[]): OshiEvent[] {
-  return [...list].sort((a, b) => {
-    const cmp = a.date.localeCompare(b.date);
-    if (cmp !== 0) return cmp;
-    return timeToMinutes(a.time) - timeToMinutes(b.time);
-  });
-}
-
 export function isEventEnded(event: OshiEvent): boolean {
   if (event.isFinished) return true;
   const days = getDaysUntilDate(event.date);
@@ -106,54 +98,6 @@ export function getOshiDaysSince(oshi: Oshi): number | null {
   const today = getTodayMidnight();
   const diff = Math.round((today.getTime() - since.getTime()) / (1000 * 60 * 60 * 24));
   return diff >= 0 ? diff + 1 : 0;
-}
-
-export function getDaysUntilBirthday(oshi: Oshi): number | null {
-  const bday = parseLocalDate(oshi.birthday);
-  if (!bday) return null;
-  const today = getTodayMidnight();
-  let next = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
-  if (next.getTime() < today.getTime()) {
-    next = new Date(today.getFullYear() + 1, bday.getMonth(), bday.getDate());
-  }
-  return Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-export function isBirthdayToday(oshi: Oshi): boolean {
-  return getDaysUntilBirthday(oshi) === 0;
-}
-
-export function getDaysUntilDebut(oshi: Oshi): number | null {
-  const debut = parseLocalDate(oshi.debutDate);
-  if (!debut) return null;
-  const today = getTodayMidnight();
-  let next = new Date(today.getFullYear(), debut.getMonth(), debut.getDate());
-  if (next.getTime() < today.getTime()) {
-    next = new Date(today.getFullYear() + 1, debut.getMonth(), debut.getDate());
-  }
-  return Math.round((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-export function getDebutYears(oshi: Oshi): number | null {
-  const debut = parseLocalDate(oshi.debutDate);
-  if (!debut) return null;
-  const today = getTodayMidnight();
-  let next = new Date(today.getFullYear(), debut.getMonth(), debut.getDate());
-  if (next.getTime() < today.getTime()) {
-    next = new Date(today.getFullYear() + 1, debut.getMonth(), debut.getDate());
-  }
-  const years = next.getFullYear() - debut.getFullYear();
-  return years > 0 ? years : 1;
-}
-
-export function isDebutAnniversaryToday(oshi: Oshi): boolean {
-  return getDaysUntilDebut(oshi) === 0;
-}
-
-export interface EventCountdownInfo {
-  heroBadge: string;
-  hoursLabel: string;
-  shortCountdown: string;
 }
 
 export interface EventLiveCountdown {
@@ -279,101 +223,6 @@ export function getEventLiveCountdown(
     minutes,
     seconds,
     totalSeconds: diffSec,
-  };
-}
-
-export function getEventCountdownInfo(
-  event: OshiEvent,
-  now: Date = new Date()
-): EventCountdownInfo {
-  const d = parseLocalDate(event.date);
-  if (!d) {
-    return {
-      heroBadge: '',
-      hoursLabel: '',
-      shortCountdown: '',
-    };
-  }
-
-  const today = isTodayDate(event.date);
-  const calendarDays = getDaysUntilDate(event.date);
-
-  const rawTime = event.time?.trim();
-  if (rawTime && rawTime.includes(':')) {
-    const [hStr, mStr] = rawTime.split(':');
-    const h = parseInt(hStr, 10);
-    const m = parseInt(mStr, 10);
-    if (!isNaN(h) && !isNaN(m)) {
-      const target = new Date(
-        d.getFullYear(),
-        d.getMonth(),
-        d.getDate(),
-        h,
-        m,
-        0
-      );
-      const diffMs = target.getTime() - now.getTime();
-
-      if (diffMs <= 0) {
-        return {
-          heroBadge: today ? 'TODAY' : '終了',
-          hoursLabel: today ? '開始済' : '終了',
-          shortCountdown: today ? '開始済' : '終了',
-        };
-      }
-
-      const totalMinutes = Math.ceil(diffMs / (1000 * 60));
-      const totalHours = Math.floor(totalMinutes / 60);
-      const remMinutes = totalMinutes % 60;
-      const fullDays = Math.floor(totalHours / 24);
-      const remHours = totalHours % 24;
-
-      if (today || totalHours < 24) {
-        const timeText =
-          totalHours > 0
-            ? remMinutes > 0
-              ? `${totalHours}時間${remMinutes}分`
-              : `${totalHours}時間`
-            : `${remMinutes}分`;
-        return {
-          heroBadge: today ? `あと ${timeText}` : `あと ${calendarDays} 日`,
-          hoursLabel: `開始まで あと ${timeText}`,
-          shortCountdown: `あと${timeText}`,
-        };
-      }
-
-      return {
-        heroBadge: `あと ${calendarDays} 日`,
-        hoursLabel: `開始まで あと ${totalHours}時間 (${fullDays}日${remHours > 0 ? `${remHours}時間` : ''})`,
-        shortCountdown: `あと${totalHours}時間`,
-      };
-    }
-  }
-
-  // 時間未設定（終日）の場合
-  if (today) {
-    return {
-      heroBadge: 'TODAY',
-      hoursLabel: '本日開催（終日）',
-      shortCountdown: '本日',
-    };
-  }
-
-  const targetMidnight = new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate(),
-    0,
-    0,
-    0
-  );
-  const diffMs = targetMidnight.getTime() - now.getTime();
-  const approxHours = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60)));
-
-  return {
-    heroBadge: `あと ${calendarDays} 日`,
-    hoursLabel: `当日まで あと 約${approxHours}時間`,
-    shortCountdown: `あと約${approxHours}時間`,
   };
 }
 

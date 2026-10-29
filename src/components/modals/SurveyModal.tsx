@@ -23,7 +23,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ isOpen, onClose }) => 
   const { settings, themeColor, isDark, showToast, refreshAllData } = useApp();
 
   const effectiveUrl = getEffectiveGoogleFormUrl(settings);
-  const [isEditingUrl, setIsEditingUrl] = useState<boolean>(!effectiveUrl);
+  const [isEditingUrl, setIsEditingUrl] = useState<boolean>(false);
   const [urlInput, setUrlInput] = useState<string>(effectiveUrl);
   const [viewMode, setViewMode] = useState<'card' | 'embedded'>('card');
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -31,10 +31,11 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ isOpen, onClose }) => 
   const dialogRef = useDialog<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
-    if (effectiveUrl) {
+    if (isOpen) {
       setUrlInput(effectiveUrl);
+      setIsEditingUrl(!effectiveUrl);
     }
-  }, [effectiveUrl]);
+  }, [isOpen, effectiveUrl]);
 
   if (!isOpen) return null;
 

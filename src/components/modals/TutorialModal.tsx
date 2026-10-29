@@ -4,8 +4,6 @@ import {
   Palette,
   Plus,
   Calendar,
-  CheckSquare,
-  ShoppingBag,
   CreditCard,
   Database,
   CheckCircle2,
@@ -16,14 +14,12 @@ import {
   Smartphone,
   ShieldCheck,
 } from 'lucide-react';
-import { useDialog } from '../../hooks/useDialog';
 
 interface TutorialModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
   themeColor: string;
-  isDark?: boolean;
 }
 
 interface TutorialStep {
@@ -41,7 +37,6 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
   onClose,
   onComplete,
   themeColor,
-  isDark = false,
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const modalRef = useRef<HTMLDivElement>(null);

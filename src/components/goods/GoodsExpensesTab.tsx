@@ -5,7 +5,6 @@ import {
   Pencil,
   Trash2,
   Calendar,
-  Tag,
   Receipt,
   FileText,
 } from 'lucide-react';

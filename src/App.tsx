@@ -462,7 +462,6 @@ const MainApp: React.FC = () => {
         onClose={handleCompleteTutorial}
         onComplete={handleCompleteTutorial}
         themeColor={themeColor}
-        isDark={isDark}
       />
     </div>
   );

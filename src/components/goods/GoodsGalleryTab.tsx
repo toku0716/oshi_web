@@ -87,8 +87,6 @@ export const GoodsGalleryTab: React.FC<GoodsGalleryTabProps> = ({
     });
   }, [ownedGoods, onlyFavorite, selectedCategory, searchQuery, sortBy]);
 
-  const totalCount = filteredGoods.reduce((sum, g) => sum + (g.quantity || 1), 0);
-
   // 所持グッズが0件の時は、検索バーやソートなどのノイズを排除してクリーンな登録案内のみ表示
   if (ownedGoods.length === 0) {
     return (
