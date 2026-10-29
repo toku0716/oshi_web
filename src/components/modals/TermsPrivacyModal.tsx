@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { getEffectivePolicyInfo } from '../../types';
 import { useDialog } from '../../hooks/useDialog';
@@ -7,6 +7,7 @@ import { PolicyContentRenderer } from '../common/PolicyContentRenderer';
 interface TermsPrivacyModalProps {
   isOpen: boolean;
   mode: 'consent' | 'view';
+  initialTab?: 'terms' | 'privacy';
   isPolicyUpdate?: boolean;
   onAccept?: () => void;
   onClose?: () => void;
@@ -15,12 +16,19 @@ interface TermsPrivacyModalProps {
 export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
   isOpen,
   mode,
+  initialTab = 'terms',
   isPolicyUpdate = false,
   onAccept,
   onClose,
 }) => {
   const { themeColor, settings } = useApp();
-  const [tab, setTab] = useState<'terms' | 'privacy'>('terms');
+  const [tab, setTab] = useState<'terms' | 'privacy'>(initialTab);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   const isConsent = mode === 'consent';
 

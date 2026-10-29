@@ -17,6 +17,10 @@ import {
   Database,
   Download,
   Upload,
+  ArrowRightLeft,
+  FileText,
+  Shield,
+  MessageSquare,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { oshiRepository, backupRepository } from '../repository';
@@ -31,6 +35,9 @@ import {
   getOshiDaysSince,
   resizeAndConvertImageToBase64,
 } from '../utils/oshiUtils';
+import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
+import { SurveyModal } from '../components/modals/SurveyModal';
+import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
 
 interface MyPageViewProps {
   onLogout?: () => void;
@@ -64,6 +71,12 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
   const backupFileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+
+  // 利用規約・プライバシーポリシー / アンケート / P2P同期モーダル
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [termsInitialTab, setTermsInitialTab] = useState<'terms' | 'privacy'>('terms');
+  const [isSurveyOpen, setIsSurveyOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // バックアップJSONダウンロード（データ保存）
   const handleExportBackup = async () => {
@@ -812,6 +825,32 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
           </button>
         </div>
 
+        {/* P2P端末間直接同期ボタン */}
+        <button
+          type="button"
+          onClick={() => setIsSyncModalOpen(true)}
+          style={{
+            width: '100%',
+            marginTop: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '12px 16px',
+            borderRadius: 14,
+            border: `1.5px solid ${themeColor}44`,
+            backgroundColor: `${themeColor}12`,
+            color: themeColor,
+            fontSize: 13,
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <ArrowRightLeft size={16} strokeWidth={2.4} />
+          <span>スマホ・PC 端末間直接同期 (P2P / QRコード)</span>
+        </button>
+
         {/* 非表示のファイル入力 */}
         <input
           ref={backupFileInputRef}
@@ -820,6 +859,146 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
           onChange={handleImportBackupFile}
           style={{ display: 'none' }}
         />
+      </div>
+
+      {/* ========================================================
+          カード4: サポート・利用規約・プライバシー・アンケート
+          ======================================================== */}
+      <div
+        style={{
+          padding: '22px 20px',
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 24,
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 11,
+              backgroundColor: `${themeColor}18`,
+              color: themeColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <FileText size={18} strokeWidth={2.2} />
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h2
+              style={{
+                fontSize: 16,
+                fontWeight: 800,
+                margin: 0,
+                color: 'var(--text-primary)',
+              }}
+            >
+              規約・ポリシー・アンケート
+            </h2>
+            <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+              利用規約、プライバシーポリシー、改善アンケート
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* アンケートボタン */}
+          <button
+            type="button"
+            onClick={() => setIsSurveyOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '13px 16px',
+              borderRadius: 14,
+              border: `1.5px solid ${themeColor}33`,
+              backgroundColor: `${themeColor}10`,
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <MessageSquare size={17} color={themeColor} />
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: themeColor }}>
+                  アンケート・改善要望を送る
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  推しサポの使い心地や欲しい機能をお聞かせください
+                </div>
+              </div>
+            </div>
+            <span style={{ fontSize: 13, color: themeColor, fontWeight: 800 }}>回答 →</span>
+          </button>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {/* 利用規約ボタン */}
+            <button
+              type="button"
+              onClick={() => {
+                setTermsInitialTab('terms');
+                setIsTermsOpen(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '11px 14px',
+                borderRadius: 14,
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface-subtle)',
+                color: 'var(--text-primary)',
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <FileText size={15} color="var(--text-secondary)" />
+              <span>利用規約</span>
+            </button>
+
+            {/* プライバシーポリシーボタン */}
+            <button
+              type="button"
+              onClick={() => {
+                setTermsInitialTab('privacy');
+                setIsTermsOpen(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '11px 14px',
+                borderRadius: 14,
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface-subtle)',
+                color: 'var(--text-primary)',
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <Shield size={15} color="var(--text-secondary)" />
+              <span>プライバシーポリシー</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* ========================================================
@@ -1149,6 +1328,26 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
           </form>
         </div>
       )}
+
+      {/* 利用規約・プライバシーポリシー閲覧モーダル */}
+      <TermsPrivacyModal
+        isOpen={isTermsOpen}
+        mode="view"
+        initialTab={termsInitialTab}
+        onClose={() => setIsTermsOpen(false)}
+      />
+
+      {/* アンケートモーダル */}
+      <SurveyModal
+        isOpen={isSurveyOpen}
+        onClose={() => setIsSurveyOpen(false)}
+      />
+
+      {/* P2Pデバイス間直接同期モーダル */}
+      <DeviceSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+      />
     </div>
   );
 };
