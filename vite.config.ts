@@ -19,6 +19,22 @@ function policyServerPlugin(): Plugin {
               const data = JSON.parse(body)
               const filePath = resolve(import.meta.dirname, 'public/active_policy.json')
               fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
+
+              if (typeof data.maintenanceMode === 'boolean') {
+                const maintPath = resolve(import.meta.dirname, 'public/maintenance.json')
+                const maintObj = {
+                  enabled: data.maintenanceMode,
+                  maintenanceMode: data.maintenanceMode,
+                  title: data.maintenanceTitle || '現在メンテナンス中です',
+                  message:
+                    data.maintenanceMessage ||
+                    'ただいまサービスの改善およびシステムメンテナンスを行っております。ご不便をおかけしますが、完了まで今しばらくお待ちください。',
+                  estimatedEnd: data.maintenanceEstimatedEnd || '',
+                  updatedAt: new Date().toISOString(),
+                }
+                fs.writeFileSync(maintPath, JSON.stringify(maintObj, null, 2), 'utf-8')
+              }
+
               res.statusCode = 200
               res.setHeader('Content-Type', 'application/json')
               res.end(JSON.stringify({ ok: true, data }))

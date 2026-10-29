@@ -17,6 +17,8 @@ interface MaintenanceScreenProps {
   themeColor?: string;
   isDark?: boolean;
   isPreview?: boolean;
+  isAdminUser?: boolean;
+  onAdminBypass?: () => void;
   onClosePreview?: () => void;
   onRefresh?: () => Promise<boolean | void>;
 }
@@ -28,6 +30,8 @@ export const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({
   themeColor = '#ec4899',
   isDark = true,
   isPreview = false,
+  isAdminUser = false,
+  onAdminBypass,
   onClosePreview,
   onRefresh,
 }) => {
@@ -45,19 +49,38 @@ export const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({
         if (resolved) return;
       }
 
-      // サーバーの active_policy.json を直接確認
-      const res = await fetch(`./active_policy.json?t=${Date.now()}`, {
-        cache: 'no-store',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.maintenanceMode === false) {
-          setCheckStatusMessage('メンテナンスが終了しました！画面を更新します...');
-          setTimeout(() => {
-            window.location.reload();
-          }, 800);
-          return;
-        }
+      // サーバーの active_policy.json および maintenance.json を直接確認
+      const [policyRes, maintRes] = await Promise.allSettled([
+        fetch(`./active_policy.json?t=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`./maintenance.json?t=${Date.now()}`, { cache: 'no-store' }),
+      ]);
+
+      let isModeOn = false;
+      if (policyRes.status === 'fulfilled' && policyRes.value.ok) {
+        try {
+          const d = await policyRes.value.json();
+          if (d && typeof d.maintenanceMode === 'boolean') {
+            isModeOn = d.maintenanceMode;
+          }
+        } catch {}
+      }
+      if (maintRes.status === 'fulfilled' && maintRes.value.ok) {
+        try {
+          const m = await maintRes.value.json();
+          if (m && (m.enabled === true || m.maintenanceMode === true)) {
+            isModeOn = true;
+          } else if (m && (m.enabled === false || m.maintenanceMode === false)) {
+            isModeOn = false;
+          }
+        } catch {}
+      }
+
+      if (!isModeOn) {
+        setCheckStatusMessage('メンテナンスが終了しました！画面を更新します...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
+        return;
       }
       setCheckStatusMessage('現在もメンテナンス継続中です。完了まで今しばらくお待ちください。');
     } catch {
@@ -320,6 +343,35 @@ export const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({
             backgroundColor: borderColor,
           }}
         />
+
+        {/* 管理者用バイパスボタン（管理者ログイン中の場合） */}
+        {isAdminUser && onAdminBypass && (
+          <div style={{ marginBottom: 14 }}>
+            <button
+              type="button"
+              onClick={onAdminBypass}
+              style={{
+                width: '100%',
+                padding: '9px 14px',
+                borderRadius: 12,
+                border: `1.2px dashed ${themeColor}66`,
+                backgroundColor: isDark ? 'rgba(236, 72, 153, 0.08)' : 'rgba(236, 72, 153, 0.04)',
+                color: themeColor,
+                fontSize: 12.5,
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <ShieldAlert size={15} />
+              <span>管理者としてアプリを一時表示（バイパス）</span>
+            </button>
+          </div>
+        )}
 
         {/* 管理者リンク */}
         <div

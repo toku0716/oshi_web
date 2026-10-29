@@ -89,13 +89,29 @@ jobs:
 
             fs.writeFileSync(path, JSON.stringify(updated, null, 2) + "\n");
             console.log("Updated maintenance.json to:", updated);
+
+            const policyPath = "./public/active_policy.json";
+            if (fs.existsSync(policyPath)) {
+              try {
+                const pol = JSON.parse(fs.readFileSync(policyPath, "utf8"));
+                pol.maintenanceMode = targetEnabled;
+                pol.maintenanceTitle = updated.title;
+                pol.maintenanceMessage = updated.message;
+                pol.maintenanceEstimatedEnd = updated.estimatedEnd;
+                pol.updatedAt = updated.updatedAt;
+                fs.writeFileSync(policyPath, JSON.stringify(pol, null, 2) + "\n");
+                console.log("Updated active_policy.json maintenanceMode to:", targetEnabled);
+              } catch(e) {
+                console.error("Failed to update active_policy.json:", e);
+              }
+            }
           '
 
       - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/maintenance.json
+          git add public/maintenance.json public/active_policy.json
           git commit -m "chore(maintenance): switch mode via 1-click action [skip ci]" || echo "No changes to commit"
           git push origin main || echo "Git push skipped or permission denied, proceeding with direct page deployment."
 

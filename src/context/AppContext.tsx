@@ -235,14 +235,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       navigator.storage.persist().catch(() => {});
     }
 
-    // サーバー（public/active_policy.json）から最新の規約・ポリシー設定を同期（スマートフォン等の他端末同期用）
+    // サーバー（active_policy.json / maintenance.json）から最新の規約・メンテナンス設定を同期
     const syncServerPolicy = async () => {
       try {
-        const res = await fetch(`./active_policy.json?t=${Date.now()}`, {
-          cache: 'no-store',
-        });
-        if (res.ok) {
-          const data = await res.json();
+        const [resPolicy, resMaint] = await Promise.allSettled([
+          fetch(`./active_policy.json?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`./maintenance.json?t=${Date.now()}`, { cache: 'no-store' }),
+        ]);
+
+        let maintData: {
+          enabled?: boolean;
+          maintenanceMode?: boolean;
+          title?: string;
+          message?: string;
+          estimatedEnd?: string;
+        } | null = null;
+
+        if (resMaint.status === 'fulfilled' && resMaint.value.ok) {
+          try {
+            maintData = await resMaint.value.json();
+          } catch {}
+        }
+
+        if (resPolicy.status === 'fulfilled' && resPolicy.value.ok) {
+          const data = await resPolicy.value.json();
           if (data && data.version) {
             localStorage.setItem('oshiss_active_policy_version', data.version);
             if (data.dateLabel) {
@@ -293,30 +309,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 );
               } catch {}
             }
-            if (typeof data.maintenanceMode === 'boolean') {
-              patch.maintenanceMode = data.maintenanceMode;
-              try {
-                localStorage.setItem('oshiss_maintenance_mode', String(data.maintenanceMode));
-                if (data.maintenanceTitle) {
-                  localStorage.setItem('oshiss_maintenance_title', data.maintenanceTitle);
-                }
-                if (data.maintenanceMessage) {
-                  localStorage.setItem('oshiss_maintenance_message', data.maintenanceMessage);
-                }
-                if (typeof data.maintenanceEstimatedEnd === 'string') {
-                  localStorage.setItem('oshiss_maintenance_estimated_end', data.maintenanceEstimatedEnd);
-                }
-              } catch {}
-            }
-            if (data.maintenanceTitle) {
-              patch.maintenanceTitle = data.maintenanceTitle;
-            }
-            if (data.maintenanceMessage) {
-              patch.maintenanceMessage = data.maintenanceMessage;
-            }
-            if (typeof data.maintenanceEstimatedEnd === 'string') {
-              patch.maintenanceEstimatedEnd = data.maintenanceEstimatedEnd;
-            }
+
+            // メンテナンスモードの同期（active_policy.json または maintenance.json のいずれかでONならON）
+            const serverMaintenance =
+              (maintData && (maintData.enabled === true || maintData.maintenanceMode === true)) ||
+              data.maintenanceMode === true;
+
+            const finalMaintenance =
+              typeof maintData?.enabled === 'boolean'
+                ? maintData.enabled
+                : typeof maintData?.maintenanceMode === 'boolean'
+                ? maintData.maintenanceMode
+                : typeof data.maintenanceMode === 'boolean'
+                ? data.maintenanceMode
+                : false;
+
+            patch.maintenanceMode = finalMaintenance;
+            try {
+              localStorage.setItem('oshiss_maintenance_mode', String(finalMaintenance));
+              const title = maintData?.title || data.maintenanceTitle;
+              if (title) {
+                localStorage.setItem('oshiss_maintenance_title', title);
+                patch.maintenanceTitle = title;
+              }
+              const msg = maintData?.message || data.maintenanceMessage;
+              if (msg) {
+                localStorage.setItem('oshiss_maintenance_message', msg);
+                patch.maintenanceMessage = msg;
+              }
+              const end = maintData?.estimatedEnd || data.maintenanceEstimatedEnd;
+              if (typeof end === 'string') {
+                localStorage.setItem('oshiss_maintenance_estimated_end', end);
+                patch.maintenanceEstimatedEnd = end;
+              }
+            } catch {}
+
             await settingsRepository.saveSettings(patch);
             setSettings((prev) => ({ ...(prev || {}), ...patch } as AppSettings));
             await refreshAllData();

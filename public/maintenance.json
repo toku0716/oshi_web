@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "maintenanceMode": true,
+  "title": "現在メンテナンス中です",
+  "message": "ただいまサービスの改善およびシステムメンテナンスを行っております。ご不便をおかけしますが、完了まで今しばらくお待ちください。",
+  "estimatedEnd": "",
+  "updatedAt": "2026-10-29T10:48:00.000Z"
+}

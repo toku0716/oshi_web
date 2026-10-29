@@ -1578,6 +1578,44 @@ export const AdminPortalView: React.FC = () => {
                 <span>設定を保存・即時同期</span>
               </button>
             </div>
+
+            {/* GitHub Actions 連携案内 */}
+            <div
+              style={{
+                marginTop: 10,
+                padding: '10px 14px',
+                borderRadius: 12,
+                backgroundColor: cardBg,
+                border: `1px solid ${borderColor}`,
+                fontSize: 12,
+                color: subTextColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 8,
+              }}
+            >
+              <span>
+                💡 GitHub Pages 本番環境の全世界向け一斉切替は GitHub Actions の「Maintenance Mode」ワークフローとも自動連動しています。
+              </span>
+              <a
+                href="https://github.com/toku0716/oshi_web/actions/workflows/maintenance.yml"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: themeColor,
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <span>GitHub Actions 実行画面を開く</span>
+                <ExternalLink size={13} />
+              </a>
+            </div>
           </div>
         </section>
 

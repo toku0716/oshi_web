@@ -90,6 +90,22 @@ const MainApp: React.FC = () => {
     formatIsoDate(getTodayMidnight())
   );
 
+  // 管理者バイパスステート（セッション中のみ有効）
+  const [isAdminBypass, setIsAdminBypass] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('bypass') === 'true' || urlParams.get('preview') === 'admin') {
+        sessionStorage.setItem('oshiss_admin_bypass', 'true');
+        return true;
+      }
+      return sessionStorage.getItem('oshiss_admin_bypass') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+
   // 初回起動時チュートリアルステート
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -233,6 +249,7 @@ const MainApp: React.FC = () => {
     );
   }
 
+
   const isMaintenanceMode =
     settings?.maintenanceMode ??
     (typeof window !== 'undefined' && localStorage.getItem('oshiss_maintenance_mode') === 'true');
@@ -252,7 +269,8 @@ const MainApp: React.FC = () => {
     (adminAccessConfig.allowedEmails.length === 0 ||
       isGoogleEmailAllowed(authSession!.email, adminAccessConfig.allowedEmails));
 
-  if (isMaintenanceMode && !isAdminUser) {
+  // メンテナンスモード中は、明示的な管理者バイパス（プレビュー）でない限りアクセスを遮断
+  if (isMaintenanceMode && !isAdminBypass) {
     return (
       <MaintenanceScreen
         title={settings?.maintenanceTitle}
@@ -260,6 +278,13 @@ const MainApp: React.FC = () => {
         estimatedEnd={settings?.maintenanceEstimatedEnd}
         themeColor={themeColor}
         isDark={isDark}
+        isAdminUser={isAdminUser}
+        onAdminBypass={() => {
+          try {
+            sessionStorage.setItem('oshiss_admin_bypass', 'true');
+          } catch {}
+          setIsAdminBypass(true);
+        }}
         onRefresh={async () => {
           await refreshAllData();
           const freshMode =
@@ -342,7 +367,7 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="app-shell">
-      {isMaintenanceMode && isAdminUser && (
+      {isMaintenanceMode && isAdminBypass && (
         <div
           style={{
             backgroundColor: '#dc2626',
@@ -357,26 +382,51 @@ const MainApp: React.FC = () => {
             top: 0,
             zIndex: 9999,
             boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+            flexWrap: 'wrap',
+            gap: 8,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Wrench size={16} />
-            <span>⚠️ メンテナンスモード実行中（管理者としてバイパスアクセス中・一般遮断中）</span>
+            <span>⚠️ メンテナンスモード実行中（管理者プレビュー中・一般ユーザーは遮断されています）</span>
           </div>
-          <a
-            href="./admin.html"
-            style={{
-              color: '#ffffff',
-              textDecoration: 'underline',
-              fontWeight: 800,
-              fontSize: 12,
-              padding: '2px 8px',
-              borderRadius: 6,
-              background: 'rgba(0,0,0,0.2)',
-            }}
-          >
-            管理画面で設定
-          </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem('oshiss_admin_bypass');
+                } catch {}
+                setIsAdminBypass(false);
+              }}
+              style={{
+                background: 'rgba(0, 0, 0, 0.25)',
+                border: 'none',
+                color: '#ffffff',
+                padding: '4px 10px',
+                borderRadius: 6,
+                fontSize: 11.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              メンテナンス画面に戻す
+            </button>
+            <a
+              href="./admin.html"
+              style={{
+                color: '#ffffff',
+                textDecoration: 'underline',
+                fontWeight: 800,
+                fontSize: 12,
+                padding: '4px 10px',
+                borderRadius: 6,
+                background: 'rgba(0, 0, 0, 0.2)',
+              }}
+            >
+              管理画面で設定
+            </a>
+          </div>
         </div>
       )}
       <a href="#main-content" className="skip-link">
