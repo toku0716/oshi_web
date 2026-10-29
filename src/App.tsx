@@ -10,7 +10,6 @@ import { GoodsView } from './pages/GoodsView';
 import { MyPageView } from './pages/MyPageView';
 import { AddEntrySpeedDialSheet } from './components/modals/AddEntrySpeedDialSheet';
 import { TermsPrivacyModal } from './components/modals/TermsPrivacyModal';
-import { DeviceSyncModal } from './components/modals/DeviceSyncModal';
 import { settingsRepository } from './repository';
 import {
   getEffectivePolicyInfo,
@@ -100,19 +99,10 @@ const MainApp: React.FC = () => {
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [editingGoods, setEditingGoods] = useState<Goods | null>(null);
   const [editingExpense, setEditingExpense] = useState<ExpenseItem | null>(null);
-  const [isGlobalSyncOpen, setIsGlobalSyncOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.location.hash.includes('sync=');
-  });
 
   // ブラウザの戻る / 進む・ハッシュ直接変更に追従
   useEffect(() => {
-    const sync = () => {
-      setCurrentIndex(readTabFromHash());
-      if (window.location.hash.includes('sync=')) {
-        setIsGlobalSyncOpen(true);
-      }
-    };
+    const sync = () => setCurrentIndex(readTabFromHash());
     window.addEventListener('popstate', sync);
     window.addEventListener('hashchange', sync);
     return () => {
@@ -448,11 +438,6 @@ const MainApp: React.FC = () => {
           });
           await refreshAllData();
         }}
-      />
-
-      <DeviceSyncModal
-        isOpen={isGlobalSyncOpen}
-        onClose={() => setIsGlobalSyncOpen(false)}
       />
     </div>
   );

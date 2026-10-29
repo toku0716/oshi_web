@@ -848,7 +848,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
           }}
         >
           <ArrowRightLeft size={16} strokeWidth={2.4} />
-          <span>スマホ・PC 端末間直接同期 (P2P / QRコード)</span>
+          <span>スマホ・PC 端末間直接同期 (P2P / 6桁コード)</span>
         </button>
 
         {/* 非表示のファイル入力 */}

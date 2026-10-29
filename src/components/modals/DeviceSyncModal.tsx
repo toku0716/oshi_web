@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Peer, { type DataConnection } from 'peerjs';
-import { QRCodeSVG } from 'qrcode.react';
 import {
   Smartphone,
   Monitor,
   ArrowRightLeft,
-  QrCode,
   KeyRound,
   CheckCircle2,
   AlertCircle,
@@ -137,16 +135,10 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
     setSyncDetails(null);
   }, [cleanupPeer]);
 
-  // URLハッシュから自動コード読み取り（QRコード読み取り時）
   useEffect(() => {
     if (!isOpen) return;
 
-    const hash = window.location.hash;
-    const match = hash.match(/sync=([0-9]{6})/);
-    if (match && match[1]) {
-      startReceive(match[1]);
-      window.history.replaceState(null, '', window.location.pathname);
-    } else if (initialMode === 'send') {
+    if (initialMode === 'send') {
       startSend();
     } else if (initialMode === 'receive') {
       startReceive();
@@ -211,10 +203,6 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
       cleanupPeer();
     });
   };
-
-  const syncUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${window.location.pathname}#sync=${syncCode}`
-    : '';
 
   const handleCopyCode = () => {
     if (!syncCode) return;
@@ -354,7 +342,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                       この端末から送る
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                      QRコードやコードを発行
+                      6桁コードを発行
                     </div>
                   </div>
                 </button>
@@ -488,28 +476,10 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center' }}>
+                <div style={{ textAlign: 'center', padding: '10px 0' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '0 0 16px' }}>
-                    受信側の端末で<strong>QRコードを読み取る</strong>か、
-                    <br />
-                    下の<strong>6桁コードを入力</strong>してください:
+                    受信側の端末で以下の<strong>6桁認証コードを入力</strong>してください:
                   </p>
-
-                  {/* QRコード表示 */}
-                  {syncCode && (
-                    <div
-                      style={{
-                        display: 'inline-block',
-                        padding: 14,
-                        borderRadius: 18,
-                        backgroundColor: '#FFFFFF',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                        marginBottom: 16,
-                      }}
-                    >
-                      <QRCodeSVG value={syncUrl} size={150} level="M" />
-                    </div>
-                  )}
 
                   {/* 6桁コード */}
                   <div
@@ -517,28 +487,29 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: 8,
-                      padding: '8px 18px',
-                      borderRadius: 14,
-                      backgroundColor: `${themeColor}12`,
-                      border: `1.5px dashed ${themeColor}60`,
+                      gap: 12,
+                      padding: '14px 24px',
+                      borderRadius: 18,
+                      backgroundColor: `${themeColor}15`,
+                      border: `2px dashed ${themeColor}`,
                       cursor: 'pointer',
-                      marginBottom: 14,
+                      marginBottom: 16,
+                      transition: 'transform 0.1s ease',
                     }}
                     title="タップしてコードをコピー"
                   >
                     <span
                       style={{
-                        fontSize: 28,
+                        fontSize: 32,
                         fontWeight: 900,
-                        letterSpacing: '0.15em',
+                        letterSpacing: '0.18em',
                         color: themeColor,
                         fontFamily: 'monospace',
                       }}
                     >
                       {syncCode ? `${syncCode.slice(0, 3)} - ${syncCode.slice(3, 6)}` : '発行中...'}
                     </span>
-                    {hasCopied ? <Check size={18} color={themeColor} /> : <Copy size={18} color={themeColor} />}
+                    {hasCopied ? <Check size={20} color={themeColor} /> : <Copy size={20} color={themeColor} />}
                   </div>
 
                   <div
