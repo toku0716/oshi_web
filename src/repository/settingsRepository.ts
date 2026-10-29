@@ -1,10 +1,11 @@
 import { getDB } from '../db/database';
-import type { AppSettings } from '../types';
+import { DEFAULT_GOOGLE_FORM_URL, type AppSettings } from '../types';
 
 const DEFAULT_SETTINGS: AppSettings = {
   id: 'default',
   activeOshiId: 'all',
   themeColor: '#ec4899', // Default pink
+  googleFormUrl: DEFAULT_GOOGLE_FORM_URL,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };

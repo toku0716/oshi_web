@@ -38,6 +38,7 @@ import {
   CURRENT_POLICY_DATE_LABEL,
   CURRENT_POLICY_VERSION,
   getEffectivePolicyInfo,
+  DEFAULT_GOOGLE_FORM_URL,
 } from '../types';
 import {
   cacheAccessConfig,
@@ -123,8 +124,8 @@ export const AdminPortalView: React.FC = () => {
   const [googleFormUrlInput, setGoogleFormUrlInput] = useState<string>(
     settings?.googleFormUrl ??
       (typeof window !== 'undefined'
-        ? localStorage.getItem('oshiss_google_form_url') ?? ''
-        : '')
+        ? localStorage.getItem('oshiss_google_form_url') ?? DEFAULT_GOOGLE_FORM_URL
+        : DEFAULT_GOOGLE_FORM_URL)
   );
 
   useEffect(() => {

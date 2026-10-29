@@ -236,7 +236,8 @@ export function getEffectivePolicyInfo(settings?: AppSettings | null): {
   };
 }
 
-export const DEFAULT_GOOGLE_FORM_URL = '';
+export const DEFAULT_GOOGLE_FORM_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLScDDuFzycUKURbf2saIABpcYtGiMKxP9mnQkEdoRRZqPd0foA/viewform?usp=dialog';
 
 export function getEffectiveGoogleFormUrl(settings?: AppSettings | null): string {
   const cachedUrl =

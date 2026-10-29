@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MessageSquare,
   ExternalLink,
@@ -29,6 +29,12 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ isOpen, onClose }) => 
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const dialogRef = useDialog<HTMLDivElement>(isOpen, onClose);
+
+  useEffect(() => {
+    if (effectiveUrl) {
+      setUrlInput(effectiveUrl);
+    }
+  }, [effectiveUrl]);
 
   if (!isOpen) return null;
 
