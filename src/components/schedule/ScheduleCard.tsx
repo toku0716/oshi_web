@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Clock } from 'lucide-react';
 import { EVENT_CATEGORY_META, type OshiEvent } from '../../types';
 import { getEventLiveCountdown, isEventEnded } from '../../utils/oshiUtils';
 import { pressable } from '../../utils/a11y';
@@ -130,29 +131,61 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
         </span>
       </div>
 
-      {/* 2. 下段（中央配置）：中央に小さく控えめなサイズで残り時間を配置。等幅フォント適用 */}
+      {/* 2. 下段（中央配置）：カウントダウンを枠線・背景でしっかり囲い、視認性を大幅向上 */}
       <div
         style={{
-          marginTop: 'clamp(20px, 4.5vw, 26px)',
+          marginTop: 'clamp(20px, 4.5vw, 28px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          textAlign: 'center',
         }}
       >
-        <span
+        <div
           style={{
-            fontSize: 'clamp(13px, 3.4vw, 15px)',
-            fontWeight: 600,
-            color: '#E5E7EB',
-            letterSpacing: '0.04em',
-            fontFamily:
-              'var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, monospace',
-            fontVariantNumeric: 'tabular-nums',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 22px',
+            borderRadius: 9999,
+            backgroundColor: isBeforeStart
+              ? 'rgba(255, 255, 255, 0.08)'
+              : countdown.isStarted
+              ? 'rgba(52, 199, 89, 0.15)'
+              : 'rgba(255, 255, 255, 0.05)',
+            border: isBeforeStart
+              ? '1.5px solid rgba(255, 255, 255, 0.22)'
+              : countdown.isStarted
+              ? '1.5px solid rgba(52, 199, 89, 0.5)'
+              : '1px solid rgba(255, 255, 255, 0.12)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(8px)',
           }}
         >
-          {remainingText}
-        </span>
+          <Clock
+            size={18}
+            color={
+              countdown.isStarted
+                ? '#34C759'
+                : isBeforeStart
+                ? '#60A5FA'
+                : '#9CA3AF'
+            }
+            strokeWidth={2.4}
+          />
+          <span
+            style={{
+              fontSize: 'clamp(15px, 4vw, 18px)',
+              fontWeight: 800,
+              color: countdown.isStarted ? '#34C759' : '#FFFFFF',
+              letterSpacing: '0.06em',
+              fontFamily:
+                'var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, monospace',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {remainingText}
+          </span>
+        </div>
       </div>
     </div>
   );
