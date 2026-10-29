@@ -249,6 +249,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           title?: string;
           message?: string;
           estimatedEnd?: string;
+          updatedAt?: string;
         } | null = null;
 
         if (resMaint.status === 'fulfilled' && resMaint.value.ok) {
@@ -310,12 +311,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } catch {}
             }
 
-            // メンテナンスモードの同期（active_policy.json または maintenance.json のいずれかでONならON）
-            const serverMaintenance =
-              (maintData && (maintData.enabled === true || maintData.maintenanceMode === true)) ||
-              data.maintenanceMode === true;
+            // メンテナンスモードの同期判定
+            // 管理者がローカルで直近に切り替えた場合は、古いサーバーファイルで上書きされないよう保護する
+            const localActionTimeRaw = localStorage.getItem('oshiss_maintenance_local_action_time');
+            const localActionTime = localActionTimeRaw ? new Date(localActionTimeRaw).getTime() : 0;
+            const serverUpdateTime = Math.max(
+              data.updatedAt ? new Date(data.updatedAt).getTime() : 0,
+              maintData?.updatedAt ? new Date(maintData.updatedAt).getTime() : 0
+            );
 
-            const finalMaintenance =
+            const serverMode =
               typeof maintData?.enabled === 'boolean'
                 ? maintData.enabled
                 : typeof maintData?.maintenanceMode === 'boolean'
@@ -323,6 +328,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 : typeof data.maintenanceMode === 'boolean'
                 ? data.maintenanceMode
                 : false;
+
+            const localMode = localStorage.getItem('oshiss_maintenance_mode') === 'true';
+            // サーバーの更新日時が管理者の直近操作以降の場合のみサーバー設定に追従
+            const finalMaintenance = !localActionTime || serverUpdateTime >= localActionTime ? serverMode : localMode;
 
             patch.maintenanceMode = finalMaintenance;
             try {

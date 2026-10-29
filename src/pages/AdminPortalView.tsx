@@ -607,9 +607,11 @@ export const AdminPortalView: React.FC = () => {
     const title = maintenanceTitleInput.trim() || DEFAULT_MAINTENANCE_TITLE;
     const msg = maintenanceMessageInput.trim() || DEFAULT_MAINTENANCE_MESSAGE;
     const end = maintenanceEstimatedEndInput.trim();
+    const actionTime = new Date().toISOString();
 
     setMaintenanceMode(nextMode);
     localStorage.setItem('oshiss_maintenance_mode', String(nextMode));
+    localStorage.setItem('oshiss_maintenance_local_action_time', actionTime);
     localStorage.setItem('oshiss_maintenance_title', title);
     localStorage.setItem('oshiss_maintenance_message', msg);
     localStorage.setItem('oshiss_maintenance_estimated_end', end);
@@ -640,11 +642,13 @@ export const AdminPortalView: React.FC = () => {
     const title = maintenanceTitleInput.trim() || DEFAULT_MAINTENANCE_TITLE;
     const msg = maintenanceMessageInput.trim() || DEFAULT_MAINTENANCE_MESSAGE;
     const end = maintenanceEstimatedEndInput.trim();
+    const actionTime = new Date().toISOString();
 
     localStorage.setItem('oshiss_maintenance_title', title);
     localStorage.setItem('oshiss_maintenance_message', msg);
     localStorage.setItem('oshiss_maintenance_estimated_end', end);
     localStorage.setItem('oshiss_maintenance_mode', String(maintenanceMode));
+    localStorage.setItem('oshiss_maintenance_local_action_time', actionTime);
 
     await settingsRepository.saveSettings({
       maintenanceMode,

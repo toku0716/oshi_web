@@ -12,9 +12,9 @@
     "indiamonde@gmail.com"
   ],
   "googleFormUrl": "https://docs.google.com/forms/d/e/1FAIpQLScDDuFzycUKURbf2saIABpcYtGiMKxP9mnQkEdoRRZqPd0foA/viewform?usp=dialog",
-  "maintenanceMode": true,
+  "maintenanceMode": false,
   "maintenanceTitle": "現在メンテナンス中です",
   "maintenanceMessage": "ただいまサービスの改善およびシステムメンテナンスを行っております。ご不便をおかけしますが、完了まで今しばらくお待ちください。",
   "maintenanceEstimatedEnd": "",
-  "updatedAt": "2026-10-29T10:39:49.422Z"
+  "updatedAt": "2026-10-29T12:10:00.000Z"
 }
