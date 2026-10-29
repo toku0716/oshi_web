@@ -217,7 +217,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
       await oshiRepository.delete(id);
       await refreshAllData();
       setConfirmDeleteId(null);
-      showToast('登録を解除しました');
+      showToast('削除しました');
     } catch {
       showToast('削除に失敗しました', 'error');
     }
@@ -496,7 +496,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                       }}
                     >
                       <Trash2 size={12} />
-                      <span>{confirmDeleteId === oshi.id ? '削除確定' : '解除'}</span>
+                      <span>{confirmDeleteId === oshi.id ? '削除確定' : '削除'}</span>
                     </button>
                   </div>
                 </div>
