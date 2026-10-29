@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import {
   Clock,
+  CreditCard,
   MapPin,
   PieChart,
   Plus,
   ShoppingBag,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { goodsRepository } from '../repository';
-import type { Goods } from '../types';
+import { goodsRepository, expenseRepository } from '../repository';
+import type { Goods, ExpenseItem } from '../types';
 import { resizeAndConvertImageToBase64 } from '../utils/oshiUtils';
 import { useDialog } from '../hooks/useDialog';
 
@@ -16,21 +17,26 @@ import { useDialog } from '../hooks/useDialog';
 import { GoodsGalleryTab } from '../components/goods/GoodsGalleryTab';
 import { GoodsStorageTab } from '../components/goods/GoodsStorageTab';
 import { GoodsOrdersTab } from '../components/goods/GoodsOrdersTab';
+import { GoodsExpensesTab } from '../components/goods/GoodsExpensesTab';
 import { GoodsAnalyticsTab } from '../components/goods/GoodsAnalyticsTab';
 import { GoodsDetailInspector } from '../components/goods/GoodsDetailInspector';
 
 interface GoodsViewProps {
   onOpenAddGoods: (isWish: boolean) => void;
   onOpenEditGoods: (goods: Goods) => void;
+  onOpenAddExpense?: () => void;
+  onOpenEditExpense?: (expense: ExpenseItem) => void;
 }
 
-type MainTab = 'gallery' | 'storage' | 'orders' | 'analytics';
+type MainTab = 'gallery' | 'orders' | 'expenses' | 'storage' | 'analytics';
 
 export const GoodsView: React.FC<GoodsViewProps> = ({
   onOpenAddGoods,
   onOpenEditGoods,
+  onOpenAddExpense,
+  onOpenEditExpense,
 }) => {
-  const { goods, oshis, activeOshiId, themeColor, refreshAllData, showToast } =
+  const { goods, expenses, oshis, activeOshiId, themeColor, refreshAllData, showToast } =
     useApp();
 
   const [activeTab, setActiveTab] = useState<MainTab>('gallery');
@@ -216,8 +222,9 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
       >
         {[
           { key: 'gallery', label: '一覧', icon: ShoppingBag, count: ownedCount },
-          { key: 'storage', label: '保管場所別', icon: MapPin, count: storageLocationCount },
           { key: 'orders', label: '予約・欲しいもの', icon: Clock, count: ordersCount },
+          { key: 'expenses', label: '支出記録', icon: CreditCard, count: expenses.length },
+          { key: 'storage', label: '保管場所別', icon: MapPin, count: storageLocationCount },
           { key: 'analytics', label: '分析・内訳', icon: PieChart, count: null },
         ].map((tab) => {
           const selected = activeTab === tab.key;
@@ -310,6 +317,21 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
               onMoveToOwned={handleMoveToOwned}
               onOpenAddGoods={onOpenAddGoods}
               themeColor={themeColor}
+            />
+          )}
+
+          {activeTab === 'expenses' && (
+            <GoodsExpensesTab
+              expenses={expenses}
+              themeColor={themeColor}
+              onOpenAddExpense={onOpenAddExpense || (() => {})}
+              onOpenEditExpense={onOpenEditExpense || (() => {})}
+              onDeleteExpense={async (exp) => {
+                if (!window.confirm(`「${exp.title}」の支出記録を削除しますか？`)) return;
+                await expenseRepository.delete(exp.id);
+                await refreshAllData();
+                showToast('支出記録を削除しました', 'info');
+              }}
             />
           )}
 

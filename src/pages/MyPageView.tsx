@@ -375,9 +375,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                     padding: '14px 16px',
                     borderRadius: 16,
                     backgroundColor: 'var(--bg-surface-subtle)',
-                    border: isActive
-                      ? `2px solid ${oColor}`
-                      : '1px solid var(--border-subtle)',
+                    border: '1px solid var(--border-subtle)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -433,20 +431,6 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                         >
                           {oshi.name}
                         </span>
-                        {isActive && (
-                          <span
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 800,
-                              color: '#FFFFFF',
-                              backgroundColor: oColor,
-                              padding: '2px 7px',
-                              borderRadius: 999,
-                            }}
-                          >
-                            選択中
-                          </span>
-                        )}
                       </div>
 
                       {daysSince !== null && (
@@ -469,24 +453,6 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
 
                   {/* 操作ボタン */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {!isActive && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveOshiId(oshi.id)}
-                        style={{
-                          padding: '6px 11px',
-                          borderRadius: 8,
-                          border: '1px solid var(--border-subtle)',
-                          backgroundColor: 'var(--bg-surface)',
-                          color: 'var(--text-primary)',
-                          fontSize: 11.5,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        選択
-                      </button>
-                    )}
                     <button
                       type="button"
                       onClick={() => handleOpenEditModal(oshi)}
@@ -1046,7 +1012,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout }) => {
                   type="text"
                   value={oshiName}
                   onChange={(e) => setOshiName(e.target.value)}
-                  placeholder="例: 星街すいせい"
+                  placeholder="推しの名前を入力"
                   style={{
                     width: '100%',
                     padding: '10px 14px',

@@ -98,6 +98,7 @@ const MainApp: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<OshiEvent | null>(null);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [editingGoods, setEditingGoods] = useState<Goods | null>(null);
+  const [editingExpense, setEditingExpense] = useState<ExpenseItem | null>(null);
 
   // ブラウザの戻る / 進む・ハッシュ直接変更に追従
   useEffect(() => {
@@ -130,6 +131,7 @@ const MainApp: React.FC = () => {
     setEditingEvent(null);
     setEditingTodo(null);
     setEditingGoods(null);
+    setEditingExpense(null);
   };
 
   const openSheet = (
@@ -189,6 +191,17 @@ const MainApp: React.FC = () => {
     clearEditingStates();
     setEditingGoods(goodsItem);
     openSheet(2, [2], { isWish: !!goodsItem.isWish });
+  };
+
+  const handleOpenAddExpense = () => {
+    clearEditingStates();
+    openSheet(3, [2, 3]);
+  };
+
+  const handleOpenEditExpense = (expenseItem: ExpenseItem) => {
+    clearEditingStates();
+    setEditingExpense(expenseItem);
+    openSheet(3, [3], { date: expenseItem.date });
   };
 
   if (isLoading) {
@@ -353,6 +366,8 @@ const MainApp: React.FC = () => {
           <GoodsView
             onOpenAddGoods={(isWish) => handleOpenAddGoods(isWish)}
             onOpenEditGoods={handleOpenEditGoods}
+            onOpenAddExpense={handleOpenAddExpense}
+            onOpenEditExpense={handleOpenEditExpense}
           />
         )}
         {currentIndex === 3 && (
@@ -405,7 +420,7 @@ const MainApp: React.FC = () => {
         editingEvent={editingEvent}
         editingTodo={editingTodo}
         editingGoods={editingGoods}
-        editingExpense={null as ExpenseItem | null}
+        editingExpense={editingExpense}
       />
 
       <TermsPrivacyModal
