@@ -79,7 +79,7 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
             setLiveAllowedEmails((prev) => Array.from(new Set([...prev, ...serverAllowed])));
           }
         }
-      } catch {}
+      } catch { }
     };
     fetchFresh();
     return () => {
@@ -137,7 +137,7 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
                     setLiveAllowedEmails(checkPool);
                   }
                 }
-              } catch {}
+              } catch { }
 
               // 許可リストがまだ空（初回セットアップ直後）の場合は、最初にログインしたGoogleアカウントをオーナーとして自動許可
               if (checkPool.length === 0) {
@@ -334,9 +334,9 @@ export const GoogleAccessGate: React.FC<GoogleAccessGateProps> = ({
             lineHeight: 1.6,
           }}
         >
-          このサイトは<strong>許可されたGoogleアカウントのみ</strong>アクセスできます。
+          このサイトは<strong>許可されたZEN大学Googleアカウントのみ</strong>アクセスできます。
           <br />
-          アカウント新規登録は不要です。お使いのGoogleアカウントで認証してください。
+          アカウント新規登録は不要です。ZEN大学のGoogleアカウントで認証してください。
         </p>
 
         {/* アクセス拒否時の表示 */}
