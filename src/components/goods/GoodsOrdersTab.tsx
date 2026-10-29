@@ -42,6 +42,101 @@ export const GoodsOrdersTab: React.FC<GoodsOrdersTabProps> = ({
   const totalPreorderPrice = preorders.reduce((sum, g) => sum + (g.price || 0), 0);
   const totalWishPrice = wishItems.reduce((sum, g) => sum + (g.price || 0), 0);
 
+  // 予約・欲しいものが0件の時はクリーンな案内のみ表示
+  if (preorders.length === 0 && wishItems.length === 0) {
+    return (
+      <div
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 20,
+          border: '1px solid var(--border-subtle)',
+          padding: '60px 24px',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 18,
+            backgroundColor: `${themeColor}18`,
+            margin: '0 auto 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: themeColor,
+          }}
+        >
+          <Clock size={28} />
+        </div>
+        <h3
+          style={{
+            fontSize: 16,
+            fontWeight: 800,
+            margin: '0 0 6px',
+            color: 'var(--text-primary)',
+          }}
+        >
+          予約中や欲しいグッズはまだありません
+        </h3>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'var(--text-secondary)',
+            margin: '0 0 20px',
+            lineHeight: 1.5,
+          }}
+        >
+          これから発売される予約グッズや欲しいものをリストアップしてみましょう
+        </p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => onOpenAddGoods(false)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '11px 20px',
+              borderRadius: 14,
+              border: 'none',
+              backgroundColor: themeColor,
+              color: '#FFFFFF',
+              fontSize: 13.5,
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: `0 4px 14px ${themeColor}44`,
+            }}
+          >
+            <Clock size={16} />
+            <span>予約グッズを登録</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenAddGoods(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '11px 20px',
+              borderRadius: 14,
+              border: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-surface-subtle)',
+              color: 'var(--text-primary)',
+              fontSize: 13.5,
+              fontWeight: 800,
+              cursor: 'pointer',
+            }}
+          >
+            <Heart size={16} color="#EC4899" />
+            <span>欲しいものを登録</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* サブセクション切り替え */}

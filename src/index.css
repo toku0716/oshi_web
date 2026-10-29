@@ -1489,32 +1489,4 @@ html.keyboard-open .bottom-nav {
   }
 }
 
-/* Goods Master-Detail Split Layout */
-.goods-split-layout {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  width: 100%;
-}
-
-.goods-main-pane {
-  flex: 1;
-  min-width: 0;
-}
-
-.goods-inspector-pane {
-  display: none;
-}
-
-@media (min-width: 960px) {
-  .goods-inspector-pane {
-    display: block;
-    width: 360px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 24px;
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
-  }
-}
 

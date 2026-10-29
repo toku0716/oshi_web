@@ -89,6 +89,79 @@ export const GoodsGalleryTab: React.FC<GoodsGalleryTabProps> = ({
 
   const totalCount = filteredGoods.reduce((sum, g) => sum + (g.quantity || 1), 0);
 
+  // 所持グッズが0件の時は、検索バーやソートなどのノイズを排除してクリーンな登録案内のみ表示
+  if (ownedGoods.length === 0) {
+    return (
+      <div
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 20,
+          border: '1px solid var(--border-subtle)',
+          padding: '60px 24px',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 18,
+            backgroundColor: `${themeColor}18`,
+            margin: '0 auto 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: themeColor,
+          }}
+        >
+          <Package size={28} />
+        </div>
+        <h3
+          style={{
+            fontSize: 16,
+            fontWeight: 800,
+            margin: '0 0 6px',
+            color: 'var(--text-primary)',
+          }}
+        >
+          グッズがまだ登録されていません
+        </h3>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'var(--text-secondary)',
+            margin: '0 0 20px',
+            lineHeight: 1.5,
+          }}
+        >
+          手元にある推しのグッズを登録してみましょう
+        </p>
+        <button
+          type="button"
+          onClick={onOpenAddGoods}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '11px 24px',
+            borderRadius: 14,
+            border: 'none',
+            backgroundColor: themeColor,
+            color: '#FFFFFF',
+            fontSize: 14,
+            fontWeight: 800,
+            cursor: 'pointer',
+            boxShadow: `0 4px 14px ${themeColor}44`,
+          }}
+        >
+          <Plus size={16} />
+          <span>グッズを登録する</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* 検索・ソート・表示切り替えコントロールバー */}
@@ -287,10 +360,12 @@ export const GoodsGalleryTab: React.FC<GoodsGalleryTabProps> = ({
         </div>
       </div>
 
-      {/* 件数表示 */}
-      <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', fontWeight: 600 }}>
-        表示中: {filteredGoods.length} 種 ({totalCount} 点)
-      </div>
+      {/* 件数表示（検索や絞り込み時のみ表示） */}
+      {(searchQuery || selectedCategory !== 'all' || onlyFavorite) && (
+        <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', fontWeight: 600 }}>
+          検索結果: {filteredGoods.length} 件
+        </div>
+      )}
 
       {/* グッズ一覧（グリッドまたはリスト） */}
       {filteredGoods.length === 0 ? (

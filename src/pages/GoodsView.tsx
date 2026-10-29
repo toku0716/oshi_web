@@ -2,8 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   Clock,
   CreditCard,
-  MapPin,
-  PieChart,
   Plus,
   ShoppingBag,
 } from 'lucide-react';
@@ -15,10 +13,8 @@ import { useDialog } from '../hooks/useDialog';
 
 // 分割コンポーネント
 import { GoodsGalleryTab } from '../components/goods/GoodsGalleryTab';
-import { GoodsStorageTab } from '../components/goods/GoodsStorageTab';
 import { GoodsOrdersTab } from '../components/goods/GoodsOrdersTab';
 import { GoodsExpensesTab } from '../components/goods/GoodsExpensesTab';
-import { GoodsAnalyticsTab } from '../components/goods/GoodsAnalyticsTab';
 import { GoodsDetailInspector } from '../components/goods/GoodsDetailInspector';
 
 interface GoodsViewProps {
@@ -28,7 +24,7 @@ interface GoodsViewProps {
   onOpenEditExpense?: (expense: ExpenseItem) => void;
 }
 
-type MainTab = 'gallery' | 'orders' | 'expenses' | 'storage' | 'analytics';
+type MainTab = 'gallery' | 'orders' | 'expenses';
 
 export const GoodsView: React.FC<GoodsViewProps> = ({
   onOpenAddGoods,
@@ -41,18 +37,18 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
 
   const [activeTab, setActiveTab] = useState<MainTab>('gallery');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [isMobileModalOpen, setIsMobileModalOpen] = useState<boolean>(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
 
-  // 常に最新のグッズデータをIDから導出（同期用useEffect不要）
+  // 最新のグッズデータ
   const selectedItem = useMemo(
     () => (selectedItemId ? goods.find((g) => g.id === selectedItemId) || null : null),
     [goods, selectedItemId]
   );
 
-  // モーダルダイアログ制御（アクセシビリティ対応）
-  const mobileDialogRef = useDialog<HTMLDivElement>(
-    isMobileModalOpen,
-    () => setIsMobileModalOpen(false)
+  // モーダルダイアログ制御
+  const dialogRef = useDialog<HTMLDivElement>(
+    isDetailModalOpen,
+    () => setIsDetailModalOpen(false)
   );
 
   // アクティブ推しでフィルタリングされたグッズ一覧
@@ -61,7 +57,7 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
     return goods.filter((g) => !g.oshiId || g.oshiId === activeOshiId);
   }, [goods, activeOshiId]);
 
-  // 各タブのバッジカウント計算
+  // 各タブのカウント
   const ownedCount = useMemo(
     () => filteredByOshiGoods.filter((g) => !g.isWish && !g.isPreorder).length,
     [filteredByOshiGoods]
@@ -70,22 +66,11 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
     () => filteredByOshiGoods.filter((g) => g.isPreorder || g.isWish).length,
     [filteredByOshiGoods]
   );
-  const storageLocationCount = useMemo(() => {
-    const set = new Set<string>();
-    filteredByOshiGoods.forEach((g) => {
-      if (!g.isWish && !g.isPreorder && g.storageLocation?.trim()) {
-        set.add(g.storageLocation.trim());
-      }
-    });
-    return set.size;
-  }, [filteredByOshiGoods]);
 
-  // グッズ選択ハンドラ (PCではインスペクターに即座に表示、スマホではモーダルを開く)
+  // グッズ選択ハンドラ (カードタップで詳細モーダルを表示)
   const handleSelectItem = (item: Goods) => {
     setSelectedItemId(item.id);
-    if (typeof window !== 'undefined' && window.innerWidth < 960) {
-      setIsMobileModalOpen(true);
-    }
+    setIsDetailModalOpen(true);
   };
 
   // お気に入り切り替え
@@ -129,7 +114,7 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
     };
     await goodsRepository.save(updated);
     await refreshAllData();
-    setIsMobileModalOpen(false);
+    setIsDetailModalOpen(false);
 
     showToast(
       wasPreorder ? '🎉 手元に届いたグッズとして登録しました！' : '🎉 購入済みのコレクションへ移動しました！',
@@ -167,13 +152,13 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
     await goodsRepository.delete(item.id);
     await refreshAllData();
     if (selectedItemId === item.id) setSelectedItemId(null);
-    setIsMobileModalOpen(false);
+    setIsDetailModalOpen(false);
     showToast('グッズを削除しました', 'info');
   };
 
   // 編集モーダルを開く
   const handleEditGoods = (item: Goods) => {
-    setIsMobileModalOpen(false);
+    setIsDetailModalOpen(false);
     onOpenEditGoods(item);
   };
 
@@ -203,9 +188,80 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
             グッズ管理
           </h1>
         </div>
+
+        {/* ヘッダー追加ボタン */}
+        {activeTab === 'gallery' && (
+          <button
+            type="button"
+            onClick={() => onOpenAddGoods(false)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '9px 16px',
+              borderRadius: 12,
+              border: 'none',
+              backgroundColor: themeColor,
+              color: '#FFFFFF',
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: `0 3px 12px ${themeColor}44`,
+            }}
+          >
+            <Plus size={15} strokeWidth={2.4} />
+            <span>グッズを登録</span>
+          </button>
+        )}
+        {activeTab === 'orders' && (
+          <button
+            type="button"
+            onClick={() => onOpenAddGoods(false)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '9px 16px',
+              borderRadius: 12,
+              border: 'none',
+              backgroundColor: themeColor,
+              color: '#FFFFFF',
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: `0 3px 12px ${themeColor}44`,
+            }}
+          >
+            <Plus size={15} strokeWidth={2.4} />
+            <span>予約・欲しいもの登録</span>
+          </button>
+        )}
+        {activeTab === 'expenses' && onOpenAddExpense && (
+          <button
+            type="button"
+            onClick={onOpenAddExpense}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '9px 16px',
+              borderRadius: 12,
+              border: 'none',
+              backgroundColor: themeColor,
+              color: '#FFFFFF',
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: `0 3px 12px ${themeColor}44`,
+            }}
+          >
+            <Plus size={15} strokeWidth={2.4} />
+            <span>支出を記録</span>
+          </button>
+        )}
       </div>
 
-      {/* 機能分割タブバー (4タブ) */}
+      {/* シンプルな3タブバー */}
       <div
         role="tablist"
         aria-label="グッズ機能タブ"
@@ -217,15 +273,12 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
           marginBottom: 18,
           border: '1px solid var(--border-subtle)',
           gap: 4,
-          overflowX: 'auto',
         }}
       >
         {[
           { key: 'gallery', label: '一覧', icon: ShoppingBag, count: ownedCount },
           { key: 'orders', label: '予約・欲しいもの', icon: Clock, count: ordersCount },
           { key: 'expenses', label: '支出記録', icon: CreditCard, count: expenses.length },
-          { key: 'storage', label: '保管場所別', icon: MapPin, count: storageLocationCount },
-          { key: 'analytics', label: '分析・内訳', icon: PieChart, count: null },
         ].map((tab) => {
           const selected = activeTab === tab.key;
           const Icon = tab.icon;
@@ -238,12 +291,11 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
               onClick={() => setActiveTab(tab.key as MainTab)}
               style={{
                 flex: 1,
-                minWidth: 100,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
-                padding: '9px 10px',
+                padding: '10px 8px',
                 borderRadius: 10,
                 fontSize: 12.5,
                 fontWeight: selected ? 800 : 600,
@@ -258,125 +310,85 @@ export const GoodsView: React.FC<GoodsViewProps> = ({
             >
               <Icon size={14} color={selected ? themeColor : undefined} strokeWidth={selected ? 2.5 : 2} />
               <span>{tab.label}</span>
-              {tab.count !== null && (
-                <span
-                  style={{
-                    fontSize: 10.5,
-                    fontWeight: 800,
-                    padding: '1px 6px',
-                    borderRadius: 10,
-                    backgroundColor: selected ? `${themeColor}20` : 'var(--bg-surface)',
-                    color: selected ? themeColor : 'var(--text-muted)',
-                  }}
-                >
-                  {tab.count}
-                </span>
-              )}
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  padding: '1px 6px',
+                  borderRadius: 10,
+                  backgroundColor: selected ? `${themeColor}20` : 'var(--bg-surface)',
+                  color: selected ? themeColor : 'var(--text-muted)',
+                }}
+              >
+                {tab.count}
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* 2ペイン マスター・ディテール分割レイアウト */}
-      <div className="goods-split-layout">
-        {/* 左ペイン（メインコンテンツ） */}
-        <div className="goods-main-pane">
-          {activeTab === 'gallery' && (
-            <GoodsGalleryTab
-              goods={filteredByOshiGoods}
-              oshis={oshis}
-              selectedItem={selectedItem}
-              onSelectItem={handleSelectItem}
-              onToggleFavorite={handleToggleFavorite}
-              onUpdateQuantity={handleUpdateQuantity}
-              onOpenAddGoods={() => onOpenAddGoods(false)}
-              themeColor={themeColor}
-            />
-          )}
+      {/* メインコンテンツ（全幅表示） */}
+      <div>
+        {activeTab === 'gallery' && (
+          <GoodsGalleryTab
+            goods={filteredByOshiGoods}
+            oshis={oshis}
+            selectedItem={selectedItem}
+            onSelectItem={handleSelectItem}
+            onToggleFavorite={handleToggleFavorite}
+            onUpdateQuantity={handleUpdateQuantity}
+            onOpenAddGoods={() => onOpenAddGoods(false)}
+            themeColor={themeColor}
+          />
+        )}
 
-          {activeTab === 'storage' && (
-            <GoodsStorageTab
-              goods={filteredByOshiGoods}
-              oshis={oshis}
-              selectedItem={selectedItem}
-              onSelectItem={handleSelectItem}
-              onToggleFavorite={handleToggleFavorite}
-              onUpdateQuantity={handleUpdateQuantity}
-              onOpenAddGoods={() => onOpenAddGoods(false)}
-              themeColor={themeColor}
-            />
-          )}
-
-          {activeTab === 'orders' && (
-            <GoodsOrdersTab
-              goods={filteredByOshiGoods}
-              oshis={oshis}
-              selectedItem={selectedItem}
-              onSelectItem={handleSelectItem}
-              onToggleFavorite={handleToggleFavorite}
-              onMoveToOwned={handleMoveToOwned}
-              onOpenAddGoods={onOpenAddGoods}
-              themeColor={themeColor}
-            />
-          )}
-
-          {activeTab === 'expenses' && (
-            <GoodsExpensesTab
-              expenses={expenses}
-              themeColor={themeColor}
-              onOpenAddExpense={onOpenAddExpense || (() => {})}
-              onOpenEditExpense={onOpenEditExpense || (() => {})}
-              onDeleteExpense={async (exp) => {
-                if (!window.confirm(`「${exp.title}」の支出記録を削除しますか？`)) return;
-                await expenseRepository.delete(exp.id);
-                await refreshAllData();
-                showToast('支出記録を削除しました', 'info');
-              }}
-            />
-          )}
-
-          {activeTab === 'analytics' && (
-            <GoodsAnalyticsTab
-              goods={filteredByOshiGoods}
-              oshis={oshis}
-              themeColor={themeColor}
-            />
-          )}
-        </div>
-
-        {/* 右ペイン（PC・タブレット用 固定インスペクター） */}
-        <aside className="goods-inspector-pane" aria-label="グッズ詳細プレビュー">
-          <GoodsDetailInspector
-            item={selectedItem}
-            onEdit={handleEditGoods}
-            onDelete={handleDeleteGoods}
+        {activeTab === 'orders' && (
+          <GoodsOrdersTab
+            goods={filteredByOshiGoods}
+            oshis={oshis}
+            selectedItem={selectedItem}
+            onSelectItem={handleSelectItem}
             onToggleFavorite={handleToggleFavorite}
             onMoveToOwned={handleMoveToOwned}
-            onUpdateQuantity={handleUpdateQuantity}
-            onImageFileSelect={handleImageFileSelect}
-            isMobileModal={false}
+            onOpenAddGoods={onOpenAddGoods}
+            themeColor={themeColor}
           />
-        </aside>
+        )}
+
+        {activeTab === 'expenses' && (
+          <GoodsExpensesTab
+            expenses={expenses}
+            themeColor={themeColor}
+            onOpenAddExpense={onOpenAddExpense || (() => {})}
+            onOpenEditExpense={onOpenEditExpense || (() => {})}
+            onDeleteExpense={async (exp) => {
+              if (!window.confirm(`「${exp.title}」の支出記録を削除しますか？`)) return;
+              await expenseRepository.delete(exp.id);
+              await refreshAllData();
+              showToast('支出記録を削除しました', 'info');
+            }}
+          />
+        )}
       </div>
 
-      {/* モバイル用 詳細モーダル */}
-      {isMobileModalOpen && selectedItem && (
+      {/* グッズ詳細モーダル（タップ時に全画面サイズでポップアップ） */}
+      {isDetailModalOpen && selectedItem && (
         <div
           className="modal-overlay"
-          onClick={() => setIsMobileModalOpen(false)}
+          onClick={() => setIsDetailModalOpen(false)}
         >
           <div
-            ref={mobileDialogRef}
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="goods-mobile-detail-title"
             className="modal-box"
-            style={{ maxWidth: 460 }}
+            style={{ maxWidth: 480, width: '92%' }}
             onClick={(e) => e.stopPropagation()}
           >
             <GoodsDetailInspector
               item={selectedItem}
-              onClose={() => setIsMobileModalOpen(false)}
+              onClose={() => setIsDetailModalOpen(false)}
               onEdit={handleEditGoods}
               onDelete={handleDeleteGoods}
               onToggleFavorite={handleToggleFavorite}

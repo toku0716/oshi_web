@@ -61,6 +61,79 @@ export const GoodsExpensesTab: React.FC<GoodsExpensesTabProps> = ({
     return sortedExpenses.filter((e) => e.category === selectedCategory);
   }, [sortedExpenses, selectedCategory]);
 
+  // 支出が0件の時はクリーンな案内のみ表示
+  if (expenses.length === 0) {
+    return (
+      <div
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 20,
+          border: '1px solid var(--border-subtle)',
+          padding: '60px 24px',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 18,
+            backgroundColor: `${themeColor}18`,
+            margin: '0 auto 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: themeColor,
+          }}
+        >
+          <CreditCard size={28} />
+        </div>
+        <h3
+          style={{
+            fontSize: 16,
+            fontWeight: 800,
+            margin: '0 0 6px',
+            color: 'var(--text-primary)',
+          }}
+        >
+          支出記録がまだありません
+        </h3>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'var(--text-secondary)',
+            margin: '0 0 20px',
+            lineHeight: 1.5,
+          }}
+        >
+          ライブチケット代や遠征費、グッズ購入などの推し活出費を記録してみましょう
+        </p>
+        <button
+          type="button"
+          onClick={onOpenAddExpense}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '11px 24px',
+            borderRadius: 14,
+            border: 'none',
+            backgroundColor: themeColor,
+            color: '#FFFFFF',
+            fontSize: 14,
+            fontWeight: 800,
+            cursor: 'pointer',
+            boxShadow: `0 4px 14px ${themeColor}44`,
+          }}
+        >
+          <Plus size={16} />
+          <span>支出を記録する</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* サマリーカード */}
