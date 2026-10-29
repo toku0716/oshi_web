@@ -3,6 +3,7 @@ import { Clock } from 'lucide-react';
 import { EVENT_CATEGORY_META, type OshiEvent } from '../../types';
 import { getEventLiveCountdown, isEventEnded } from '../../utils/oshiUtils';
 import { pressable } from '../../utils/a11y';
+import { useApp } from '../../context/AppContext';
 
 interface ScheduleCardProps {
   event: OshiEvent;
@@ -22,6 +23,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
   currentTime = new Date(),
   onClick,
 }) => {
+  const { isDark } = useApp();
   const [isHovered, setIsHovered] = useState(false);
   const [isActive, setIsActive] = useState(false);
 
@@ -57,14 +59,34 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
       onTouchStart={() => setIsActive(true)}
       onTouchEnd={() => setIsActive(false)}
       style={{
-        backgroundColor: isActive ? '#191B1F' : isHovered ? '#23262D' : '#1C1E23',
+        backgroundColor: isDark
+          ? isActive
+            ? '#15171E'
+            : isHovered
+            ? '#222632'
+            : '#181B24'
+          : isActive
+          ? '#F3F4F6'
+          : isHovered
+          ? '#F9FAFB'
+          : '#FFFFFF',
         borderRadius: 20,
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        border: isDark
+          ? isHovered
+            ? '1.5px solid rgba(255, 255, 255, 0.24)'
+            : '1.5px solid rgba(255, 255, 255, 0.14)'
+          : isHovered
+          ? '1.5px solid var(--border-medium)'
+          : '1.5px solid var(--border-subtle)',
         padding: 'clamp(24px, 5vw, 32px) clamp(20px, 4.5vw, 28px)',
         cursor: 'pointer',
-        boxShadow: isHovered
-          ? '0 12px 32px rgba(0, 0, 0, 0.45)'
-          : '0 6px 24px rgba(0, 0, 0, 0.3)',
+        boxShadow: isDark
+          ? isHovered
+            ? '0 14px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08)'
+            : '0 8px 26px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+          : isHovered
+          ? '0 12px 30px rgba(0, 0, 0, 0.08)'
+          : 'var(--shadow-card)',
         transform: isActive ? 'scale(0.995)' : 'none',
         transition:
           'background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease',
@@ -110,7 +132,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
             margin: 0,
             fontSize: 'clamp(28px, 6.5vw, 38px)',
             fontWeight: 800,
-            color: '#FFFFFF',
+            color: 'var(--text-primary)',
             lineHeight: 1.25,
             letterSpacing: '-0.01em',
             wordBreak: 'break-word',
@@ -122,7 +144,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
           style={{
             fontSize: 16,
             fontWeight: 500,
-            color: '#9CA3AF',
+            color: 'var(--text-secondary)',
             letterSpacing: '0.02em',
             whiteSpace: 'nowrap',
           }}
@@ -147,17 +169,31 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
             gap: 10,
             padding: '10px 22px',
             borderRadius: 9999,
-            backgroundColor: isBeforeStart
-              ? 'rgba(255, 255, 255, 0.08)'
+            backgroundColor: isDark
+              ? isBeforeStart
+                ? 'rgba(255, 255, 255, 0.10)'
+                : countdown.isStarted
+                ? 'rgba(52, 199, 89, 0.20)'
+                : 'rgba(255, 255, 255, 0.08)'
+              : isBeforeStart
+              ? '#EFF6FF'
               : countdown.isStarted
-              ? 'rgba(52, 199, 89, 0.15)'
-              : 'rgba(255, 255, 255, 0.05)',
-            border: isBeforeStart
-              ? '1.5px solid rgba(255, 255, 255, 0.22)'
+              ? '#ECFDF5'
+              : '#F3F4F6',
+            border: isDark
+              ? isBeforeStart
+                ? '1.5px solid rgba(255, 255, 255, 0.26)'
+                : countdown.isStarted
+                ? '1.5px solid rgba(52, 199, 89, 0.6)'
+                : '1.5px solid rgba(255, 255, 255, 0.16)'
+              : isBeforeStart
+              ? '1.5px solid #93C5FD'
               : countdown.isStarted
-              ? '1.5px solid rgba(52, 199, 89, 0.5)'
-              : '1px solid rgba(255, 255, 255, 0.12)',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+              ? '1.5px solid #6EE7B7'
+              : '1.5px solid var(--border-medium)',
+            boxShadow: isDark
+              ? '0 4px 16px rgba(0, 0, 0, 0.4)'
+              : '0 2px 8px rgba(0, 0, 0, 0.06)',
             backdropFilter: 'blur(8px)',
           }}
         >
@@ -167,8 +203,8 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
               countdown.isStarted
                 ? '#34C759'
                 : isBeforeStart
-                ? '#60A5FA'
-                : '#9CA3AF'
+                ? '#3B82F6'
+                : 'var(--text-muted)'
             }
             strokeWidth={2.4}
           />
@@ -176,7 +212,9 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
             style={{
               fontSize: 'clamp(15px, 4vw, 18px)',
               fontWeight: 800,
-              color: countdown.isStarted ? '#34C759' : '#FFFFFF',
+              color: countdown.isStarted
+                ? '#34C759'
+                : 'var(--text-primary)',
               letterSpacing: '0.06em',
               fontFamily:
                 'var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, monospace',

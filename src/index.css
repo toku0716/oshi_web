@@ -13,36 +13,36 @@
   --font-sans: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, "Hiragino Maru Gothic ProN", sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Dark Canvas (Spotify Pure Dark System) */
-  --bg-canvas: #121212;
-  --bg-surface: #181818;
-  --bg-surface-elevated: #242424;
-  --bg-surface-subtle: #1e1e1e;
-  --bg-glass: rgba(18, 18, 18, 0.94);
+  /* High-Contrast Clear Dark Canvas & Surfaces (Apple Music & iOS Premium Dark) */
+  --bg-canvas: #0E1013;
+  --bg-surface: #181B22;
+  --bg-surface-elevated: #222630;
+  --bg-surface-subtle: #242834;
+  --bg-glass: rgba(14, 16, 19, 0.94);
 
-  /* Precise Subtle Borders (Spotify Style) */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-medium: rgba(255, 255, 255, 0.14);
-  --border-strong: rgba(255, 255, 255, 0.22);
+  /* Precise Clear Borders (High Contrast for Dark Mode) */
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-medium: rgba(255, 255, 255, 0.18);
+  --border-strong: rgba(255, 255, 255, 0.28);
 
-  /* Typography Colors (Spotify Standard) */
+  /* Typography Colors */
   --text-primary: #FFFFFF;
-  --text-secondary: #B3B3B3;
-  --text-muted: #888888;
-  --text-tertiary: #6A6A6A;
+  --text-secondary: #A6ADBA;
+  --text-muted: #7E8597;
+  --text-tertiary: #5D6373;
   --text-on-accent: #FFFFFF;
 
   /* Semantic Colors */
   --color-danger: #FF453A;
-  --color-danger-bg: rgba(255, 69, 58, 0.14);
+  --color-danger-bg: rgba(255, 69, 58, 0.16);
   --color-warning: #FF9F0A;
-  --color-warning-bg: rgba(255, 159, 10, 0.14);
+  --color-warning-bg: rgba(255, 159, 10, 0.16);
   --color-success: #30D158;
-  --color-success-bg: rgba(48, 209, 88, 0.14);
+  --color-success-bg: rgba(48, 209, 88, 0.16);
 
   /* Overlays */
-  --bg-overlay: rgba(0, 0, 0, 0.6);
-  --bg-toast: #2C2C2E;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-toast: #222630;
 
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(var(--oshi-color-rgb), 0.45);
@@ -52,9 +52,9 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* Shadows */
-  --shadow-card: 0 8px 28px -6px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 10px 30px -4px rgba(var(--oshi-color-rgb), 0.28);
+  /* Shadows (with crisp depth & edge highlight for dark canvases) */
+  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-glow: 0 10px 30px -4px rgba(var(--oshi-color-rgb), 0.32);
 
   color-scheme: dark;
 }
