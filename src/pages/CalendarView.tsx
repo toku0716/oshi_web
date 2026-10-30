@@ -195,20 +195,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               >
                 {year}年 {month + 1}月
               </h1>
-              {activeOshi && (
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    backgroundColor: `${themeColor}1F`,
-                    color: themeColor,
-                  }}
-                >
-                  {activeOshi.name}
-                </span>
-              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
