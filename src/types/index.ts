@@ -147,8 +147,8 @@ export const EXPENSE_CATEGORY_META: Record<
 
 export type ThemeModeOption = 'system' | 'light' | 'dark';
 
-export const CURRENT_POLICY_VERSION = '2026-10-27';
-export const CURRENT_POLICY_DATE_LABEL = '2026年10月27日';
+export const CURRENT_POLICY_VERSION = '2026-11-01';
+export const CURRENT_POLICY_DATE_LABEL = '2026年11月1日';
 
 export const DEFAULT_MAINTENANCE_TITLE = '現在メンテナンス中です';
 export const DEFAULT_MAINTENANCE_MESSAGE =

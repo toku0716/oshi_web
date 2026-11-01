@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getEffectivePolicyInfo } from '../../types';
 import { useDialog } from '../../hooks/useDialog';
@@ -16,20 +17,11 @@ interface TermsPrivacyModalProps {
 export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
   isOpen,
   mode,
-  initialTab = 'terms',
   isPolicyUpdate = false,
   onAccept,
   onClose,
 }) => {
   const { themeColor, settings } = useApp();
-  const [tab, setTab] = useState<'terms' | 'privacy'>(initialTab);
-
-  useEffect(() => {
-    if (isOpen) {
-      setTab(initialTab);
-    }
-  }, [isOpen, initialTab]);
-
   const isConsent = mode === 'consent';
 
   const handleBackdropClick = () => {
@@ -48,12 +40,14 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
   const policyInfo = getEffectivePolicyInfo(settings);
 
   const sheetBg = 'var(--bg-surface-elevated)';
-  const headerBg = 'var(--bg-surface-elevated)';
-  const borderColor = 'var(--border-medium)';
+  const subtleBg = 'var(--bg-surface-subtle)';
+  const borderSubtle = 'var(--border-subtle)';
   const textColor = 'var(--text-primary)';
   const subTextColor = 'var(--text-secondary)';
   const labelColor = 'var(--text-muted)';
-  const segmentBg = 'var(--bg-surface-subtle)';
+
+  const policyText = policyInfo.termsContent || policyInfo.privacyContent;
+  const ctaLabel = isPolicyUpdate ? '同意して続ける' : '同意してはじめる';
 
   return (
     <div
@@ -66,51 +60,81 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
         role={isConsent ? 'alertdialog' : 'dialog'}
         aria-modal="true"
         aria-labelledby="terms-privacy-title"
-        aria-describedby={isConsent ? 'terms-privacy-consent-desc' : undefined}
+        aria-describedby="terms-privacy-desc"
         className="flutter-bottom-sheet"
         style={{
           backgroundColor: sheetBg,
           padding: 0,
-          maxHeight: 'min(88dvh, calc(var(--visual-viewport-height, 88dvh) - 16px))',
-          maxWidth: 560,
+          maxHeight: 'min(90dvh, calc(var(--visual-viewport-height, 90dvh) - 12px))',
+          maxWidth: 500,
           margin: '0 auto',
-          borderRadius: '20px 20px 0 0',
+          borderRadius: '22px 22px 0 0',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 上部ハンドル */}
-        <div style={{ padding: '12px 0 4px', display: 'flex', justifyContent: 'center' }}>
+        {/* 上部ドラッグハンドル */}
+        <div style={{ padding: '10px 0 2px', display: 'flex', justifyContent: 'center' }}>
           <div className="flutter-sheet-handle" style={{ margin: 0 }} />
         </div>
 
         {/* ヘッダー */}
         <div
           style={{
-            padding: '8px 20px 14px',
-            borderBottom: `1px solid ${borderColor}`,
-            backgroundColor: headerBg,
+            padding: '8px 20px 12px',
+            borderBottom: `1px solid ${borderSubtle}`,
+            backgroundColor: sheetBg,
           }}
         >
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               justifyContent: 'space-between',
-              marginBottom: 12,
+              gap: 12,
             }}
           >
             <div>
               <h2
                 id="terms-privacy-title"
-                style={{ margin: 0, fontSize: 17, fontWeight: 800, color: textColor }}
+                style={{
+                  margin: 0,
+                  fontSize: 16.5,
+                  fontWeight: 800,
+                  color: textColor,
+                  letterSpacing: '-0.01em',
+                }}
               >
                 利用規約・プライバシーポリシー
               </h2>
-              <div style={{ fontSize: 12, color: labelColor, marginTop: 2 }}>
-                改定日: {policyInfo.dateLabel} (Ver. {policyInfo.version})
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  marginTop: 5,
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '1.5px 7px',
+                    borderRadius: 6,
+                    backgroundColor: `${themeColor}18`,
+                    color: themeColor,
+                    fontSize: 10.5,
+                    fontWeight: 800,
+                  }}
+                >
+                  ZEN大学 在学生対象
+                </span>
+                <span style={{ fontSize: 11.5, color: labelColor }}>
+                  改定: {policyInfo.dateLabel}
+                </span>
               </div>
             </div>
 
@@ -119,11 +143,11 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
                 type="button"
                 onClick={onClose}
                 style={{
-                  background: segmentBg,
-                  border: 'none',
-                  color: textColor,
-                  width: 36,
-                  height: 36,
+                  background: subtleBg,
+                  border: `1px solid ${borderSubtle}`,
+                  color: subTextColor,
+                  width: 32,
+                  height: 32,
                   flexShrink: 0,
                   borderRadius: '50%',
                   cursor: 'pointer',
@@ -134,163 +158,99 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
                 }}
                 aria-label="閉じる"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <X size={16} strokeWidth={2.2} />
               </button>
             )}
           </div>
-
-          {/* シンプルなセグメントコントロール */}
-          <div
-            role="tablist"
-            aria-label="表示する文書"
-            style={{
-              display: 'flex',
-              padding: 3,
-              backgroundColor: segmentBg,
-              borderRadius: 10,
-            }}
-          >
-            <button
-              type="button"
-              role="tab"
-              id="terms-privacy-tab-terms"
-              aria-selected={tab === 'terms'}
-              aria-controls="terms-privacy-panel"
-              onClick={() => setTab('terms')}
-              style={{
-                flex: 1,
-                padding: '8px 0',
-                border: 'none',
-                borderRadius: 8,
-                backgroundColor: tab === 'terms' ? sheetBg : 'transparent',
-                color: tab === 'terms' ? textColor : labelColor,
-                fontWeight: tab === 'terms' ? 800 : 600,
-                fontSize: 13,
-                cursor: 'pointer',
-                boxShadow: tab === 'terms' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              利用規約
-            </button>
-            <button
-              type="button"
-              role="tab"
-              id="terms-privacy-tab-privacy"
-              aria-selected={tab === 'privacy'}
-              aria-controls="terms-privacy-panel"
-              onClick={() => setTab('privacy')}
-              style={{
-                flex: 1,
-                padding: '8px 0',
-                border: 'none',
-                borderRadius: 8,
-                backgroundColor: tab === 'privacy' ? sheetBg : 'transparent',
-                color: tab === 'privacy' ? textColor : labelColor,
-                fontWeight: tab === 'privacy' ? 800 : 600,
-                fontSize: 13,
-                cursor: 'pointer',
-                boxShadow: tab === 'privacy' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              プライバシーポリシー
-            </button>
-          </div>
         </div>
 
-        {/* 同意メッセージ（必要な場合のみ） */}
-        {mode === 'consent' && (
-          <div
-            id="terms-privacy-consent-desc"
-            style={{
-              margin: '14px 20px 0',
-              padding: '12px 14px',
-              borderRadius: 10,
-              backgroundColor: `${themeColor}14`,
-              border: `1px solid ${themeColor}33`,
-              fontSize: 12.5,
-              lineHeight: 1.6,
-              color: textColor,
-            }}
-          >
-            {isPolicyUpdate
-              ? '【ZEN大学 生徒限定】利用規約およびプライバシーポリシーが改定されました。内容をご確認の上、同意をお願いいたします。'
-              : '【ZEN大学 生徒限定】本アプリはZEN大学の生徒のみなさまを対象として提供しております。今後のサービス改善・機能向上のため、フィードバックへのご協力をお願いいたします。ご利用前に以下の規約・ポリシーをご確認ください。'}
-          </div>
-        )}
-
-        {/* スクロール本文エリア */}
+        {/* 1枚完結の規約・プライバシーポリシー本文 */}
         <div
-          role="tabpanel"
-          id="terms-privacy-panel"
-          aria-labelledby={tab === 'terms' ? 'terms-privacy-tab-terms' : 'terms-privacy-tab-privacy'}
-          tabIndex={0}
+          id="terms-privacy-desc"
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '16px 20px 24px',
-            fontSize: 13,
-            lineHeight: 1.7,
+            padding: '12px 18px 14px',
             color: subTextColor,
           }}
         >
-          {tab === 'terms' ? (
-            <PolicyContentRenderer
-              content={policyInfo.termsContent}
-              textColor={textColor}
-              subTextColor={subTextColor}
-            />
-          ) : (
-            <PolicyContentRenderer
-              content={policyInfo.privacyContent}
-              textColor={textColor}
-              subTextColor={subTextColor}
-            />
+          {isConsent && (
+            <p
+              style={{
+                margin: '0 0 10px',
+                fontSize: 12,
+                lineHeight: 1.45,
+                color: isPolicyUpdate ? textColor : subTextColor,
+                fontWeight: isPolicyUpdate ? 700 : 500,
+              }}
+            >
+              {isPolicyUpdate
+                ? '規約・プライバシーポリシーが改定されました。内容をご確認のうえ同意をお願いします。'
+                : 'ご利用の前に、以下の内容をご確認ください。'}
+            </p>
           )}
+
+          <PolicyContentRenderer
+            content={policyText}
+            textColor={textColor}
+            subTextColor={subTextColor}
+            themeColor={themeColor}
+          />
         </div>
 
         {/* フッターアクション */}
         <div
           style={{
-            padding: '12px 20px calc(20px + var(--safe-bottom))',
-            borderTop: `1px solid ${borderColor}`,
-            backgroundColor: headerBg,
+            padding: '10px 18px calc(14px + var(--safe-bottom))',
+            borderTop: `1px solid ${borderSubtle}`,
+            backgroundColor: sheetBg,
           }}
         >
           {mode === 'consent' ? (
-            <button
-              type="button"
-              onClick={onAccept}
-              style={{
-                width: '100%',
-                height: 48,
-                borderRadius: 12,
-                border: 'none',
-                backgroundColor: themeColor,
-                color: 'var(--text-on-accent)',
-                fontSize: 15,
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
-              {isPolicyUpdate ? '同意して続ける' : '同意してはじめる'}
-            </button>
+            <>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: labelColor,
+                  textAlign: 'center',
+                  lineHeight: 1.4,
+                  marginBottom: 8,
+                }}
+              >
+                ボタンの押下をもって上記内容に同意したものとみなします。
+              </div>
+              <button
+                type="button"
+                onClick={onAccept}
+                style={{
+                  width: '100%',
+                  height: 46,
+                  borderRadius: 12,
+                  border: 'none',
+                  backgroundColor: themeColor,
+                  color: 'var(--text-on-accent)',
+                  fontSize: 14.5,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: `0 4px 14px ${themeColor}38`,
+                  transition: 'opacity 0.15s ease',
+                }}
+              >
+                {ctaLabel}
+              </button>
+            </>
           ) : (
             <button
               type="button"
               onClick={onClose}
               style={{
                 width: '100%',
-                height: 44,
+                height: 42,
                 borderRadius: 12,
-                border: 'none',
-                backgroundColor: segmentBg,
+                border: `1px solid ${borderSubtle}`,
+                backgroundColor: subtleBg,
                 color: textColor,
-                fontSize: 14,
+                fontSize: 13.5,
                 fontWeight: 700,
                 cursor: 'pointer',
               }}

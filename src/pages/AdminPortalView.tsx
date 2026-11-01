@@ -30,10 +30,7 @@ import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
 import { AdminGoogleAccessGate } from '../components/auth/AdminGoogleAccessGate';
 import { PolicyContentRenderer } from '../components/common/PolicyContentRenderer';
 import { MaintenanceScreen } from '../components/common/MaintenanceScreen';
-import {
-  DEFAULT_TERMS_CONTENT,
-  DEFAULT_PRIVACY_CONTENT,
-} from '../data/defaultPolicyText';
+import { DEFAULT_TERMS_CONTENT } from '../data/defaultPolicyText';
 import { useApp } from '../context/AppContext';
 import { settingsRepository } from '../repository';
 import { setCurrentUserEmail } from '../db/database';
@@ -116,14 +113,10 @@ export const AdminPortalView: React.FC = () => {
     'none' | 'view' | 'consent_initial' | 'consent_update'
   >('none');
 
-  // 4. 利用規約・プライバシーポリシー本文編集ステート
-  const [policyEditorTab, setPolicyEditorTab] = useState<'terms' | 'privacy'>('terms');
+  // 4. 利用規約・プライバシーポリシー本文編集ステート（1枚統合）
   const [editorPreviewMode, setEditorPreviewMode] = useState<'edit' | 'preview'>('edit');
   const [editingTermsContent, setEditingTermsContent] = useState<string>(
     policyInfo.termsContent
-  );
-  const [editingPrivacyContent, setEditingPrivacyContent] = useState<string>(
-    policyInfo.privacyContent
   );
 
   // 5. 改善アンケート GoogleフォームURLステート
@@ -202,10 +195,7 @@ export const AdminPortalView: React.FC = () => {
     if (policyInfo.termsContent && !editingTermsContent) {
       setEditingTermsContent(policyInfo.termsContent);
     }
-    if (policyInfo.privacyContent && !editingPrivacyContent) {
-      setEditingPrivacyContent(policyInfo.privacyContent);
-    }
-  }, [policyInfo.termsContent, policyInfo.privacyContent]);
+  }, [policyInfo.termsContent]);
 
   const bgColor = isDark ? '#0D0E12' : '#F3F5F9';
   const cardBg = isDark ? '#171921' : '#FFFFFF';
@@ -666,37 +656,32 @@ export const AdminPortalView: React.FC = () => {
     showToast('メンテナンス画面の設定を保存・同期しました！', 'success');
   };
 
-  // 利用規約・プライバシーポリシーの文面のみ下書き・即時保存（再同意要求なし）
+  // 利用規約・プライバシーポリシー（1枚統合）の文面のみ下書き・即時保存（再同意要求なし）
   const handleSavePolicyContentOnly = async () => {
     const terms = editingTermsContent.trim();
-    const privacy = editingPrivacyContent.trim();
 
     if (!terms) {
-      showToast('利用規約の本文を入力してください', 'error');
-      return;
-    }
-    if (!privacy) {
-      showToast('プライバシーポリシーの本文を入力してください', 'error');
+      showToast('利用規約・プライバシーポリシーの本文を入力してください', 'error');
       return;
     }
 
     localStorage.setItem('oshiss_custom_terms_content', terms);
-    localStorage.setItem('oshiss_custom_privacy_content', privacy);
+    localStorage.setItem('oshiss_custom_privacy_content', terms);
 
     await settingsRepository.saveSettings({
       customTermsContent: terms,
-      customPrivacyContent: privacy,
+      customPrivacyContent: terms,
     });
 
     await syncPolicyToServer({
       version: policyInfo.version,
       dateLabel: policyInfo.dateLabel,
       termsContent: terms,
-      privacyContent: privacy,
+      privacyContent: terms,
     });
 
     await refreshAllData();
-    showToast('規約・プライバシーポリシーの本文を更新保存しました！（スマホ等の別端末にも即時同期されます）', 'success');
+    showToast('利用規約・プライバシーポリシーの本文を更新保存しました！（スマホ等の別端末にも即時同期されます）', 'success');
   };
 
   // 利用規約・プライバシーポリシーの新バージョン発行（全ユーザーへ再同意を要求）
@@ -705,13 +690,12 @@ export const AdminPortalView: React.FC = () => {
     const ver = newPolicyVersion.trim();
     const label = newPolicyDateLabel.trim();
     const terms = editingTermsContent.trim();
-    const privacy = editingPrivacyContent.trim();
 
     if (!ver || !label) {
       showToast('バージョン番号と改定日ラベルを入力してください', 'error');
       return;
     }
-    if (!terms || !privacy) {
+    if (!terms) {
       showToast('規約・ポリシーの本文を入力してください', 'error');
       return;
     }
@@ -719,20 +703,20 @@ export const AdminPortalView: React.FC = () => {
     localStorage.setItem('oshiss_active_policy_version', ver);
     localStorage.setItem('oshiss_active_policy_date_label', label);
     localStorage.setItem('oshiss_custom_terms_content', terms);
-    localStorage.setItem('oshiss_custom_privacy_content', privacy);
+    localStorage.setItem('oshiss_custom_privacy_content', terms);
 
     await settingsRepository.saveSettings({
       activePolicyVersion: ver,
       activePolicyDateLabel: label,
       customTermsContent: terms,
-      customPrivacyContent: privacy,
+      customPrivacyContent: terms,
     });
 
     await syncPolicyToServer({
       version: ver,
       dateLabel: label,
       termsContent: terms,
-      privacyContent: privacy,
+      privacyContent: terms,
     });
 
     await refreshAllData();
@@ -742,16 +726,10 @@ export const AdminPortalView: React.FC = () => {
     );
   };
 
-  // 規約本文をデフォルトにリセット
+  // 規約・ポリシー本文をデフォルトにリセット
   const handleResetTermsToDefault = () => {
     setEditingTermsContent(DEFAULT_TERMS_CONTENT);
-    showToast('利用規約をデフォルトの文章に戻しました（保存ボタンを押すと確定します）', 'info');
-  };
-
-  // プライバシーポリシー本文をデフォルトにリセット
-  const handleResetPrivacyToDefault = () => {
-    setEditingPrivacyContent(DEFAULT_PRIVACY_CONTENT);
-    showToast('プライバシーポリシーをデフォルトの文章に戻しました（保存ボタンを押すと確定します）', 'info');
+    showToast('利用規約・プライバシーポリシーをデフォルトの文章に戻しました（保存ボタンを押すと確定します）', 'info');
   };
 
   // 全て初期デフォルトに戻す
@@ -773,12 +751,11 @@ export const AdminPortalView: React.FC = () => {
       version: CURRENT_POLICY_VERSION,
       dateLabel: CURRENT_POLICY_DATE_LABEL,
       termsContent: DEFAULT_TERMS_CONTENT,
-      privacyContent: DEFAULT_PRIVACY_CONTENT,
+      privacyContent: DEFAULT_TERMS_CONTENT,
     });
     setNewPolicyVersion(CURRENT_POLICY_VERSION);
     setNewPolicyDateLabel(CURRENT_POLICY_DATE_LABEL);
     setEditingTermsContent(DEFAULT_TERMS_CONTENT);
-    setEditingPrivacyContent(DEFAULT_PRIVACY_CONTENT);
     await refreshAllData();
     showToast('規約・ポリシー設定を初期デフォルトに戻しました', 'success');
   };
@@ -2464,7 +2441,7 @@ export const AdminPortalView: React.FC = () => {
               marginBottom: 16,
             }}
           >
-            {/* タブ切り替え & モード切り替えバー */}
+            {/* タイトル & モード切り替えバー（1枚統合） */}
             <div
               style={{
                 display: 'flex',
@@ -2475,58 +2452,22 @@ export const AdminPortalView: React.FC = () => {
                 marginBottom: 14,
               }}
             >
-              {/* 文書選択タブ */}
               <div
                 style={{
                   display: 'inline-flex',
-                  padding: 3,
+                  alignItems: 'center',
+                  gap: 7,
+                  padding: '6px 12px',
                   backgroundColor: cardBg,
-                  borderRadius: 10,
+                  borderRadius: 9,
                   border: `1px solid ${borderColor}`,
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  color: textColor,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => setPolicyEditorTab('terms')}
-                  style={{
-                    padding: '7px 14px',
-                    borderRadius: 8,
-                    border: 'none',
-                    backgroundColor: policyEditorTab === 'terms' ? themeColor : 'transparent',
-                    color: policyEditorTab === 'terms' ? '#FFFFFF' : textColor,
-                    fontWeight: policyEditorTab === 'terms' ? 800 : 600,
-                    fontSize: 12.5,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <FileText size={13} />
-                  <span>利用規約の編集</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPolicyEditorTab('privacy')}
-                  style={{
-                    padding: '7px 14px',
-                    borderRadius: 8,
-                    border: 'none',
-                    backgroundColor: policyEditorTab === 'privacy' ? themeColor : 'transparent',
-                    color: policyEditorTab === 'privacy' ? '#FFFFFF' : textColor,
-                    fontWeight: policyEditorTab === 'privacy' ? 800 : 600,
-                    fontSize: 12.5,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <Lock size={13} />
-                  <span>プライバシーポリシーの編集</span>
-                </button>
+                <FileText size={14} color={themeColor} />
+                <span>利用規約・プライバシーポリシー（1枚統合）</span>
               </div>
 
               {/* ツールボタン群 */}
@@ -2584,11 +2525,7 @@ export const AdminPortalView: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={
-                    policyEditorTab === 'terms'
-                      ? handleResetTermsToDefault
-                      : handleResetPrivacyToDefault
-                  }
+                  onClick={handleResetTermsToDefault}
                   title="初期のデフォルト文章を読み込みます"
                   style={{
                     padding: '6px 11px',
@@ -2626,9 +2563,9 @@ export const AdminPortalView: React.FC = () => {
                   border: `1px solid ${borderColor}`,
                 }}
               >
-                <span style={{ fontWeight: 800, color: themeColor }}>💡 書式ガイド:</span>
+                <span style={{ fontWeight: 800, color: themeColor }}>書式:</span>
                 <span>
-                  「<strong>### 第〇条（見出し）</strong>」または「<strong>第〇条</strong>」で見出し、「<strong>・</strong>」「<strong>-</strong>」で箇条書き、「<strong>**太字**</strong>」で強調表示されます。
+                  「<strong>### 1. 見出し</strong>」で項目ブロック、「<strong>・</strong>」で箇条書き、「<strong>**太字**</strong>」で強調表示されます。
                 </span>
               </div>
             )}
@@ -2637,27 +2574,13 @@ export const AdminPortalView: React.FC = () => {
             {editorPreviewMode === 'edit' ? (
               <div>
                 <textarea
-                  value={
-                    policyEditorTab === 'terms'
-                      ? editingTermsContent
-                      : editingPrivacyContent
-                  }
-                  onChange={(e) => {
-                    if (policyEditorTab === 'terms') {
-                      setEditingTermsContent(e.target.value);
-                    } else {
-                      setEditingPrivacyContent(e.target.value);
-                    }
-                  }}
-                  rows={14}
-                  placeholder={
-                    policyEditorTab === 'terms'
-                      ? '利用規約の本文を入力してください...'
-                      : 'プライバシーポリシーの本文を入力してください...'
-                  }
+                  value={editingTermsContent}
+                  onChange={(e) => setEditingTermsContent(e.target.value)}
+                  rows={10}
+                  placeholder="利用規約・プライバシーポリシーの本文を入力してください..."
                   style={{
                     width: '100%',
-                    minHeight: 280,
+                    minHeight: 200,
                     padding: '12px 14px',
                     borderRadius: 12,
                     border: `1px solid ${borderColor}`,
@@ -2681,20 +2604,15 @@ export const AdminPortalView: React.FC = () => {
                     color: subTextColor,
                   }}
                 >
+                  <span>1枚のモーダルシートとしてそのまま表示されます</span>
                   <span>
-                    現在編集中: {policyEditorTab === 'terms' ? '利用規約' : 'プライバシーポリシー'}
-                  </span>
-                  <span>
-                    {(policyEditorTab === 'terms' ? editingTermsContent : editingPrivacyContent).length} 文字 /{' '}
-                    {(policyEditorTab === 'terms' ? editingTermsContent : editingPrivacyContent).split('\n').length} 行
+                    {editingTermsContent.length} 文字 / {editingTermsContent.split('\n').length} 行
                   </span>
                 </div>
               </div>
             ) : (
               <div
                 style={{
-                  maxHeight: 380,
-                  overflowY: 'auto',
                   padding: '16px 18px',
                   borderRadius: 12,
                   border: `1px solid ${borderColor}`,
@@ -2711,16 +2629,13 @@ export const AdminPortalView: React.FC = () => {
                     borderBottom: `1px solid ${borderColor}`,
                   }}
                 >
-                  👁️ {policyEditorTab === 'terms' ? '利用規約' : 'プライバシーポリシー'}（実際の表示プレビュー）
+                  表示プレビュー（1枚シート）
                 </div>
                 <PolicyContentRenderer
-                  content={
-                    policyEditorTab === 'terms'
-                      ? editingTermsContent
-                      : editingPrivacyContent
-                  }
+                  content={editingTermsContent}
                   textColor={textColor}
                   subTextColor={subTextColor}
+                  themeColor={themeColor}
                 />
               </div>
             )}

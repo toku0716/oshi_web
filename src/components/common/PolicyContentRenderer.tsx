@@ -1,15 +1,75 @@
 import React from 'react';
+import {
+  GraduationCap,
+  ShieldCheck,
+  AlertTriangle,
+  MessageSquare,
+  FileText,
+} from 'lucide-react';
 
 interface PolicyContentRendererProps {
   content: string;
   textColor?: string;
   subTextColor?: string;
+  themeColor?: string;
 }
+
+interface PolicySection {
+  heading: string;
+  lines: string[];
+}
+
+const isHeadingLine = (trimmed: string): boolean => {
+  return (
+    trimmed.startsWith('### ') ||
+    /^第[0-9０-９一二三四五六七八九十]+条/.test(trimmed) ||
+    (/^[0-9]+[.\s]/.test(trimmed) && trimmed.length < 60)
+  );
+};
+
+const getSectionMeta = (heading: string): {
+  isWarning: boolean;
+  tag?: string;
+  renderIcon: (color: string) => React.ReactNode;
+} => {
+  const iconProps = (color: string) => ({ size: 16, color, strokeWidth: 2.2 });
+
+  if (/開発|ベータ|beta|消失|免責/i.test(heading)) {
+    return {
+      isWarning: true,
+      tag: 'Beta',
+      renderIcon: (color) => <AlertTriangle {...iconProps(color)} />,
+    };
+  }
+  if (/プライバシー|データ|保存|個人情報/.test(heading)) {
+    return {
+      isWarning: false,
+      renderIcon: (color) => <ShieldCheck {...iconProps(color)} />,
+    };
+  }
+  if (/対象|ルール|目的|禁止/.test(heading)) {
+    return {
+      isWarning: false,
+      renderIcon: (color) => <GraduationCap {...iconProps(color)} />,
+    };
+  }
+  if (/フィードバック|アンケート/.test(heading)) {
+    return {
+      isWarning: false,
+      renderIcon: (color) => <MessageSquare {...iconProps(color)} />,
+    };
+  }
+  return {
+    isWarning: false,
+    renderIcon: (color) => <FileText {...iconProps(color)} />,
+  };
+};
 
 export const PolicyContentRenderer: React.FC<PolicyContentRendererProps> = ({
   content,
   textColor = 'var(--text-primary)',
   subTextColor = 'var(--text-secondary)',
+  themeColor = 'var(--oshi-color)',
 }) => {
   const renderInlineFormatted = (text: string) => {
     const parts: React.ReactNode[] = [];
@@ -34,93 +94,182 @@ export const PolicyContentRenderer: React.FC<PolicyContentRendererProps> = ({
     return parts.length > 0 ? parts : text;
   };
 
-  const lines = content.split(/\r?\n/);
-  const elements: React.ReactNode[] = [];
-  let currentList: string[] = [];
+  const renderLines = (lines: string[]) => {
+    const elements: React.ReactNode[] = [];
+    let currentList: string[] = [];
 
-  const flushList = (key: string) => {
-    if (currentList.length > 0) {
-      elements.push(
-        <ul
-          key={`ul-${key}`}
-          style={{
-            margin: '0 0 16px',
-            paddingLeft: 20,
-            lineHeight: 1.65,
-            color: subTextColor,
-          }}
-        >
-          {currentList.map((item, idx) => (
-            <li key={idx} style={{ marginBottom: 4 }}>
-              {renderInlineFormatted(item)}
-            </li>
-          ))}
-        </ul>
-      );
-      currentList = [];
-    }
+    const flushList = (key: string) => {
+      if (currentList.length > 0) {
+        elements.push(
+          <ul
+            key={`ul-${key}`}
+            style={{
+              margin: '4px 0 0',
+              paddingLeft: 18,
+              lineHeight: 1.5,
+              fontSize: 12,
+              color: subTextColor,
+            }}
+          >
+            {currentList.map((item, idx) => (
+              <li key={idx} style={{ marginBottom: 2 }}>
+                {renderInlineFormatted(item)}
+              </li>
+            ))}
+          </ul>
+        );
+        currentList = [];
+      }
+    };
+
+    lines.forEach((line, idx) => {
+      if (line.startsWith('・') || line.startsWith('- ') || line.startsWith('* ')) {
+        currentList.push(line.replace(/^[・\-*]\s*/, ''));
+      } else {
+        flushList(`l-${idx}`);
+        elements.push(
+          <p
+            key={`p-${idx}`}
+            style={{
+              margin: elements.length === 0 ? 0 : '4px 0 0',
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: subTextColor,
+            }}
+          >
+            {renderInlineFormatted(line)}
+          </p>
+        );
+      }
+    });
+
+    flushList('end');
+    return elements;
   };
 
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    const trimmed = rawLine.trim();
+  const rawLines = content.split(/\r?\n/);
+  const preamble: string[] = [];
+  const sections: PolicySection[] = [];
+  let currentSection: PolicySection | null = null;
 
-    if (!trimmed) {
-      flushList(`empty-${i}`);
-      continue;
-    }
+  for (const raw of rawLines) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
 
-    // List item check
-    if (trimmed.startsWith('・') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-      const itemText = trimmed.replace(/^[・\-*]\s*/, '');
-      currentList.push(itemText);
-      continue;
-    }
-
-    // Not a list item, flush any pending list
-    flushList(`line-${i}`);
-
-    // Heading check (### or 第〇条 or 1. など)
-    const isMarkdownH3 = trimmed.startsWith('### ');
-    const isHeadingLike =
-      isMarkdownH3 ||
-      /^第[0-9０-９一二三四五六七八九十]+条/.test(trimmed) ||
-      (/^[0-9]+[.\s]/.test(trimmed) && trimmed.length < 60);
-
-    if (isHeadingLike) {
-      const headingText = isMarkdownH3 ? trimmed.replace(/^###\s+/, '') : trimmed;
-      elements.push(
-        <h4
-          key={`h4-${i}`}
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: textColor,
-            margin: elements.length === 0 ? '0 0 6px' : '20px 0 6px',
-            lineHeight: 1.4,
-          }}
-        >
-          {headingText}
-        </h4>
-      );
+    if (isHeadingLine(trimmed)) {
+      const headingText = trimmed.replace(/^###\s+/, '');
+      currentSection = { heading: headingText, lines: [] };
+      sections.push(currentSection);
+    } else if (currentSection) {
+      currentSection.lines.push(trimmed);
     } else {
-      // Normal paragraph
-      elements.push(
-        <p
-          key={`p-${i}`}
-          style={{
-            margin: '0 0 12px',
-            lineHeight: 1.65,
-            color: subTextColor,
-          }}
-        >
-          {renderInlineFormatted(trimmed)}
-        </p>
-      );
+      preamble.push(trimmed);
     }
   }
 
-  flushList('end');
+  const borderSubtle = 'var(--border-subtle)';
+  const borderMedium = 'var(--border-medium)';
+  const subtleBg = 'var(--bg-surface-subtle)';
+  const warningColor = 'var(--color-warning)';
+  const warningBg = 'var(--color-warning-bg)';
 
-  return <div>{elements}</div>;
+  return (
+    <div>
+      {preamble.length > 0 && (
+        <div style={{ marginBottom: sections.length > 0 ? 10 : 0 }}>
+          {renderLines(preamble)}
+        </div>
+      )}
+
+      {sections.length > 0 && (
+        <div
+          style={{
+            borderRadius: 14,
+            border: `1px solid ${borderMedium}`,
+            backgroundColor: subtleBg,
+            overflow: 'hidden',
+          }}
+        >
+          {sections.map((section, index) => {
+            const meta = getSectionMeta(section.heading);
+            const isLast = index === sections.length - 1;
+            const iconColor = meta.isWarning ? warningColor : themeColor;
+
+            return (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 11,
+                  padding: '11px 13px',
+                  backgroundColor: meta.isWarning ? warningBg : 'transparent',
+                  borderBottom: isLast ? 'none' : `1px solid ${borderSubtle}`,
+                }}
+              >
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
+                    flexShrink: 0,
+                    marginTop: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: meta.isWarning
+                      ? 'rgba(245, 158, 11, 0.16)'
+                      : `color-mix(in srgb, ${themeColor} 12%, transparent)`,
+                  }}
+                  aria-hidden="true"
+                >
+                  {meta.renderIcon(iconColor)}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 6,
+                      marginBottom: 3,
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: 0,
+                        fontSize: 13,
+                        fontWeight: 800,
+                        color: textColor,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {section.heading}
+                    </h4>
+                    {meta.tag && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          padding: '1px 5.5px',
+                          borderRadius: 5,
+                          backgroundColor: 'rgba(245, 158, 11, 0.22)',
+                          color: warningColor,
+                          letterSpacing: '0.01em',
+                        }}
+                      >
+                        {meta.tag}
+                      </span>
+                    )}
+                  </div>
+                  {renderLines(section.lines)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 };

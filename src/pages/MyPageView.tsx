@@ -1004,7 +1004,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Sparkles size={17} color={themeColor} />
+                <Sparkles size={17} color={themeColor} style={{ flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 800, color: isDark ? '#FFFFFF' : themeColor }}>
                     アプリの使い方（チュートリアル）
@@ -1014,7 +1014,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
                   </div>
                 </div>
               </div>
-              <span style={{ fontSize: 13, color: themeColor, fontWeight: 800 }}>見る →</span>
+              <span style={{ fontSize: 13, color: themeColor, fontWeight: 800, flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 8 }}>見る →</span>
             </button>
           )}
 
@@ -1038,7 +1038,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <MessageSquare size={17} color={themeColor} />
+              <MessageSquare size={17} color={themeColor} style={{ flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 800, color: isDark ? '#FFFFFF' : themeColor, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <span>アンケート・改善要望を送る</span>
@@ -1049,62 +1049,41 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
                 </div>
               </div>
             </div>
-            <span style={{ fontSize: 13, color: themeColor, fontWeight: 800 }}>回答 ↗</span>
+            <span style={{ fontSize: 13, color: themeColor, fontWeight: 800, flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 8 }}>回答 ↗</span>
           </button>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {/* 利用規約ボタン */}
-            <button
-              type="button"
-              onClick={() => {
-                setTermsInitialTab('terms');
-                setIsTermsOpen(true);
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '11px 14px',
-                borderRadius: 14,
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid var(--border-subtle)',
-                backgroundColor: isDark ? '#252830' : 'var(--bg-surface-subtle)',
-                color: 'var(--text-primary)',
-                fontSize: 12.5,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              <FileText size={15} color="var(--text-secondary)" />
-              <span>利用規約</span>
-            </button>
-
-            {/* プライバシーポリシーボタン */}
-            <button
-              type="button"
-              onClick={() => {
-                setTermsInitialTab('privacy');
-                setIsTermsOpen(true);
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '11px 14px',
-                borderRadius: 14,
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid var(--border-subtle)',
-                backgroundColor: isDark ? '#252830' : 'var(--bg-surface-subtle)',
-                color: 'var(--text-primary)',
-                fontSize: 12.5,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              <Shield size={15} color="var(--text-secondary)" />
-              <span>プライバシーポリシー</span>
-            </button>
-          </div>
+          {/* 利用規約・プライバシーポリシーボタン */}
+          <button
+            type="button"
+            onClick={() => setIsTermsOpen(true)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '13px 16px',
+              borderRadius: 14,
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid var(--border-subtle)',
+              backgroundColor: isDark ? '#252830' : 'var(--bg-surface-subtle)',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <FileText size={17} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  利用規約・プライバシーポリシー
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  ご利用条件・データの取り扱い・免責事項
+                </div>
+              </div>
+            </div>
+            <span style={{ fontSize: 12.5, color: 'var(--text-muted)', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 8 }}>確認 →</span>
+          </button>
         </div>
       </div>
 
