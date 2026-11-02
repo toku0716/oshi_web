@@ -18,8 +18,6 @@ import {
   Download,
   Upload,
   ArrowRightLeft,
-  FileText,
-  Shield,
   MessageSquare,
   AlertTriangle,
   Sparkles,
@@ -37,7 +35,6 @@ import {
   getOshiDaysSince,
   resizeAndConvertImageToBase64,
 } from '../utils/oshiUtils';
-import { TermsPrivacyModal } from '../components/modals/TermsPrivacyModal';
 import { SurveyModal } from '../components/modals/SurveyModal';
 import { DeviceSyncModal } from '../components/modals/DeviceSyncModal';
 
@@ -76,9 +73,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
-  // 利用規約・プライバシーポリシー / アンケート / P2P同期モーダル
-  const [isTermsOpen, setIsTermsOpen] = useState(false);
-  const [termsInitialTab, setTermsInitialTab] = useState<'terms' | 'privacy'>('terms');
+  // アンケート / P2P同期 / 全削除モーダル
   const [isSurveyOpen, setIsSurveyOpen] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -931,7 +926,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
       </div>
 
       {/* ========================================================
-          カード4: サポート・利用規約・プライバシー・アンケート
+          カード4: ガイド・アンケート
           ======================================================== */}
       <div
         style={{
@@ -963,7 +958,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
               flexShrink: 0,
             }}
           >
-            <FileText size={18} strokeWidth={2.2} />
+            <Sparkles size={18} strokeWidth={2.2} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h2
@@ -974,10 +969,10 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
                 color: 'var(--text-primary)',
               }}
             >
-              ガイド・規約・アンケート
+              ガイド・アンケート
             </h2>
             <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-              使い方チュートリアル、利用規約、改善アンケート
+              使い方チュートリアル、改善アンケート
             </span>
           </div>
         </div>
@@ -1050,39 +1045,6 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
               </div>
             </div>
             <span style={{ fontSize: 13, color: themeColor, fontWeight: 800, flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 8 }}>回答 ↗</span>
-          </button>
-
-          {/* 利用規約・プライバシーポリシーボタン */}
-          <button
-            type="button"
-            onClick={() => setIsTermsOpen(true)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '13px 16px',
-              borderRadius: 14,
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid var(--border-subtle)',
-              backgroundColor: isDark ? '#252830' : 'var(--bg-surface-subtle)',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <FileText size={17} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-                  利用規約・プライバシーポリシー
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                  ご利用条件・データの取り扱い・免責事項
-                </div>
-              </div>
-            </div>
-            <span style={{ fontSize: 12.5, color: 'var(--text-muted)', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 8 }}>確認 →</span>
           </button>
         </div>
       </div>
@@ -1414,14 +1376,6 @@ export const MyPageView: React.FC<MyPageViewProps> = ({ onLogout, onOpenTutorial
           </form>
         </div>
       )}
-
-      {/* 利用規約・プライバシーポリシー閲覧モーダル */}
-      <TermsPrivacyModal
-        isOpen={isTermsOpen}
-        mode="view"
-        initialTab={termsInitialTab}
-        onClose={() => setIsTermsOpen(false)}
-      />
 
       {/* アンケートモーダル */}
       <SurveyModal

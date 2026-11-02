@@ -8,7 +8,6 @@ import { PolicyContentRenderer } from '../common/PolicyContentRenderer';
 interface TermsPrivacyModalProps {
   isOpen: boolean;
   mode: 'consent' | 'view';
-  initialTab?: 'terms' | 'privacy';
   isPolicyUpdate?: boolean;
   onAccept?: () => void;
   onClose?: () => void;
