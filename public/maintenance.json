@@ -1,8 +1,8 @@
 {
-  "enabled": false,
-  "maintenanceMode": false,
-  "title": "通常運用中",
-  "message": "",
+  "enabled": true,
+  "maintenanceMode": true,
+  "title": "ただいまメンテナンス中です",
+  "message": "現在、システムのメンテナンスを実施しております。\nメンテナンス中は本サービスをご利用いただけません。ご不便をおかけいたしますが、再開まで今しばらくお待ちください。",
   "estimatedEnd": "",
-  "updatedAt": "2026-10-29T12:10:00.000Z"
+  "updatedAt": "2026-11-24T13:15:00.000Z"
 }

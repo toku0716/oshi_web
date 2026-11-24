@@ -251,8 +251,7 @@ const MainApp: React.FC = () => {
 
 
   const isMaintenanceMode =
-    settings?.maintenanceMode ??
-    (typeof window !== 'undefined' && localStorage.getItem('oshiss_maintenance_mode') === 'true');
+    settings?.maintenanceMode ?? true;
 
   const accessConfig = getEffectiveAccessConfig(settings);
   const adminAccessConfig = getEffectiveAdminAccessConfig(settings);
@@ -264,13 +263,8 @@ const MainApp: React.FC = () => {
     (combinedAllowedEmails.length === 0 ||
       isGoogleEmailAllowed(authSession!.email, combinedAllowedEmails));
 
-  const isAdminUser =
-    Boolean(authSession?.email) &&
-    (adminAccessConfig.allowedEmails.length === 0 ||
-      isGoogleEmailAllowed(authSession!.email, adminAccessConfig.allowedEmails));
-
-  // メンテナンスモード中は、明示的な管理者バイパス（プレビュー）でない限りアクセスを遮断
-  if (isMaintenanceMode && !isAdminBypass) {
+  // メンテナンスモード中はアクセスを遮断（サイトを完全メンテナンス中にして利用不可に）
+  if (isMaintenanceMode) {
     return (
       <MaintenanceScreen
         title={settings?.maintenanceTitle}
@@ -278,13 +272,8 @@ const MainApp: React.FC = () => {
         estimatedEnd={settings?.maintenanceEstimatedEnd}
         themeColor={themeColor}
         isDark={isDark}
-        isAdminUser={isAdminUser}
-        onAdminBypass={() => {
-          try {
-            sessionStorage.setItem('oshiss_admin_bypass', 'true');
-          } catch {}
-          setIsAdminBypass(true);
-        }}
+        isAdminUser={false}
+        showAdminLink={false}
         onRefresh={async () => {
           await refreshAllData();
           const freshMode =

@@ -18,6 +18,7 @@ interface MaintenanceScreenProps {
   isDark?: boolean;
   isPreview?: boolean;
   isAdminUser?: boolean;
+  showAdminLink?: boolean;
   onAdminBypass?: () => void;
   onClosePreview?: () => void;
   onRefresh?: () => Promise<boolean | void>;
@@ -31,6 +32,7 @@ export const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({
   isDark = true,
   isPreview = false,
   isAdminUser = false,
+  showAdminLink = false,
   onAdminBypass,
   onClosePreview,
   onRefresh,
@@ -374,31 +376,33 @@ export const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({
         )}
 
         {/* 管理者リンク */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-          }}
-        >
-          <span style={{ fontSize: 12, color: subTextColor }}>管理者の方はこちら:</span>
-          <a
-            href="./admin.html"
+        {showAdminLink && (
+          <div
             style={{
-              fontSize: 12.5,
-              fontWeight: 800,
-              color: themeColor,
-              textDecoration: 'none',
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
-              gap: 3,
+              justifyContent: 'center',
+              gap: 6,
             }}
           >
-            <span>管理コンソール</span>
-            <ExternalLink size={13} />
-          </a>
-        </div>
+            <span style={{ fontSize: 12, color: subTextColor }}>管理者の方はこちら:</span>
+            <a
+              href="./admin.html"
+              style={{
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: themeColor,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+            >
+              <span>管理コンソール</span>
+              <ExternalLink size={13} />
+            </a>
+          </div>
+        )}
       </div>
 
       <style>{`

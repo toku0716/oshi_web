@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   activeOshiId: 'all',
   themeColor: '#ec4899', // Default pink
   googleFormUrl: DEFAULT_GOOGLE_FORM_URL,
-  maintenanceMode: false,
+  maintenanceMode: true,
   maintenanceTitle: DEFAULT_MAINTENANCE_TITLE,
   maintenanceMessage: DEFAULT_MAINTENANCE_MESSAGE,
   maintenanceEstimatedEnd: '',
